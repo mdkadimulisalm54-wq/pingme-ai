@@ -19,15 +19,23 @@
 
         .user-message {
 
-            align-self: flex-end;
+            display: block;
 
-            max-width: min(78%, 720px);
+            width: fit-content;
 
-            margin: 10px 14px 10px auto;
+            max-width: 78%;
+
+            margin-top: 10px;
+            margin-bottom: 10px;
+            margin-left: auto;
+            margin-right: 14px;
 
             padding: 13px 17px;
 
-            border-radius: 20px 20px 6px 20px;
+            box-sizing: border-box;
+
+            border-radius:
+                20px 20px 6px 20px;
 
             background:
                 linear-gradient(
@@ -42,20 +50,22 @@
 
             line-height: 1.55;
 
-            word-wrap: break-word;
+            word-break: break-word;
 
             overflow-wrap: anywhere;
 
             box-shadow:
-                0 8px 25px rgba(108, 99, 255, 0.22);
+                0 8px 25px
+                rgba(108, 99, 255, 0.22);
 
             animation:
                 pingmeUserMessage
-                0.42s
+                0.45s
                 cubic-bezier(.2,.8,.2,1)
                 both;
 
-            transform-origin: right bottom;
+            transform-origin:
+                right bottom;
 
         }
 
@@ -66,46 +76,60 @@
 
         .ai-message {
 
-            align-self: flex-start;
+            display: block;
 
-            max-width: min(82%, 760px);
+            width: fit-content;
 
-            margin: 10px auto 10px 14px;
+            max-width: 82%;
+
+            margin-top: 10px;
+            margin-bottom: 10px;
+            margin-left: 14px;
+            margin-right: auto;
 
             padding: 15px 18px;
 
-            border-radius: 20px 20px 20px 6px;
+            box-sizing: border-box;
+
+            border-radius:
+                20px 20px 20px 6px;
 
             background:
-                rgba(255,255,255,0.055);
+                rgba(255, 255, 255, 0.055);
 
             border:
-                1px solid rgba(255,255,255,0.09);
+                1px solid
+                rgba(255, 255, 255, 0.09);
 
-            color: rgba(255,255,255,0.92);
+            color:
+                rgba(255, 255, 255, 0.92);
 
             font-size: 15px;
 
             line-height: 1.65;
 
-            word-wrap: break-word;
+            word-break: break-word;
 
             overflow-wrap: anywhere;
 
             box-shadow:
-                0 8px 28px rgba(0,0,0,0.16);
+                0 8px 28px
+                rgba(0, 0, 0, 0.16);
 
-            backdrop-filter: blur(12px);
+            backdrop-filter:
+                blur(12px);
 
-            -webkit-backdrop-filter: blur(12px);
+            -webkit-backdrop-filter:
+                blur(12px);
 
             animation:
                 pingmeAIMessage
-                0.48s
+                0.5s
                 cubic-bezier(.2,.8,.2,1)
                 both;
 
-            transform-origin: left bottom;
+            transform-origin:
+                left bottom;
 
         }
 
@@ -126,12 +150,11 @@
         .ai-message h3 {
 
             margin:
-                8px 0
-                10px;
+                8px 0 10px;
 
             font-size: 17px;
 
-            line-height: 1.35;
+            line-height: 1.4;
 
             color: #ffffff;
 
@@ -149,9 +172,9 @@
                 opacity: 0;
 
                 transform:
-                    translateY(12px)
-                    translateX(10px)
-                    scale(0.96);
+                    translateY(14px)
+                    translateX(12px)
+                    scale(0.94);
 
             }
 
@@ -180,9 +203,9 @@
                 opacity: 0;
 
                 transform:
-                    translateY(12px)
-                    translateX(-10px)
-                    scale(0.96);
+                    translateY(14px)
+                    translateX(-12px)
+                    scale(0.94);
 
             }
 
@@ -202,11 +225,14 @@
 
         /* =====================================================
            THINKING INDICATOR
+           
+           IMPORTANT:
+           এখানে display জোর করে দেওয়া হচ্ছে না।
+           Existing JavaScript যেভাবে show/hide করে,
+           সেটাই কাজ করবে।
            ===================================================== */
 
         #thinking {
-
-            display: inline-flex;
 
             align-items: center;
 
@@ -218,6 +244,10 @@
             padding:
                 11px 15px;
 
+            box-sizing: border-box;
+
+            width: fit-content;
+
             border-radius:
                 18px 18px 18px 6px;
 
@@ -225,18 +255,13 @@
                 rgba(255,255,255,0.045);
 
             border:
-                1px solid rgba(255,255,255,0.07);
+                1px solid
+                rgba(255,255,255,0.07);
 
             color:
                 rgba(255,255,255,0.68);
 
             font-size: 14px;
-
-            animation:
-                pingmeThinkingIn
-                0.35s
-                ease
-                both;
 
         }
 
@@ -250,6 +275,8 @@
             width: 15px;
 
             height: 15px;
+
+            flex-shrink: 0;
 
             border-radius: 50%;
 
@@ -275,7 +302,9 @@
 
         #thinking span {
 
-            position: relative;
+            display: inline-block;
+
+            white-space: nowrap;
 
         }
 
@@ -293,40 +322,29 @@
             animation:
                 pingmeDots
                 1.2s
-                steps(4,end)
+                steps(4, end)
                 infinite;
 
         }
 
 
-        @keyframes pingmeThinkingIn {
-
-            from {
-
-                opacity: 0;
-
-                transform:
-                    translateY(8px);
-
-            }
-
-            to {
-
-                opacity: 1;
-
-                transform:
-                    translateY(0);
-
-            }
-
-        }
-
+        /* =====================================================
+           THINKING ANIMATION
+           ===================================================== */
 
         @keyframes pingmeSpinner {
 
+            from {
+
+                transform:
+                    rotate(0deg);
+
+            }
+
             to {
 
-                transform: rotate(360deg);
+                transform:
+                    rotate(360deg);
 
             }
 
@@ -417,22 +435,11 @@
 
 
     /* =========================================================
-       MAKE CHAT AREA FLEX-FRIENDLY
+       DO NOT CHANGE CHAT AREA LAYOUT
+       
+       IMPORTANT:
+       এখানে আর display:flex দেওয়া হচ্ছে না।
        ========================================================= */
-
-    const chatArea =
-        document.getElementById("chatArea");
-
-
-    if (chatArea) {
-
-        chatArea.style.display =
-            "flex";
-
-        chatArea.style.flexDirection =
-            "column";
-
-    }
 
 
     console.log(
