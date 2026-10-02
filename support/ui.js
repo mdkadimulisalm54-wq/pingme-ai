@@ -44,14 +44,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 34px;
-            font-weight: 800;
-            color: white;
+            overflow: hidden;
             background: linear-gradient(135deg, #6c63ff, #9b5cff);
             box-shadow:
                 0 0 35px rgba(120, 100, 255, 0.45),
                 0 0 80px rgba(120, 100, 255, 0.18);
             animation: pingmeLogo 2s ease-in-out infinite;
+        }
+
+        .pingme-entry-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
 
         .pingme-entry-title {
@@ -121,7 +126,9 @@
 
     screen.innerHTML = `
         <div class="pingme-entry-content">
-            <div class="pingme-entry-logo">P</div>
+            <div class="pingme-entry-logo">
+                <img src="icon-192.png" alt="PingMe AI">
+            </div>
             <h1 class="pingme-entry-title">PingMe AI</h1>
             <div class="pingme-entry-subtitle">
                 Welcome back
