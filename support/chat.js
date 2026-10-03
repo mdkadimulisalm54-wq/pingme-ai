@@ -366,7 +366,42 @@
         );
 
     }
+          /* =========================================================
+       KEEP THINKING AT BOTTOM
+       ========================================================= */
 
+    const thinking =
+        document.getElementById("thinking");
+
+    if (thinking) {
+
+        const thinkingObserver =
+            new MutationObserver(() => {
+
+                if (
+                    thinking.classList.contains("show")
+                ) {
+
+                    const chatArea =
+                        document.getElementById("chatArea");
+
+                    if (chatArea) {
+                        chatArea.appendChild(thinking);
+                    }
+
+                }
+
+            });
+
+        thinkingObserver.observe(
+            thinking,
+            {
+                attributes: true,
+                attributeFilter: ["class"]
+            }
+        );
+
+    }
 
     /* =========================================================
        CONNECTED
