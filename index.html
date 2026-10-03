@@ -1744,44 +1744,35 @@ function startVoice() {
     recognition.lang =
         "bn-BD";
 
+recognition.continuous =
+    false;
 
-    recognition.continuous =
-        false;
+recognition.interimResults =
+    false;
 
+recognition.onresult =
+    function (event) {
 
-    recognition.interimResults =
-        false;
+        input.value =
+            event.results[0][0]
+                .transcript;
 
+        input.dispatchEvent(
+            new Event("input")
+        );
 
-    recognition.onresult =
-        function (event) {
+    };
 
-            input.value =
-                event.results[0][0]
-                    .transcript;
+recognition.onerror =
+    function () {
 
+        input.focus();
 
-            input.dispatchEvent(
-                new Event(
-                    "input"
-                )
-            );
+    };
 
-        };
-
-
-    recognition.onerror =
-        function () {
-
-            input.focus();
-
-        };
-
-
-    recognition.start();
-
+recognition.start();
+    
 }
-
 
 /* =========================================================
    ২৩. SCROLL
