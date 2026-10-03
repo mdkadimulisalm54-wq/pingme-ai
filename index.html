@@ -1082,13 +1082,17 @@ const secondBar =
         "secondBar"
     );
 
-
-let conversationHistory = [];
+ let conversationHistory =JSON.parse(
+      
+        
+ localStorage.getItem("pingme_conversation_history") || "[]"
+  );      
+ 
+    
 
 let chatSession = null;
 
 let currentChatModel = null;
-
 
 /* =========================================================
    TOP BAR STATE
