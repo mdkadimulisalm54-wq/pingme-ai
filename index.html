@@ -1311,16 +1311,6 @@ micButton.addEventListener(
 
     }
 );
-function startVoice() {
-    startVoiceInput("bn-BD", {
-        onResult: function (result) {
-            input.value =
-                result.finalText ||
-                result.interimText ||
-                "";
-        }
-    });
-}
 
 /* =========================================================
    CAMERA
