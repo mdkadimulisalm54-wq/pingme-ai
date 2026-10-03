@@ -1472,7 +1472,7 @@ async function sendMessage() {
                 {
                     text: message
                 }
-
+              
             ]
 
         });
@@ -1487,12 +1487,15 @@ async function sendMessage() {
                 {
                     text: reply
                 }
-
+              
             ]
 
         });
-
-
+         localStorage.setItem(
+           "pingme_conversation_history",
+            JSON.stringify(conversationHistory)
+         );      
+        
         /* =================================================
            STOP THINKING
            ================================================= */
