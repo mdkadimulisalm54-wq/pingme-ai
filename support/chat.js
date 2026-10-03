@@ -1,84 +1,150 @@
 // PingMe AI — Chat Support
-// Message Animations + Thinking Animation
+// Message UI + Smooth Animations
 
 (() => {
     "use strict";
 
     /* =========================================================
-       STYLE
+       MESSAGE UI STYLE
        ========================================================= */
 
     const style = document.createElement("style");
 
     style.textContent = `
 
-        /* -----------------------------------------------------
+        /* =====================================================
            USER MESSAGE
-           ----------------------------------------------------- */
+           ===================================================== */
 
         .user-message {
-            animation: pingmeUserMessageIn 0.45s cubic-bezier(.2,.8,.2,1);
+            max-width: 80%;
+            margin: 10px 0 10px auto !important;
+            padding: 12px 16px !important;
+
+            border-radius: 20px 20px 6px 20px !important;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1a73e8,
+                    #4285f4
+                ) !important;
+
+            color: #ffffff !important;
+
+            box-shadow:
+                0 5px 16px rgba(26, 115, 232, 0.20);
+
+            line-height: 1.5;
+
+            animation:
+                pingmeUserIn
+                0.38s
+                cubic-bezier(.2,.8,.2,1)
+                both;
+
             transform-origin: bottom right;
         }
 
 
-        @keyframes pingmeUserMessageIn {
+        @keyframes pingmeUserIn {
 
-            0% {
+            from {
                 opacity: 0;
-                transform: translateY(12px) scale(0.92);
+                transform:
+                    translateY(12px)
+                    scale(0.92);
             }
 
-            100% {
+            to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform:
+                    translateY(0)
+                    scale(1);
             }
 
         }
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            AI MESSAGE
-           ----------------------------------------------------- */
+           ===================================================== */
 
         .ai-message {
-            animation: pingmeAIMessageIn 0.55s cubic-bezier(.2,.8,.2,1);
+            width: 100%;
+            margin: 14px 0 !important;
+            padding: 12px 14px !important;
+
+            border-radius: 18px 18px 18px 6px;
+
+            background:
+                #f7f8fc;
+
+            color: #202124 !important;
+
+            line-height: 1.6;
+
+            box-shadow:
+                0 3px 12px rgba(0,0,0,0.05);
+
+            animation:
+                pingmeAIIn
+                0.45s
+                cubic-bezier(.2,.8,.2,1)
+                both;
+
             transform-origin: bottom left;
         }
 
 
-        @keyframes pingmeAIMessageIn {
+        @keyframes pingmeAIIn {
 
-            0% {
+            from {
                 opacity: 0;
-                transform: translateY(14px) scale(0.97);
+                transform:
+                    translateY(14px)
+                    scale(0.97);
             }
 
-            100% {
+            to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform:
+                    translateY(0)
+                    scale(1);
             }
 
         }
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
+           AI HEADINGS
+           ===================================================== */
+
+        .ai-message h3 {
+            margin: 8px 0 6px !important;
+        }
+
+
+        /* =====================================================
            AI ERROR
-           ----------------------------------------------------- */
+           ===================================================== */
 
         .ai-error {
-            animation: pingmeAIErrorIn 0.45s ease;
+            animation:
+                pingmeErrorIn
+                0.4s
+                ease both;
         }
 
 
-        @keyframes pingmeAIErrorIn {
+        @keyframes pingmeErrorIn {
 
-            0% {
+            from {
                 opacity: 0;
                 transform: translateY(10px);
             }
 
-            100% {
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
@@ -86,23 +152,26 @@
         }
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            THINKING
-           ----------------------------------------------------- */
+           ===================================================== */
 
         .thinking.show {
-            animation: pingmeThinkingIn 0.25s ease;
+            animation:
+                pingmeThinkingIn
+                0.3s
+                ease both;
         }
 
 
         @keyframes pingmeThinkingIn {
 
-            0% {
+            from {
                 opacity: 0;
-                transform: translateY(5px);
+                transform: translateY(6px);
             }
 
-            100% {
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
@@ -110,26 +179,32 @@
         }
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            THINKING DOTS
-           ----------------------------------------------------- */
+           ===================================================== */
 
         .thinking span {
             display: inline-flex;
             align-items: center;
         }
 
+
         .thinking span::after {
             content: "";
-            width: 18px;
             display: inline-block;
-            text-align: left;
+            width: 18px;
             overflow: hidden;
-            animation: pingmeThinkingDots 1.3s steps(4, end) infinite;
+            text-align: left;
+
+            animation:
+                pingmeDots
+                1.2s
+                steps(4, end)
+                infinite;
         }
 
 
-        @keyframes pingmeThinkingDots {
+        @keyframes pingmeDots {
 
             0% {
                 content: "";
@@ -154,9 +229,27 @@
         }
 
 
-        /* -----------------------------------------------------
-           REDUCE MOTION
-           ----------------------------------------------------- */
+        /* =====================================================
+           MOBILE
+           ===================================================== */
+
+        @media (max-width: 480px) {
+
+            .user-message {
+                max-width: 84%;
+                padding: 11px 14px !important;
+            }
+
+            .ai-message {
+                padding: 11px 12px !important;
+            }
+
+        }
+
+
+        /* =====================================================
+           REDUCED MOTION
+           ===================================================== */
 
         @media (prefers-reduced-motion: reduce) {
 
@@ -180,11 +273,107 @@
 
 
     /* =========================================================
+       MESSAGE OBSERVER
+       ========================================================= */
+
+    const chatArea =
+        document.getElementById("chatArea");
+
+
+    if (chatArea) {
+
+        const observer =
+            new MutationObserver(
+                (mutations) => {
+
+                    for (
+                        const mutation
+                        of mutations
+                    ) {
+
+                        for (
+                            const node
+                            of mutation.addedNodes
+                        ) {
+
+                            if (
+                                node.nodeType !== 1
+                            ) {
+                                continue;
+                            }
+
+
+                            if (
+                                node.classList.contains(
+                                    "user-message"
+                                )
+                            ) {
+
+                                node.style.animation =
+                                    "none";
+
+                                node.offsetHeight;
+
+                                node.style.animation =
+                                    "pingmeUserIn 0.38s cubic-bezier(.2,.8,.2,1) both";
+                            }
+
+
+                            if (
+                                node.classList.contains(
+                                    "ai-message"
+                                )
+                            ) {
+
+                                node.style.animation =
+                                    "none";
+
+                                node.offsetHeight;
+
+                                node.style.animation =
+                                    "pingmeAIIn 0.45s cubic-bezier(.2,.8,.2,1) both";
+                            }
+
+
+                            if (
+                                node.classList.contains(
+                                    "ai-error"
+                                )
+                            ) {
+
+                                node.style.animation =
+                                    "none";
+
+                                node.offsetHeight;
+
+                                node.style.animation =
+                                    "pingmeErrorIn 0.4s ease both";
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+        observer.observe(
+            chatArea,
+            {
+                childList: true
+            }
+        );
+
+    }
+
+
+    /* =========================================================
        CONNECTED
        ========================================================= */
 
     console.log(
-        "Chat Support Connected"
+        "Chat Support UI Connected"
     );
 
 })();
