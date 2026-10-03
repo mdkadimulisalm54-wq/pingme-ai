@@ -1093,7 +1093,12 @@ const secondBar =
 let chatSession = null;
 
 let currentChatModel = null;
+input.addEventListener("input", function () {
+    input.style.height = "auto";
+    input.style.height = input.scrollHeight + "px";
+});
 
+    
 /* =========================================================
    TOP BAR STATE
    ========================================================= */
