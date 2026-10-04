@@ -1832,7 +1832,19 @@ recognition.onerror =
         input.focus();
 
     };
+    recognition.onend =
+    function () {
 
+        micButton.classList.remove(
+            "voice-listening"
+        );
+
+        document.body.classList.remove(
+            "voice-active"
+        );
+
+    };
+    
 recognition.start();
 micButton.classList.add("voice-listening");
 document.body.classList.add("voice-active");
