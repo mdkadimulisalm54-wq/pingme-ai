@@ -1,9 +1,8 @@
 // =========================================================
-// OPENAI API KEY — TEST ONLY
-// এখানে তোর Secret Key বসাবি
+// OPENAI API KEY
 // =========================================================
 
-const OPENAI_API_KEY = "OPENAI_API_KEY";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 
 // =========================================================
@@ -41,12 +40,10 @@ export default async function handler(req, res) {
         method: "POST",
 
         headers: {
-
           "Content-Type": "application/json",
 
           "Authorization":
             `Bearer ${OPENAI_API_KEY}`
-
         },
 
         body: JSON.stringify({
@@ -61,8 +58,7 @@ export default async function handler(req, res) {
     );
 
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
 
     if (!response.ok) {
