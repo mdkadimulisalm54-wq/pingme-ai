@@ -1,6 +1,13 @@
 // PingMe AI — Settings Support
 
 const pingmeSettings = {
+
+    general: {
+        language: "en",
+        autoSave: true,
+        confirmDelete: true
+    },
+
     model: "gemini-3.8-flash",
 
     appearance: {
@@ -42,35 +49,49 @@ const pingmeSettings = {
     }
 };
 
+
 // Get a setting
 function getSetting(path) {
+
     return path.split(".").reduce((object, key) => {
         return object?.[key];
     }, pingmeSettings);
+
 }
+
 
 // Change a setting
 function setSetting(path, value) {
+
     const keys = path.split(".");
     const lastKey = keys.pop();
 
     let target = pingmeSettings;
 
     for (const key of keys) {
+
         if (!target[key]) {
             target[key] = {};
         }
 
         target = target[key];
+
     }
 
     target[lastKey] = value;
 
     console.log("Setting Changed:", path, value);
+
 }
+
 
 // Reset all settings
 function resetSettings() {
+
+    pingmeSettings.general.language = "en";
+    pingmeSettings.general.autoSave = true;
+    pingmeSettings.general.confirmDelete = true;
+
     pingmeSettings.model = "gemini-3.8-flash";
 
     pingmeSettings.appearance.theme = "light";
@@ -98,6 +119,8 @@ function resetSettings() {
     pingmeSettings.tools.scanner = true;
 
     console.log("Settings Reset");
+
 }
+
 
 console.log("Settings Support Connected");
