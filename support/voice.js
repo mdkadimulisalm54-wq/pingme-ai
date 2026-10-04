@@ -748,8 +748,6 @@
             })
         );
 
-        stopRecognition();
-
         setStatus("Thinking...");
 
         /*
