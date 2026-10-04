@@ -1370,27 +1370,6 @@ sendButton.addEventListener(
 /* =========================================================
    CAMERA
    ========================================================= */
-const cameraButton =
-    document.getElementById("cameraButton");
-
-cameraButton.addEventListener("click", async function () {
-
-    try {
-
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
-                video: true
-            });
-
-        console.log("Camera Started", stream);
-
-    } catch (error) {
-
-        console.error("Camera Error:", error);
-
-    }
-
-});
 
 /* =========================================================
    SEND MESSAGE
