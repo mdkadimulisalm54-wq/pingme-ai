@@ -15,15 +15,11 @@
         return;
     }
 
-    const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
 
     const speechSupported =
         "speechSynthesis" in window;
 
     let room = null;
-    let recognition = null;
 
     let roomOpen = false;
     let recognitionRunning = false;
