@@ -937,9 +937,6 @@
             function () {
 
                 speaking = true;
-
-                stopRecognition();
-
                 if (room) {
                     room.classList.add(
                         "voice-room-speaking"
@@ -971,13 +968,6 @@
                         "Listening..."
                     );
 
-                    setTimeout(
-                        startRecognition,
-                        300
-                    );
-                }
-            };
-
         utterance.onerror =
             function () {
 
@@ -993,7 +983,7 @@
                     roomOpen &&
                     keepListening
                 ) {
-                    startRecognition();
+               
                 }
             };
 
