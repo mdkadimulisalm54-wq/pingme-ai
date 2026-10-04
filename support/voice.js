@@ -1151,7 +1151,7 @@
             "voiceschanged",
             function () {
                 speechSynthesis.getVoices();
-            }
+            
         );
     }
 
@@ -1165,11 +1165,9 @@
        CLEANUP
        ===================================================== */
 
-    window.addEventListener(
+           window.addEventListener(
         "beforeunload",
         function () {
-
-            stopRecognition();
 
             if (speechSupported) {
                 speechSynthesis.cancel();
@@ -1183,3 +1181,4 @@
     );
 
 })();
+    
