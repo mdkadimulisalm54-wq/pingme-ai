@@ -3,7 +3,7 @@
 // এখানে তোর Secret Key বসাবি
 // =========================================================
 
-const OPENAI_API_KEY = "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";
+const OPENAI_API_KEY = "OPENAI_API_KEY";
 
 
 // =========================================================
