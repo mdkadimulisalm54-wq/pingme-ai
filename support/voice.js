@@ -1095,9 +1095,6 @@
             "Listening..."
         );
 
-        startRecognition();
-    }
-
     /* =====================================================
        CLOSE
        ===================================================== */
@@ -1106,8 +1103,6 @@
 
         roomOpen = false;
         keepListening = false;
-
-        stopRecognition();
 
         if (speechSupported) {
             speechSynthesis.cancel();
