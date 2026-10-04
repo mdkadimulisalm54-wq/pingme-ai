@@ -22,7 +22,6 @@
     let room = null;
 
     let roomOpen = false;
-    let recognitionRunning = false;
     let keepListening = false;
     let speaking = false;
 
