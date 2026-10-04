@@ -22,6 +22,31 @@ export default async function handler(req, res) {
 
   try {
 
+    const contentType =
+      req.headers["content-type"] || "";
+
+
+    // =====================================================
+    // AUDIO REQUEST
+    // =====================================================
+
+    if (
+      contentType.includes("audio/") ||
+      contentType.includes("multipart/form-data")
+    ) {
+
+      return res.status(200).json({
+        mode: "audio",
+        message: "Audio request received"
+      });
+
+    }
+
+
+    // =====================================================
+    // TEXT REQUEST
+    // =====================================================
+
     const { message } = req.body;
 
 
