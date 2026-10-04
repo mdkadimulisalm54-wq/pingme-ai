@@ -1,8 +1,9 @@
-// =========================================================
-// PingMe AI — Voice Room Support
-// =========================================================
+/* =========================================================
+   PingMe AI — Voice Room
+   Auto Voice • Auto Language • Animated AI Orb
+   ========================================================= */
 
-(() => {
+(function () {
 
     "use strict";
 
@@ -10,785 +11,765 @@
     const input = document.getElementById("chatInput");
 
     if (!sendButton || !input) {
-        console.warn("PingMe Voice Room: Main send button not found.");
+        console.error("PingMe Voice: sendButton or chatInput not found.");
         return;
     }
 
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    const speechSupported =
+        "speechSynthesis" in window;
+
+    let room = null;
     let recognition = null;
-    let voiceRoomOpen = false;
+
+    let roomOpen = false;
     let recognitionRunning = false;
+    let keepListening = false;
+    let speaking = false;
 
-    let selectedLanguage = "en-US";
-    let selectedVoice = "voice-1";
-    let autoTalk = true;
+    let microphoneReady = false;
+    let lastSpokenResponse = "";
 
-    // =====================================================
-    // VOICE ROOM STYLE
-    // =====================================================
+    /* =====================================================
+       CREATE VOICE ROOM
+       ===================================================== */
 
-    const style = document.createElement("style");
+    function createRoom() {
 
-    style.textContent = `
+        if (room) return;
 
-        .pingme-voice-room {
+        room = document.createElement("div");
+
+        room.id = "pingmeVoiceRoom";
+
+        room.innerHTML = `
+            <div class="voice-room-bg">
+
+                <div class="voice-orb-glow glow-one"></div>
+                <div class="voice-orb-glow glow-two"></div>
+
+                <button
+                    class="voice-room-close"
+                    id="voiceRoomClose"
+                    type="button"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+                <div class="voice-room-content">
+
+                    <div
+                        class="voice-room-status"
+                        id="voiceRoomStatus"
+                    >
+                        Listening...
+                    </div>
+
+                    <div
+                        class="voice-orb"
+                        id="voiceOrb"
+                    >
+
+                        <div class="orb-ring ring-one"></div>
+                        <div class="orb-ring ring-two"></div>
+
+                        <div
+                            class="orb-core"
+                            id="orbCore"
+                        >
+                            <div class="orb-light"></div>
+
+                            <div class="orb-inner">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="voice-bars"
+                        id="voiceBars"
+                    >
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                    </div>
+
+                    <div class="voice-room-label">
+                        PingMe AI
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+        document.body.appendChild(room);
+
+        addStyles();
+
+        const close =
+            document.getElementById("voiceRoomClose");
+
+        close.addEventListener(
+            "click",
+            closeRoom
+        );
+
+        startOrbAnimation();
+    }
+
+    /* =====================================================
+       STYLE
+       ===================================================== */
+
+    function addStyles() {
+
+        if (document.getElementById("pingmeVoiceRoomStyle")) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = "pingmeVoiceRoomStyle";
+
+        style.textContent = `
+
+        #pingmeVoiceRoom {
             position: fixed;
             inset: 0;
             z-index: 999999;
+            overflow: hidden;
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        .voice-room-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background:
+                radial-gradient(
+                    circle at 50% 45%,
+                    #182f62 0%,
+                    #0b1735 32%,
+                    #050b1c 67%,
+                    #02040b 100%
+                );
+        }
+
+        .voice-room-content {
+            position: relative;
+            z-index: 5;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding:
-                calc(24px + env(safe-area-inset-top))
-                22px
-                calc(24px + env(safe-area-inset-bottom));
-
-            background:
-                radial-gradient(
-                    circle at 50% 38%,
-                    #252052 0%,
-                    #111126 38%,
-                    #07070d 75%,
-                    #030305 100%
-                );
-
-            color: white;
-            overflow: hidden;
         }
 
-        .pingme-voice-room.hidden {
-            display: none;
-        }
-
-        .pingme-voice-top {
+        .voice-room-close {
             position: absolute;
-            top: calc(18px + env(safe-area-inset-top));
-            left: 18px;
-            right: 18px;
+            top: 26px;
+            right: 22px;
+            z-index: 20;
 
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+            width: 44px;
+            height: 44px;
 
-        .pingme-voice-title {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: .2px;
-        }
-
-        .pingme-voice-close {
-            width: 42px;
-            height: 42px;
             border: 0;
             border-radius: 50%;
 
-            background: rgba(255,255,255,.08);
+            background:
+                rgba(255,255,255,.09);
+
             color: white;
+            font-size: 30px;
+            line-height: 42px;
+
+            cursor: pointer;
+
+            -webkit-tap-highlight-color:
+                transparent;
+        }
+
+        .voice-room-close:active {
+            transform: scale(.92);
+        }
+
+        .voice-room-status {
+            position: absolute;
+            top: 88px;
+            left: 20px;
+            right: 20px;
+
+            text-align: center;
+
+            color:
+                rgba(255,255,255,.72);
+
+            font-size: 15px;
+            font-weight: 500;
+
+            min-height: 22px;
+        }
+
+        .voice-orb {
+            position: relative;
+
+            width: 260px;
+            height: 260px;
 
             display: flex;
             align-items: center;
             justify-content: center;
-
-            font-size: 25px;
-            cursor: pointer;
-
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .pingme-voice-orb {
+        .orb-ring {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ring-one {
+            width: 245px;
+            height: 245px;
+
+            border:
+                1px solid
+                rgba(96,165,250,.28);
+
+            animation:
+                orbRingOne
+                4s ease-in-out infinite;
+        }
+
+        .ring-two {
+            width: 295px;
+            height: 295px;
+
+            border:
+                1px solid
+                rgba(59,130,246,.13);
+
+            animation:
+                orbRingTwo
+                5s ease-in-out infinite;
+        }
+
+        .orb-core {
             position: relative;
 
-            width: 190px;
-            height: 190px;
-
-            margin-top: 20px;
+            width: 178px;
+            height: 178px;
 
             border-radius: 50%;
 
             display: flex;
             align-items: center;
             justify-content: center;
+
+            overflow: hidden;
 
             background:
                 radial-gradient(
-                    circle at 35% 30%,
-                    #ffffff 0%,
-                    #cfcaff 5%,
-                    #7d72ff 22%,
-                    #5147db 48%,
-                    #211d70 72%,
-                    #100e35 100%
+                    circle at 35% 28%,
+                    #8bd5ff 0%,
+                    #4298ff 24%,
+                    #2563eb 48%,
+                    #111d48 100%
                 );
 
             box-shadow:
-                0 0 35px rgba(110,95,255,.55),
-                0 0 90px rgba(95,80,255,.28),
-                inset 0 0 35px rgba(255,255,255,.18);
+                0 0 30px
+                rgba(59,130,246,.55),
 
-            animation: pingmeVoiceOrb 3s ease-in-out infinite;
+                0 0 75px
+                rgba(59,130,246,.27),
+
+                inset 0 0 30px
+                rgba(255,255,255,.17);
+
+            animation:
+                orbFloat
+                3s ease-in-out infinite;
         }
 
-        .pingme-voice-orb::before {
-            content: "";
-
+        .orb-light {
             position: absolute;
-            inset: -12px;
+            inset: -35%;
 
-            border-radius: 50%;
+            background:
+                conic-gradient(
+                    from 0deg,
+                    transparent,
+                    rgba(255,255,255,.18),
+                    transparent,
+                    rgba(96,165,250,.16),
+                    transparent
+                );
 
-            border: 1px solid rgba(150,140,255,.28);
-
-            animation: pingmeVoiceRing 2.4s ease-out infinite;
+            animation:
+                orbLight
+                4s linear infinite;
         }
 
-        .pingme-voice-orb::after {
-            content: "";
+        .orb-inner {
+            position: relative;
 
-            position: absolute;
-            inset: -28px;
-
-            border-radius: 50%;
-
-            border: 1px solid rgba(120,110,255,.12);
-
-            animation: pingmeVoiceRing 3.2s ease-out infinite;
-        }
-
-        .pingme-voice-logo {
             width: 92px;
             height: 92px;
 
-            border-radius: 25px;
-
-            object-fit: contain;
-
-            filter:
-                drop-shadow(0 0 18px rgba(255,255,255,.35));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
-        .pingme-voice-status {
-            margin-top: 32px;
+        .orb-inner span {
+            width: 7px;
+            height: 28px;
 
-            font-size: 15px;
+            border-radius: 20px;
 
-            color: rgba(255,255,255,.72);
+            background:
+                rgba(255,255,255,.9);
 
-            text-align: center;
+            box-shadow:
+                0 0 12px
+                rgba(255,255,255,.45);
+
+            animation:
+                orbWave
+                1.2s ease-in-out infinite;
         }
 
-        .pingme-voice-wave {
-            height: 34px;
+        .orb-inner span:nth-child(2) {
+            animation-delay: .12s;
+        }
+
+        .orb-inner span:nth-child(3) {
+            animation-delay: .24s;
+        }
+
+        .orb-inner span:nth-child(4) {
+            animation-delay: .36s;
+        }
+
+        .orb-inner span:nth-child(5) {
+            animation-delay: .48s;
+        }
+
+        .voice-bars {
+            margin-top: 42px;
+
+            height: 38px;
 
             display: flex;
             align-items: center;
             justify-content: center;
 
             gap: 5px;
-
-            margin-top: 12px;
         }
 
-        .pingme-voice-wave span {
+        .voice-bars i {
+            display: block;
+
             width: 4px;
             height: 7px;
 
-            border-radius: 10px;
+            border-radius: 20px;
 
-            background: #aaa2ff;
+            background:
+                rgba(147,197,253,.85);
 
-            animation: pingmeVoiceWave 1s ease-in-out infinite;
+            animation:
+                voiceBar
+                1s ease-in-out infinite;
+
+            animation-play-state:
+                paused;
         }
 
-        .pingme-voice-wave span:nth-child(2) {
+        #pingmeVoiceRoom.active
+        .voice-bars i {
+
+            animation-play-state:
+                running;
+        }
+
+        .voice-bars i:nth-child(2) {
             animation-delay: .1s;
         }
 
-        .pingme-voice-wave span:nth-child(3) {
+        .voice-bars i:nth-child(3) {
             animation-delay: .2s;
         }
 
-        .pingme-voice-wave span:nth-child(4) {
+        .voice-bars i:nth-child(4) {
             animation-delay: .3s;
         }
 
-        .pingme-voice-wave span:nth-child(5) {
+        .voice-bars i:nth-child(5) {
             animation-delay: .4s;
         }
 
-        .pingme-voice-controls {
-            position: absolute;
-
-            left: 20px;
-            right: 20px;
-            bottom: calc(24px + env(safe-area-inset-bottom));
-
-            display: flex;
-            flex-direction: column;
-
-            gap: 12px;
+        .voice-bars i:nth-child(6) {
+            animation-delay: .3s;
         }
 
-        .pingme-voice-option {
-            width: 100%;
-
-            min-height: 52px;
-
-            padding: 0 16px;
-
-            border: 1px solid rgba(255,255,255,.09);
-
-            border-radius: 17px;
-
-            background: rgba(255,255,255,.07);
-
-            color: white;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            font-size: 14px;
-
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-
-            cursor: pointer;
-
-            -webkit-tap-highlight-color: transparent;
+        .voice-bars i:nth-child(7) {
+            animation-delay: .2s;
         }
 
-        .pingme-voice-option-left {
-            display: flex;
-            align-items: center;
-            gap: 11px;
+        .voice-bars i:nth-child(8) {
+            animation-delay: .1s;
         }
 
-        .pingme-voice-option-icon {
-            width: 34px;
-            height: 34px;
-
-            border-radius: 11px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            background: rgba(125,114,255,.18);
-
-            font-size: 17px;
+        .voice-bars i:nth-child(9) {
+            animation-delay: 0s;
         }
 
-        .pingme-voice-option-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 3px;
+        .voice-room-label {
+            margin-top: 24px;
+
+            color:
+                rgba(255,255,255,.48);
+
+            font-size: 13px;
+            letter-spacing: .4px;
         }
 
-        .pingme-voice-option-label {
-            color: rgba(255,255,255,.52);
-            font-size: 11px;
+        .voice-room-speaking .orb-core {
+            animation:
+                orbSpeaking
+                .9s ease-in-out infinite;
         }
 
-        .pingme-voice-option-value {
-            font-size: 14px;
+        .voice-room-speaking .ring-one {
+            animation:
+                speakingRingOne
+                1.1s ease-in-out infinite;
         }
 
-        .pingme-voice-chevron {
-            color: rgba(255,255,255,.45);
-            font-size: 18px;
+        .voice-room-speaking .ring-two {
+            animation:
+                speakingRingTwo
+                1.3s ease-in-out infinite;
         }
 
-        .pingme-voice-toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        @keyframes orbFloat {
 
-            min-height: 52px;
-
-            padding: 0 16px;
-
-            border-radius: 17px;
-
-            background: rgba(255,255,255,.06);
-
-            border: 1px solid rgba(255,255,255,.08);
-        }
-
-        .pingme-voice-toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-
-            font-size: 14px;
-        }
-
-        .pingme-voice-toggle {
-            position: relative;
-
-            width: 50px;
-            height: 29px;
-
-            border: 0;
-            border-radius: 30px;
-
-            background: rgba(255,255,255,.18);
-
-            cursor: pointer;
-
-            transition: .25s ease;
-        }
-
-        .pingme-voice-toggle.active {
-            background: #7167ff;
-        }
-
-        .pingme-voice-toggle span {
-            position: absolute;
-
-            top: 4px;
-            left: 4px;
-
-            width: 21px;
-            height: 21px;
-
-            border-radius: 50%;
-
-            background: white;
-
-            transition: .25s ease;
-
-            box-shadow: 0 2px 8px rgba(0,0,0,.25);
-        }
-
-        .pingme-voice-toggle.active span {
-            transform: translateX(21px);
-        }
-
-        .pingme-voice-menu {
-            position: fixed;
-
-            left: 20px;
-            right: 20px;
-            bottom: calc(25px + env(safe-area-inset-bottom));
-
-            z-index: 1000001;
-
-            display: none;
-
-            padding: 10px;
-
-            border-radius: 20px;
-
-            background: rgba(25,24,43,.96);
-
-            border: 1px solid rgba(255,255,255,.1);
-
-            box-shadow:
-                0 20px 60px rgba(0,0,0,.45);
-
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-        }
-
-        .pingme-voice-menu.show {
-            display: block;
-        }
-
-        .pingme-voice-menu-title {
-            padding: 10px 12px;
-
-            font-size: 12px;
-
-            color: rgba(255,255,255,.45);
-        }
-
-        .pingme-voice-menu-item {
-            width: 100%;
-
-            border: 0;
-
-            border-radius: 13px;
-
-            padding: 13px 12px;
-
-            background: transparent;
-
-            color: white;
-
-            text-align: left;
-
-            font-size: 14px;
-
-            cursor: pointer;
-        }
-
-        .pingme-voice-menu-item:hover {
-            background: rgba(255,255,255,.08);
-        }
-
-        @keyframes pingmeVoiceOrb {
-
-            0%, 100% {
-                transform: scale(1);
+            0%,100% {
+                transform:
+                    translateY(0)
+                    scale(1);
             }
 
             50% {
-                transform: scale(1.045);
+                transform:
+                    translateY(-9px)
+                    scale(1.025);
             }
-
         }
 
-        @keyframes pingmeVoiceRing {
+        @keyframes orbSpeaking {
 
-            0% {
-                transform: scale(.82);
-                opacity: .7;
+            0%,100% {
+                transform:
+                    translateY(0)
+                    scale(.97);
             }
 
-            100% {
-                transform: scale(1.25);
-                opacity: 0;
+            50% {
+                transform:
+                    translateY(-12px)
+                    scale(1.07);
             }
-
         }
 
-        @keyframes pingmeVoiceWave {
+        @keyframes orbWave {
 
-            0%, 100% {
-                height: 7px;
+            0%,100% {
+                height: 14px;
+            }
+
+            50% {
+                height: 50px;
+            }
+        }
+
+        @keyframes orbLight {
+
+            from {
+                transform:
+                    rotate(0deg);
+            }
+
+            to {
+                transform:
+                    rotate(360deg);
+            }
+        }
+
+        @keyframes orbRingOne {
+
+            0%,100% {
+                transform:
+                    scale(.94)
+                    rotate(0deg);
                 opacity: .45;
             }
 
             50% {
-                height: 29px;
-                opacity: 1;
+                transform:
+                    scale(1.05)
+                    rotate(180deg);
+                opacity: .85;
             }
-
         }
 
-    `;
-
-    document.head.appendChild(style);
-
-
-    // =====================================================
-    // VOICE ROOM
-    // =====================================================
-
-    const room = document.createElement("div");
-
-    room.className = "pingme-voice-room hidden";
-
-    room.innerHTML = `
-
-        <div class="pingme-voice-top">
-
-            <div class="pingme-voice-title">
-                PingMe AI Voice
-            </div>
-
-            <button
-                class="pingme-voice-close"
-                id="pingmeVoiceClose"
-                type="button">
-                ×
-            </button>
-
-        </div>
-
-
-        <div class="pingme-voice-orb">
-
-            <img
-                class="pingme-voice-logo"
-                src="icon-192.png"
-                alt="PingMe AI">
-
-        </div>
-
-
-        <div
-            class="pingme-voice-status"
-            id="pingmeVoiceStatus">
-
-            Listening...
-
-        </div>
-
-
-        <div class="pingme-voice-wave">
-
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-
-        </div>
-
-
-        <div class="pingme-voice-controls">
-
-            <button
-                class="pingme-voice-option"
-                id="pingmeLanguageButton"
-                type="button">
-
-                <div class="pingme-voice-option-left">
-
-                    <div class="pingme-voice-option-icon">
-                        🌐
-                    </div>
-
-                    <div class="pingme-voice-option-text">
-
-                        <div class="pingme-voice-option-label">
-                            Language
-                        </div>
-
-                        <div
-                            class="pingme-voice-option-value"
-                            id="pingmeLanguageValue">
-
-                            English
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="pingme-voice-chevron">
-                    ›
-                </div>
-
-            </button>
-
-
-            <button
-                class="pingme-voice-option"
-                id="pingmeVoiceButton"
-                type="button">
-
-                <div class="pingme-voice-option-left">
-
-                    <div class="pingme-voice-option-icon">
-                        🎙️
-                    </div>
-
-                    <div class="pingme-voice-option-text">
-
-                        <div class="pingme-voice-option-label">
-                            Voice
-                        </div>
-
-                        <div
-                            class="pingme-voice-option-value"
-                            id="pingmeVoiceValue">
-
-                            Voice 1
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="pingme-voice-chevron">
-                    ›
-                </div>
-
-            </button>
-
-
-            <div class="pingme-voice-toggle-row">
-
-                <div class="pingme-voice-toggle-label">
-
-                    <span>Automatic conversation</span>
-
-                </div>
-
-                <button
-                    class="pingme-voice-toggle active"
-                    id="pingmeAutoToggle"
-                    type="button">
-
-                    <span></span>
-
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-    document.body.appendChild(room);
-
-
-    // =====================================================
-    // MENUS
-    // =====================================================
-
-    const languageMenu = document.createElement("div");
-
-    languageMenu.className = "pingme-voice-menu";
-
-    languageMenu.innerHTML = `
-
-        <div class="pingme-voice-menu-title">
-            Choose language
-        </div>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-lang="en-US"
-            data-name="English"
-            type="button">
-            🇬🇧 English
-        </button>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-lang="bn-BD"
-            data-name="বাংলা"
-            type="button">
-            🇧🇩 বাংলা
-        </button>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-lang="es-ES"
-            data-name="Spanish"
-            type="button">
-            🇪🇸 Spanish
-        </button>
-
-    `;
-
-    room.appendChild(languageMenu);
-
-
-    const voiceMenu = document.createElement("div");
-
-    voiceMenu.className = "pingme-voice-menu";
-
-    voiceMenu.innerHTML = `
-
-        <div class="pingme-voice-menu-title">
-            Choose voice
-        </div>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-voice="voice-1"
-            type="button">
-            Voice 1 — Natural
-        </button>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-voice="voice-2"
-            type="button">
-            Voice 2 — Warm
-        </button>
-
-        <button
-            class="pingme-voice-menu-item"
-            data-voice="voice-3"
-            type="button">
-            Voice 3 — Calm
-        </button>
-
-    `;
-
-    room.appendChild(voiceMenu);
-
-
-    // =====================================================
-    // ELEMENTS
-    // =====================================================
-
-    const closeButton =
-        room.querySelector("#pingmeVoiceClose");
-
-    const languageButton =
-        room.querySelector("#pingmeLanguageButton");
-
-    const voiceButton =
-        room.querySelector("#pingmeVoiceButton");
-
-    const autoToggle =
-        room.querySelector("#pingmeAutoToggle");
-
-    const status =
-        room.querySelector("#pingmeVoiceStatus");
-
-    const languageValue =
-        room.querySelector("#pingmeLanguageValue");
-
-    const voiceValue =
-        room.querySelector("#pingmeVoiceValue");
-
-
-    // =====================================================
-    // SPEECH RECOGNITION
-    // =====================================================
-
-    function speechSupported() {
-
-        return !!(
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition
-        );
-
+        @keyframes orbRingTwo {
+
+            0%,100% {
+                transform:
+                    scale(.94)
+                    rotate(0deg);
+                opacity: .25;
+            }
+
+            50% {
+                transform:
+                    scale(1.08)
+                    rotate(-180deg);
+                opacity: .55;
+            }
+        }
+
+        @keyframes speakingRingOne {
+
+            0%,100% {
+                transform:
+                    scale(.88);
+                opacity: .25;
+            }
+
+            50% {
+                transform:
+                    scale(1.16);
+                opacity: .9;
+            }
+        }
+
+        @keyframes speakingRingTwo {
+
+            0%,100% {
+                transform:
+                    scale(.90);
+                opacity: .18;
+            }
+
+            50% {
+                transform:
+                    scale(1.24);
+                opacity: .65;
+            }
+        }
+
+        @keyframes voiceBar {
+
+            0%,100% {
+                height: 6px;
+            }
+
+            50% {
+                height: 32px;
+            }
+        }
+
+        `;
+
+        document.head.appendChild(style);
     }
 
+    /* =====================================================
+       ORB ANIMATION
+       ===================================================== */
 
-    function createRecognition() {
+    function startOrbAnimation() {
 
-        if (!speechSupported()) {
+        if (!room) return;
 
-            status.textContent =
-                "Voice recognition is not supported";
+        room.classList.add("active");
+    }
+
+    function setStatus(text) {
+
+        const status =
+            document.getElementById(
+                "voiceRoomStatus"
+            );
+
+        if (status) {
+            status.textContent = text;
+        }
+    }
+
+    /* =====================================================
+       MICROPHONE PERMISSION
+       ===================================================== */
+
+    async function requestMicrophone() {
+
+        if (microphoneReady) {
+            return true;
+        }
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+            microphoneReady = true;
+            return true;
+        }
+
+        try {
+
+            const stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+                        audio: true
+                    });
+
+            stream
+                .getTracks()
+                .forEach(function (track) {
+                    track.stop();
+                });
+
+            microphoneReady = true;
+
+            return true;
+
+        } catch (error) {
+
+            console.error(
+                "PingMe microphone error:",
+                error
+            );
+
+            setStatus(
+                "Microphone permission required"
+            );
+
+            return false;
+        }
+    }
+
+    /* =====================================================
+       LANGUAGE DETECTION
+       ===================================================== */
+
+    function detectLanguage(text) {
+
+        const bangla =
+            (text.match(
+                /[\u0980-\u09FF]/g
+            ) || []).length;
+
+        const arabic =
+            (text.match(
+                /[\u0600-\u06FF]/g
+            ) || []).length;
+
+        const english =
+            (text.match(
+                /[A-Za-z]/g
+            ) || []).length;
+
+        if (
+            bangla > english &&
+            bangla > arabic
+        ) {
+            return "bn-BD";
+        }
+
+        if (arabic > english) {
+            return "ar-SA";
+        }
+
+        return "en-US";
+    }
+
+    /* =====================================================
+       RECOGNITION
+       ===================================================== */
+
+    function makeRecognition() {
+
+        if (!SpeechRecognition) {
+
+            setStatus(
+                "Voice input is not supported"
+            );
 
             return null;
         }
 
+        const r =
+            new SpeechRecognition();
 
-        const Recognition =
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition;
+        r.continuous = true;
+        r.interimResults = true;
+        r.maxAlternatives = 1;
 
+        /*
+         * Browser recognition normally needs a language.
+         * We start with English and automatically switch
+         * after detecting the user's spoken text.
+         */
 
-        const instance = new Recognition();
+        r.lang = "en-US";
 
-
-        instance.lang = selectedLanguage;
-
-        instance.continuous = true;
-
-        instance.interimResults = true;
-
-
-        instance.onstart = function () {
+        r.onstart = function () {
 
             recognitionRunning = true;
 
-            status.textContent =
-                "Listening...";
+            if (!speaking) {
+                setStatus("Listening...");
+            }
 
+            if (room) {
+                room.classList.add("active");
+            }
         };
 
-
-        instance.onresult = function (event) {
+        r.onresult = function (event) {
 
             let finalText = "";
             let interimText = "";
-
 
             for (
                 let i = event.resultIndex;
@@ -796,180 +777,116 @@
                 i++
             ) {
 
-                const text =
-                    event.results[i][0].transcript;
+                const result =
+                    event.results[i];
 
+                const transcript =
+                    result[0].transcript;
 
-                if (event.results[i].isFinal) {
-
-                    finalText += text;
-
+                if (result.isFinal) {
+                    finalText += transcript;
                 } else {
-
-                    interimText += text;
-
+                    interimText += transcript;
                 }
-
             }
 
-
-            const result =
-                (finalText || interimText).trim();
-
-
-            if (result) {
-
-                status.textContent =
-                    result;
-
+            if (interimText) {
+                setStatus(interimText);
             }
-
 
             if (finalText.trim()) {
 
-                input.value =
-                    finalText.trim();
-
-                input.dispatchEvent(
-                    new Event("input", {
-                        bubbles: true
-                    })
+                handleSpeech(
+                    finalText.trim()
                 );
-
-
-                if (autoTalk) {
-
-                    setTimeout(() => {
-
-                        const currentText =
-                            input.value.trim();
-
-
-                        if (!currentText) {
-                            return;
-                        }
-
-
-                        /*
-                         * Use the EXISTING main Send button.
-                         * We do not touch the camera-side
-                         * microphone button.
-                         */
-
-                        sendButton.click();
-
-                    }, 350);
-
-                }
-
             }
-
         };
 
-
-        instance.onerror = function (event) {
+        r.onerror = function (event) {
 
             console.warn(
-                "PingMe Voice Error:",
+                "PingMe recognition:",
                 event.error
             );
 
-
-            if (event.error === "not-allowed") {
-
-                status.textContent =
-                    "Microphone permission required";
-
-            } else {
-
-                status.textContent =
-                    "Voice connection interrupted";
-
-            }
-
-        };
-
-
-        instance.onend = function () {
-
             recognitionRunning = false;
 
+            if (
+                event.error ===
+                "not-allowed" ||
+                event.error ===
+                "service-not-allowed"
+            ) {
 
-            if (!voiceRoomOpen) {
+                setStatus(
+                    "Microphone permission denied"
+                );
+
                 return;
             }
 
-
-            if (autoTalk) {
-
-                setTimeout(() => {
-
-                    if (
-                        voiceRoomOpen &&
-                        !recognitionRunning
-                    ) {
-
-                        startRecognition();
-
-                    }
-
-                }, 400);
-
+            if (event.error === "no-speech") {
+                setStatus("Listening...");
             }
-
         };
 
+        r.onend = function () {
 
-        return instance;
+            recognitionRunning = false;
 
+            if (
+                roomOpen &&
+                keepListening &&
+                !speaking
+            ) {
+
+                setTimeout(
+                    startRecognition,
+                    300
+                );
+            }
+        };
+
+        return r;
     }
 
+    /* =====================================================
+       START LISTENING
+       ===================================================== */
 
     function startRecognition() {
 
-        if (!voiceRoomOpen) {
+        if (
+            !roomOpen ||
+            speaking ||
+            recognitionRunning
+        ) {
             return;
         }
 
+        recognition =
+            makeRecognition();
 
-        if (!speechSupported()) {
-
-            status.textContent =
-                "Voice recognition is not supported";
-
-            return;
-
-        }
-
-
-        if (recognitionRunning) {
+        if (!recognition) {
             return;
         }
-
 
         try {
 
-            recognition =
-                createRecognition();
-
-
-            if (recognition) {
-
-                recognition.start();
-
-            }
+            recognition.start();
 
         } catch (error) {
 
             console.warn(
-                "Voice start error:",
+                "Recognition start:",
                 error
             );
-
         }
-
     }
 
+    /* =====================================================
+       STOP LISTENING
+       ===================================================== */
 
     function stopRecognition() {
 
@@ -977,84 +894,422 @@
             return;
         }
 
-
         try {
-
             recognition.stop();
+        } catch (error) {}
 
-        } catch (error) {
+        recognition = null;
+        recognitionRunning = false;
+    }
 
-            console.warn(
-                "Voice stop error:",
-                error
-            );
+    /* =====================================================
+       USER SPEECH
+       ===================================================== */
 
+    function handleSpeech(text) {
+
+        if (!text) {
+            return;
         }
 
-
-        recognitionRunning = false;
-
-    }
-
-
-    // =====================================================
-    // OPEN VOICE ROOM
-    // =====================================================
-
-    function openVoiceRoom() {
-
-        voiceRoomOpen = true;
-
-        room.classList.remove("hidden");
-
-        document.body.style.overflow = "hidden";
-
-        status.textContent =
-            "Starting voice...";
-
+        const detected =
+            detectLanguage(text);
 
         /*
-         * Voice Room opens directly into listening.
-         * There is NO second microphone button.
+         * Store the detected language on the input
+         * without adding any visible language selector.
          */
 
-        setTimeout(() => {
+        input.dataset.voiceLanguage =
+            detected;
 
-            startRecognition();
+        input.value = text;
 
-        }, 250);
-
-    }
-
-
-    // =====================================================
-    // CLOSE VOICE ROOM
-    // =====================================================
-
-    function closeVoiceRoom() {
-
-        voiceRoomOpen = false;
+        input.dispatchEvent(
+            new Event("input", {
+                bubbles: true
+            })
+        );
 
         stopRecognition();
 
-        room.classList.add("hidden");
+        setStatus("Thinking...");
 
-        document.body.style.overflow = "";
+        /*
+         * Use the existing Send system.
+         */
 
-        languageMenu.classList.remove("show");
+        setTimeout(
+            function () {
 
-        voiceMenu.classList.remove("show");
+                if (
+                    input.value.trim() ===
+                    text.trim()
+                ) {
 
+                    sendButton.click();
+                }
+
+            },
+            300
+        );
     }
 
+    /* =====================================================
+       FIND AI MESSAGE
+       ===================================================== */
 
-    // =====================================================
-    // IMPORTANT:
-    // ONLY THE MAIN RIGHT-SIDE MIC/SEND BUTTON
-    // OPENS VOICE ROOM WHEN INPUT IS EMPTY.
-    //
-    // The camera-side microphone is NOT touched.
-    // =====================================================
+    function findAssistantMessage() {
+
+        const chatArea =
+            document.getElementById(
+                "chatArea"
+            );
+
+        if (!chatArea) {
+            return "";
+        }
+
+        const selectors = [
+            ".assistant-message",
+            ".ai-message",
+            ".bot-message",
+            ".message.assistant",
+            ".message.ai",
+            "[data-role='assistant']",
+            "[data-role='ai']"
+        ];
+
+        let found = [];
+
+        selectors.forEach(
+            function (selector) {
+
+                chatArea
+                    .querySelectorAll(selector)
+                    .forEach(
+                        function (element) {
+                            found.push(element);
+                        }
+                    );
+            }
+        );
+
+        if (!found.length) {
+            return "";
+        }
+
+        const last =
+            found[found.length - 1];
+
+        return (
+            last.innerText ||
+            last.textContent ||
+            ""
+        ).trim();
+    }
+
+    /* =====================================================
+       SELECT SYSTEM VOICE
+       ===================================================== */
+
+    function selectVoice(language) {
+
+        if (!speechSupported) {
+            return null;
+        }
+
+        const voices =
+            speechSynthesis.getVoices();
+
+        if (!voices.length) {
+            return null;
+        }
+
+        const base =
+            language
+                .toLowerCase()
+                .split("-")[0];
+
+        const matching =
+            voices.filter(
+                function (voice) {
+
+                    return (
+                        voice.lang &&
+                        voice.lang
+                            .toLowerCase()
+                            .startsWith(base)
+                    );
+                }
+            );
+
+        if (!matching.length) {
+            return voices[0];
+        }
+
+        /*
+         * Prefer natural/neural voices when available.
+         */
+
+        const natural =
+            matching.find(
+                function (voice) {
+
+                    const name =
+                        voice.name
+                            .toLowerCase();
+
+                    return (
+                        name.includes("natural") ||
+                        name.includes("neural") ||
+                        name.includes("google") ||
+                        name.includes("premium")
+                    );
+                }
+            );
+
+        return natural || matching[0];
+    }
+
+    /* =====================================================
+       SPEAK AI RESPONSE
+       ===================================================== */
+
+    function speak(text) {
+
+        if (
+            !text ||
+            !speechSupported ||
+            !roomOpen
+        ) {
+            return;
+        }
+
+        if (
+            text === lastSpokenResponse
+        ) {
+            return;
+        }
+
+        lastSpokenResponse = text;
+
+        speechSynthesis.cancel();
+
+        const language =
+            detectLanguage(text);
+
+        const utterance =
+            new SpeechSynthesisUtterance(
+                text
+            );
+
+        utterance.lang =
+            language;
+
+        const voice =
+            selectVoice(language);
+
+        if (voice) {
+            utterance.voice = voice;
+        }
+
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        utterance.onstart =
+            function () {
+
+                speaking = true;
+
+                stopRecognition();
+
+                if (room) {
+                    room.classList.add(
+                        "voice-room-speaking"
+                    );
+                }
+
+                setStatus(
+                    "Speaking..."
+                );
+            };
+
+        utterance.onend =
+            function () {
+
+                speaking = false;
+
+                if (room) {
+                    room.classList.remove(
+                        "voice-room-speaking"
+                    );
+                }
+
+                if (
+                    roomOpen &&
+                    keepListening
+                ) {
+
+                    setStatus(
+                        "Listening..."
+                    );
+
+                    setTimeout(
+                        startRecognition,
+                        300
+                    );
+                }
+            };
+
+        utterance.onerror =
+            function () {
+
+                speaking = false;
+
+                if (room) {
+                    room.classList.remove(
+                        "voice-room-speaking"
+                    );
+                }
+
+                if (
+                    roomOpen &&
+                    keepListening
+                ) {
+                    startRecognition();
+                }
+            };
+
+        speechSynthesis.speak(
+            utterance
+        );
+    }
+
+    /* =====================================================
+       WATCH CHAT FOR AI RESPONSE
+       ===================================================== */
+
+    function watchAIResponse() {
+
+        const chatArea =
+            document.getElementById(
+                "chatArea"
+            );
+
+        if (!chatArea) {
+            return;
+        }
+
+        const observer =
+            new MutationObserver(
+                function () {
+
+                    if (
+                        !roomOpen ||
+                        speaking
+                    ) {
+                        return;
+                    }
+
+                    const text =
+                        findAssistantMessage();
+
+                    if (
+                        text &&
+                        text !== lastSpokenResponse
+                    ) {
+
+                        setTimeout(
+                            function () {
+
+                                if (
+                                    roomOpen &&
+                                    !speaking
+                                ) {
+
+                                    speak(text);
+                                }
+
+                            },
+                            400
+                        );
+                    }
+                }
+            );
+
+        observer.observe(
+            chatArea,
+            {
+                childList: true,
+                subtree: true,
+                characterData: true
+            }
+        );
+    }
+
+    /* =====================================================
+       OPEN
+       ===================================================== */
+
+    async function openRoom() {
+
+        if (roomOpen) {
+            return;
+        }
+
+        createRoom();
+
+        roomOpen = true;
+        keepListening = true;
+
+        setStatus(
+            "Checking microphone..."
+        );
+
+        const ready =
+            await requestMicrophone();
+
+        if (!ready) {
+            keepListening = false;
+            return;
+        }
+
+        setStatus(
+            "Listening..."
+        );
+
+        startRecognition();
+    }
+
+    /* =====================================================
+       CLOSE
+       ===================================================== */
+
+    function closeRoom() {
+
+        roomOpen = false;
+        keepListening = false;
+
+        stopRecognition();
+
+        if (speechSupported) {
+            speechSynthesis.cancel();
+        }
+
+        speaking = false;
+
+        if (room) {
+
+            room.remove();
+            room = null;
+        }
+    }
+
+    /* =====================================================
+       MAIN RIGHT-SIDE MIC/SEND BUTTON
+       ===================================================== */
 
     sendButton.addEventListener(
         "click",
@@ -1063,202 +1318,52 @@
             const text =
                 input.value.trim();
 
+            /*
+             * Text exists:
+             * leave the existing Send behavior alone.
+             */
 
             if (text !== "") {
-
-                /*
-                 * Text exists.
-                 * Let the existing Send system
-                 * handle it normally.
-                 */
-
                 return;
-
             }
 
-
             /*
-             * Input is empty.
-             * This is the Voice state.
-             *
-             * Stop the old inline Voice handler
-             * from also running.
+             * Empty:
+             * open Voice Room.
              */
 
             event.preventDefault();
             event.stopImmediatePropagation();
 
-            openVoiceRoom();
+            openRoom();
 
         },
         true
     );
 
+    /* =====================================================
+       SYSTEM VOICES
+       ===================================================== */
 
-    // =====================================================
-    // CLOSE
-    // =====================================================
+    if (speechSupported) {
 
-    closeButton.addEventListener(
-        "click",
-        function () {
-
-            closeVoiceRoom();
-
-        }
-    );
-
-
-    // =====================================================
-    // LANGUAGE
-    // =====================================================
-
-    languageButton.addEventListener(
-        "click",
-        function () {
-
-            voiceMenu.classList.remove("show");
-
-            languageMenu.classList.toggle("show");
-
-        }
-    );
-
-
-    languageMenu
-        .querySelectorAll(".pingme-voice-menu-item")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    selectedLanguage =
-                        button.dataset.lang;
-
-                    languageValue.textContent =
-                        button.dataset.name;
-
-                    languageMenu.classList.remove(
-                        "show"
-                    );
-
-
-                    if (voiceRoomOpen) {
-
-                        stopRecognition();
-
-                        setTimeout(() => {
-
-                            startRecognition();
-
-                        }, 250);
-
-                    }
-
-                }
-            );
-
-        });
-
-
-    // =====================================================
-    // VOICE SELECTION
-    // =====================================================
-
-    voiceButton.addEventListener(
-        "click",
-        function () {
-
-            languageMenu.classList.remove(
-                "show"
-            );
-
-            voiceMenu.classList.toggle(
-                "show"
-            );
-
-        }
-    );
-
-
-    voiceMenu
-        .querySelectorAll(".pingme-voice-menu-item")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    selectedVoice =
-                        button.dataset.voice;
-
-
-                    const names = {
-
-                        "voice-1":
-                            "Voice 1",
-
-                        "voice-2":
-                            "Voice 2",
-
-                        "voice-3":
-                            "Voice 3"
-
-                    };
-
-
-                    voiceValue.textContent =
-                        names[selectedVoice];
-
-
-                    voiceMenu.classList.remove(
-                        "show"
-                    );
-
-                }
-            );
-
-        });
-
-
-    // =====================================================
-    // AUTOMATIC CONVERSATION TOGGLE
-    // =====================================================
-
-    autoToggle.addEventListener(
-        "click",
-        function () {
-
-            autoTalk = !autoTalk;
-
-            autoToggle.classList.toggle(
-                "active",
-                autoTalk
-            );
-
-
-            if (autoTalk) {
-
-                status.textContent =
-                    "Listening...";
-
-                startRecognition();
-
-            } else {
-
-                status.textContent =
-                    "Automatic conversation off";
-
+        speechSynthesis.addEventListener(
+            "voiceschanged",
+            function () {
+                speechSynthesis.getVoices();
             }
+        );
+    }
 
-        }
-    );
+    /* =====================================================
+       START AI RESPONSE WATCHER
+       ===================================================== */
 
+    watchAIResponse();
 
-    // =====================================================
-    // CLEANUP
-    // =====================================================
+    /* =====================================================
+       CLEANUP
+       ===================================================== */
 
     window.addEventListener(
         "beforeunload",
@@ -1266,12 +1371,15 @@
 
             stopRecognition();
 
+            if (speechSupported) {
+                speechSynthesis.cancel();
+            }
+
         }
     );
 
-
     console.log(
-        "PingMe AI — Voice Room Connected"
+        "PingMe AI — Voice Room Ready"
     );
 
 })();
