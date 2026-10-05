@@ -1014,9 +1014,13 @@
                     .slice(2, 9),
 
             url:
-                image.url ||
-                image.dataUrl ||
-                "",
+    typeof image === "string" ?
+    image :
+    (
+        image.url ||
+        image.dataUrl ||
+        ""
+    ),
 
             prompt:
                 options.prompt,
