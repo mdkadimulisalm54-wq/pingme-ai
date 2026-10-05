@@ -7,25 +7,32 @@
 
     "use strict";
 
+
     /* =========================================================
        1. BASIC SETUP
        ========================================================= */
-       const menuButton =
-    document.getElementById("menuButton");
 
-const menuButtonChat =
-    document.getElementById("menuButtonChat");
+    const menuButton =
+        document.getElementById("menuButton");
 
-if (!menuButton && !menuButtonChat) {
-    console.warn(
-        "PingMe AI — menu buttons not found."
-    );
-    return;
-}
+    const menuButtonChat =
+        document.getElementById("menuButtonChat");
 
-let drawer = null;
-let overlay = null;
-let searchInput = null;
+
+    if (!menuButton && !menuButtonChat) {
+
+        console.warn(
+            "PingMe AI — menu buttons not found."
+        );
+
+        return;
+
+    }
+
+
+    let drawer = null;
+    let overlay = null;
+    let searchInput = null;
 
 
     /* =========================================================
@@ -41,24 +48,33 @@ let searchInput = null;
            Overlay
            ----------------------------------------------------- */
 
-        overlay = document.createElement("div");
+        overlay =
+            document.createElement("div");
 
-        overlay.id = "pingmeMenuOverlay";
+        overlay.id =
+            "pingmeMenuOverlay";
 
-        overlay.className = "pingme-menu-overlay";
+        overlay.className =
+            "pingme-menu-overlay";
 
 
         /* -----------------------------------------------------
            Drawer
            ----------------------------------------------------- */
 
-        drawer = document.createElement("aside");
+        drawer =
+            document.createElement("aside");
 
-        drawer.id = "pingmeSideDrawer";
+        drawer.id =
+            "pingmeSideDrawer";
 
-        drawer.className = "pingme-side-drawer";
+        drawer.className =
+            "pingme-side-drawer";
 
-        drawer.setAttribute("aria-hidden", "true");
+        drawer.setAttribute(
+            "aria-hidden",
+            "true"
+        );
 
 
         drawer.innerHTML = `
@@ -143,6 +159,7 @@ let searchInput = null;
 
                     <span class="pingme-menu-item-icon">
                         <svg viewBox="0 0 24 24">
+
                             <rect
                                 x="3"
                                 y="3"
@@ -160,6 +177,7 @@ let searchInput = null;
                             <path
                                 d="M21 15l-5-5L6 20"
                             ></path>
+
                         </svg>
                     </span>
 
@@ -175,7 +193,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <path
                                 d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"
                             ></path>
@@ -183,7 +203,9 @@ let searchInput = null;
                             <path
                                 d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Library</span>
@@ -198,7 +220,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <path
                                 d="M3 7h7l2 2h9v10H3z"
                             ></path>
@@ -206,7 +230,9 @@ let searchInput = null;
                             <path
                                 d="M3 7V5h7l2 2"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Projects</span>
@@ -221,7 +247,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <rect
                                 x="4"
                                 y="5"
@@ -237,7 +265,9 @@ let searchInput = null;
                             <path
                                 d="M12 16v4"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Remote</span>
@@ -252,7 +282,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <circle
                                 cx="12"
                                 cy="12"
@@ -262,7 +294,9 @@ let searchInput = null;
                             <path
                                 d="M12 7v5l3 2"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Scheduled</span>
@@ -277,7 +311,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <path
                                 d="M8 3v5"
                             ></path>
@@ -297,7 +333,9 @@ let searchInput = null;
                             <path
                                 d="M12 15v6"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Plugins</span>
@@ -320,7 +358,9 @@ let searchInput = null;
                 >
 
                     <span class="pingme-chat-button-icon">
+
                         <svg viewBox="0 0 24 24">
+
                             <path
                                 d="M12 20a8 8 0 1 0-8-8c0 1.4.36 2.72 1 3.9L4 20l4.1-1c1.18.64 2.5 1 3.9 1Z"
                             ></path>
@@ -332,7 +372,9 @@ let searchInput = null;
                             <path
                                 d="M8 12h8"
                             ></path>
+
                         </svg>
+
                     </span>
 
                     <span>Chat</span>
@@ -410,9 +452,13 @@ let searchInput = null;
         `;
 
 
-        document.body.appendChild(overlay);
+        document.body.appendChild(
+            overlay
+        );
 
-        document.body.appendChild(drawer);
+        document.body.appendChild(
+            drawer
+        );
 
 
         addStyles();
@@ -436,22 +482,29 @@ let searchInput = null;
             createMenu();
         }
 
-        requestAnimationFrame(function () {
 
-            drawer.classList.add("open");
+        requestAnimationFrame(
+            function () {
 
-            overlay.classList.add("show");
+                drawer.classList.add(
+                    "open"
+                );
 
-            drawer.setAttribute(
-                "aria-hidden",
-                "false"
-            );
+                overlay.classList.add(
+                    "show"
+                );
 
-            document.body.classList.add(
-                "pingme-menu-open"
-            );
+                drawer.setAttribute(
+                    "aria-hidden",
+                    "false"
+                );
 
-        });
+                document.body.classList.add(
+                    "pingme-menu-open"
+                );
+
+            }
+        );
 
     }
 
@@ -464,9 +517,14 @@ let searchInput = null;
 
         if (!drawer) return;
 
-        drawer.classList.remove("open");
 
-        overlay.classList.remove("show");
+        drawer.classList.remove(
+            "open"
+        );
+
+        overlay.classList.remove(
+            "show"
+        );
 
         drawer.setAttribute(
             "aria-hidden",
@@ -487,14 +545,26 @@ let searchInput = null;
     function toggleMenu() {
 
         if (!drawer) {
+
             openMenu();
+
             return;
+
         }
 
-        if (drawer.classList.contains("open")) {
+
+        if (
+            drawer.classList.contains(
+                "open"
+            )
+        ) {
+
             closeMenu();
+
         } else {
+
             openMenu();
+
         }
 
     }
@@ -533,16 +603,14 @@ let searchInput = null;
             !avatarElement ||
             !initialElement
         ) {
+
             return;
+
         }
 
 
         let user = null;
 
-
-        /* -----------------------------------------------------
-           Existing PingMe Auth Support
-           ----------------------------------------------------- */
 
         try {
 
@@ -550,7 +618,10 @@ let searchInput = null;
                 typeof getAuthUser ===
                 "function"
             ) {
-                user = getAuthUser();
+
+                user =
+                    getAuthUser();
+
             }
 
         } catch (error) {
@@ -595,7 +666,6 @@ let searchInput = null;
         nameElement.textContent =
             displayName;
 
-
         emailElement.textContent =
             email;
 
@@ -609,18 +679,25 @@ let searchInput = null;
 
         if (photo) {
 
-            avatarElement.innerHTML = "";
+            avatarElement.innerHTML =
+                "";
+
 
             const image =
-                document.createElement("img");
+                document.createElement(
+                    "img"
+                );
 
-            image.src = photo;
+
+            image.src =
+                photo;
 
             image.alt =
                 displayName;
 
             image.referrerPolicy =
                 "no-referrer";
+
 
             image.onerror =
                 function () {
@@ -629,13 +706,16 @@ let searchInput = null;
                         "";
 
                     initialElement.textContent =
-                        getInitial(displayName);
+                        getInitial(
+                            displayName
+                        );
 
                     avatarElement.appendChild(
                         initialElement
                     );
 
                 };
+
 
             avatarElement.appendChild(
                 image
@@ -644,7 +724,9 @@ let searchInput = null;
         } else {
 
             initialElement.textContent =
-                getInitial(displayName);
+                getInitial(
+                    displayName
+                );
 
         }
 
@@ -660,6 +742,7 @@ let searchInput = null;
         if (!name) {
             return "P";
         }
+
 
         return name
             .trim()
@@ -679,6 +762,7 @@ let searchInput = null;
             document.getElementById(
                 "pingmeMenuSearch"
             );
+
 
         if (!searchInput) return;
 
@@ -710,7 +794,9 @@ let searchInput = null;
 
                         if (
                             !query ||
-                            text.includes(query)
+                            text.includes(
+                                query
+                            )
                         ) {
 
                             item.style.display =
@@ -865,6 +951,7 @@ let searchInput = null;
                 "pingmeNewChatButton"
             );
 
+
         if (!button) return;
 
 
@@ -883,7 +970,8 @@ let searchInput = null;
 
                 if (input) {
 
-                    input.value = "";
+                    input.value =
+                        "";
 
                     input.dispatchEvent(
                         new Event(
@@ -905,7 +993,8 @@ let searchInput = null;
 
                 if (chatArea) {
 
-                    chatArea.innerHTML = "";
+                    chatArea.innerHTML =
+                        "";
 
                 }
 
@@ -931,7 +1020,269 @@ let searchInput = null;
 
     /* =========================================================
        13. HISTORY
+       Complete History Engine
        ========================================================= */
+
+    const PINGME_HISTORY_KEY =
+        "pingme_chat_history";
+
+
+    /* ---------------------------------------------------------
+       GET HISTORY
+       --------------------------------------------------------- */
+
+    function getChatHistory() {
+
+        try {
+
+            const saved =
+                localStorage.getItem(
+                    PINGME_HISTORY_KEY
+                );
+
+
+            if (!saved) {
+
+                return [];
+
+            }
+
+
+            const history =
+                JSON.parse(
+                    saved
+                );
+
+
+            return Array.isArray(
+                history
+            )
+                ? history
+                : [];
+
+
+        } catch (error) {
+
+            console.error(
+                "PingMe History Load Error:",
+                error
+            );
+
+            return [];
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       SAVE HISTORY
+       --------------------------------------------------------- */
+
+    function saveChatHistory(
+        history
+    ) {
+
+        try {
+
+            localStorage.setItem(
+                PINGME_HISTORY_KEY,
+                JSON.stringify(
+                    history
+                )
+            );
+
+
+            return true;
+
+
+        } catch (error) {
+
+            console.error(
+                "PingMe History Save Error:",
+                error
+            );
+
+            return false;
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       ADD CHAT TO HISTORY
+       --------------------------------------------------------- */
+
+    function addChatToHistory(
+        chat
+    ) {
+
+        if (!chat) {
+
+            return false;
+
+        }
+
+
+        const history =
+            getChatHistory();
+
+
+        history.push({
+
+            ...chat,
+
+            timestamp:
+                Date.now()
+
+        });
+
+
+        const saved =
+            saveChatHistory(
+                history
+            );
+
+
+        if (
+            typeof window.PingMeMenu !==
+            "undefined" &&
+            typeof window.PingMeMenu
+                .refreshHistory ===
+                "function"
+        ) {
+
+            window.PingMeMenu.refreshHistory();
+
+        }
+
+
+        return saved;
+
+    }
+
+
+    /* ---------------------------------------------------------
+       CLEAR HISTORY
+       --------------------------------------------------------- */
+
+    function clearChatHistory() {
+
+        try {
+
+            localStorage.removeItem(
+                PINGME_HISTORY_KEY
+            );
+
+
+            loadHistory();
+
+
+            return true;
+
+
+        } catch (error) {
+
+            console.error(
+                "PingMe History Clear Error:",
+                error
+            );
+
+            return false;
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       GET LATEST CHAT
+       --------------------------------------------------------- */
+
+    function getLatestChat() {
+
+        const history =
+            getChatHistory();
+
+
+        if (!history.length) {
+
+            return null;
+
+        }
+
+
+        return history[
+            history.length - 1
+        ];
+
+    }
+
+
+    /* ---------------------------------------------------------
+       OPEN HISTORY ITEM
+       --------------------------------------------------------- */
+
+    function openHistoryItem(
+        item
+    ) {
+
+        if (!item) {
+
+            return;
+
+        }
+
+
+        const input =
+            document.getElementById(
+                "chatInput"
+            );
+
+
+        const text =
+            typeof item === "string"
+                ? item
+                : (
+                    item.text ||
+                    item.message ||
+                    ""
+                );
+
+
+        if (
+            input &&
+            text
+        ) {
+
+            input.value =
+                text;
+
+
+            input.dispatchEvent(
+                new Event(
+                    "input",
+                    {
+                        bubbles: true
+                    }
+                )
+            );
+
+
+            input.focus();
+
+        }
+
+
+        closeMenu();
+
+    }
+
+
+    /* ---------------------------------------------------------
+       HISTORY RENDER
+       --------------------------------------------------------- */
 
     function loadHistory() {
 
@@ -940,38 +1291,20 @@ let searchInput = null;
                 "pingmeHistoryList"
             );
 
-        if (!list) return;
 
+        if (!list) {
 
-        list.innerHTML = "";
-
-
-        let history = [];
-
-
-        try {
-
-            const saved =
-                localStorage.getItem(
-                    "pingme_chat_history"
-                );
-
-
-            if (saved) {
-
-                history =
-                    JSON.parse(saved);
-
-            }
-
-        } catch (error) {
-
-            console.warn(
-                "PingMe AI — History read failed.",
-                error
-            );
+            return;
 
         }
+
+
+        list.innerHTML =
+            "";
+
+
+        const history =
+            getChatHistory();
 
 
         if (
@@ -984,13 +1317,19 @@ let searchInput = null;
                     "div"
                 );
 
+
             empty.className =
                 "pingme-history-empty";
+
 
             empty.textContent =
                 "Your recent chats will appear here.";
 
-            list.appendChild(empty);
+
+            list.appendChild(
+                empty
+            );
+
 
             return;
 
@@ -998,7 +1337,12 @@ let searchInput = null;
 
 
         history
-            .slice(0, 20)
+            .slice()
+            .reverse()
+            .slice(
+                0,
+                20
+            )
             .forEach(
                 function (item) {
 
@@ -1019,13 +1363,20 @@ let searchInput = null;
                             "button"
                         );
 
+
                     button.type =
                         "button";
+
 
                     button.className =
                         "pingme-history-item";
 
+
                     button.textContent =
+                        title;
+
+
+                    button.title =
                         title;
 
 
@@ -1033,11 +1384,8 @@ let searchInput = null;
                         "click",
                         function () {
 
-                            closeMenu();
-
-                            console.log(
-                                "PingMe AI — History:",
-                                title
+                            openHistoryItem(
+                                item
                             );
 
                         }
@@ -1054,6 +1402,34 @@ let searchInput = null;
     }
 
 
+    /* ---------------------------------------------------------
+       HISTORY STORAGE API
+       --------------------------------------------------------- */
+
+    function setupHistoryAPI() {
+
+        window.addChatToHistory =
+            addChatToHistory;
+
+
+        window.getChatHistory =
+            getChatHistory;
+
+
+        window.saveChatHistory =
+            saveChatHistory;
+
+
+        window.clearChatHistory =
+            clearChatHistory;
+
+
+        window.getLatestChat =
+            getLatestChat;
+
+    }
+
+
     /* =========================================================
        14. ACCOUNT BUTTON
        ========================================================= */
@@ -1064,6 +1440,7 @@ let searchInput = null;
             document.getElementById(
                 "pingmeAccountButton"
             );
+
 
         if (!button) return;
 
@@ -1113,74 +1490,75 @@ let searchInput = null;
     /* =========================================================
        16. EVENTS
        ========================================================= */
-       function setupEvents() {
 
-    if (menuButton) {
+    function setupEvents() {
 
-        menuButton.addEventListener(
-            "click",
-            function () {
+        if (menuButton) {
 
-                toggleMenu();
+            menuButton.addEventListener(
+                "click",
+                function () {
 
-            }
-        );
+                    toggleMenu();
+
+                }
+            );
+
+        }
+
+
+        if (menuButtonChat) {
+
+            menuButtonChat.addEventListener(
+                "click",
+                function () {
+
+                    toggleMenu();
+
+                }
+            );
+
+        }
+
+
+        const closeButton =
+            document.getElementById(
+                "pingmeMenuClose"
+            );
+
+
+        if (closeButton) {
+
+            closeButton.addEventListener(
+                "click",
+                closeMenu
+            );
+
+        }
+
+
+        if (overlay) {
+
+            overlay.addEventListener(
+                "click",
+                closeMenu
+            );
+
+        }
+
+
+        setupSearch();
+
+        setupMenuActions();
+
+        setupNewChat();
+
+        setupAccountButton();
+
+        setupKeyboard();
 
     }
 
-
-    if (menuButtonChat) {
-
-        menuButtonChat.addEventListener(
-            "click",
-            function () {
-
-                toggleMenu();
-
-            }
-        );
-
-    }
-
-
-    const closeButton =
-        document.getElementById(
-            "pingmeMenuClose"
-        );
-
-
-    if (closeButton) {
-
-        closeButton.addEventListener(
-            "click",
-            closeMenu
-        );
-
-    }
-
-
-    if (overlay) {
-
-        overlay.addEventListener(
-            "click",
-            closeMenu
-        );
-
-    }
-
-
-    setupSearch();
-
-    setupMenuActions();
-
-    setupNewChat();
-
-    setupAccountButton();
-
-    setupKeyboard();
-
-}
-    
 
     /* =========================================================
        17. COMPLETE CSS
@@ -1193,7 +1571,9 @@ let searchInput = null;
                 "pingmeMenuStyles"
             )
         ) {
+
             return;
+
         }
 
 
@@ -1208,10 +1588,6 @@ let searchInput = null;
 
 
         style.textContent = `
-
-            /* =============================================
-               MENU OVERLAY
-               ============================================= */
 
             .pingme-menu-overlay {
 
@@ -1247,10 +1623,6 @@ let searchInput = null;
 
             }
 
-
-            /* =============================================
-               SIDE DRAWER
-               ============================================= */
 
             .pingme-side-drawer {
 
@@ -1319,10 +1691,6 @@ let searchInput = null;
 
             }
 
-
-            /* =============================================
-               HEADER
-               ============================================= */
 
             .pingme-menu-header {
 
@@ -1470,10 +1838,6 @@ let searchInput = null;
             }
 
 
-            /* =============================================
-               SEARCH
-               ============================================= */
-
             .pingme-menu-search {
 
                 margin:
@@ -1549,10 +1913,6 @@ let searchInput = null;
 
             }
 
-
-            /* =============================================
-               MAIN MENU
-               ============================================= */
 
             .pingme-menu-main {
 
@@ -1664,10 +2024,6 @@ let searchInput = null;
             }
 
 
-            /* =============================================
-               CHAT
-               ============================================= */
-
             .pingme-menu-chat-section {
 
                 padding:
@@ -1759,10 +2115,6 @@ let searchInput = null;
 
             }
 
-
-            /* =============================================
-               HISTORY
-               ============================================= */
 
             .pingme-history-section {
 
@@ -1878,10 +2230,6 @@ let searchInput = null;
 
             }
 
-
-            /* =============================================
-               ACCOUNT
-               ============================================= */
 
             .pingme-account-area {
 
@@ -2056,20 +2404,12 @@ let searchInput = null;
             }
 
 
-            /* =============================================
-               BODY LOCK
-               ============================================= */
-
             body.pingme-menu-open {
 
                 overflow: hidden;
 
             }
 
-
-            /* =============================================
-               MOBILE
-               ============================================= */
 
             @media (max-width: 480px) {
 
@@ -2082,6 +2422,7 @@ let searchInput = null;
                         );
 
                 }
+
 
                 .pingme-menu-header {
 
@@ -2106,6 +2447,14 @@ let searchInput = null;
        18. INITIALIZE
        ========================================================= */
 
+    /*
+       History API is registered before createMenu().
+       This makes the Menu the active History controller
+       while keeping the existing external API names.
+    */
+
+    setupHistoryAPI();
+
     createMenu();
 
 
@@ -2115,17 +2464,38 @@ let searchInput = null;
 
     window.PingMeMenu = {
 
-        open: openMenu,
+        open:
+            openMenu,
 
-        close: closeMenu,
+        close:
+            closeMenu,
 
-        toggle: toggleMenu,
+        toggle:
+            toggleMenu,
 
         refreshAccount:
             loadUserAccount,
 
         refreshHistory:
-            loadHistory
+            loadHistory,
+
+        addHistory:
+            addChatToHistory,
+
+        getHistory:
+            getChatHistory,
+
+        saveHistory:
+            saveChatHistory,
+
+        clearHistory:
+            clearChatHistory,
+
+        getLatestHistory:
+            getLatestChat,
+
+        openHistory:
+            openHistoryItem
 
     };
 
