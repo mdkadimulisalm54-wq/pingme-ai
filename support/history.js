@@ -94,9 +94,21 @@ function addChatToHistory(chat) {
 
   });
 
-  return saveChatHistory(
-    history
-  );
+  const saved =
+    saveChatHistory(
+      history
+    );
+
+  if (
+    typeof window.PingMeMenu !== "undefined" &&
+    typeof window.PingMeMenu.refreshHistory === "function"
+  ) {
+
+    window.PingMeMenu.refreshHistory();
+
+  }
+
+  return saved;
 
 }
 
@@ -112,6 +124,15 @@ function clearChatHistory() {
     localStorage.removeItem(
       PINGME_HISTORY_KEY
     );
+
+    if (
+      typeof window.PingMeMenu !== "undefined" &&
+      typeof window.PingMeMenu.refreshHistory === "function"
+    ) {
+
+      window.PingMeMenu.refreshHistory();
+
+    }
 
     return true;
 
