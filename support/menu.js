@@ -1112,8 +1112,9 @@ let searchInput = null;
     /* =========================================================
        16. EVENTS
        ========================================================= */
+       function setupEvents() {
 
-    function setupEvents() {
+    if (menuButton) {
 
         menuButton.addEventListener(
             "click",
@@ -1124,45 +1125,61 @@ let searchInput = null;
             }
         );
 
-
-        const closeButton =
-            document.getElementById(
-                "pingmeMenuClose"
-            );
+    }
 
 
-        if (closeButton) {
+    if (menuButtonChat) {
 
-            closeButton.addEventListener(
-                "click",
-                closeMenu
-            );
+        menuButtonChat.addEventListener(
+            "click",
+            function () {
 
-        }
+                toggleMenu();
 
-
-        if (overlay) {
-
-            overlay.addEventListener(
-                "click",
-                closeMenu
-            );
-
-        }
-
-
-        setupSearch();
-
-        setupMenuActions();
-
-        setupNewChat();
-
-        setupAccountButton();
-
-        setupKeyboard();
+            }
+        );
 
     }
 
+
+    const closeButton =
+        document.getElementById(
+            "pingmeMenuClose"
+        );
+
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            closeMenu
+        );
+
+    }
+
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            closeMenu
+        );
+
+    }
+
+
+    setupSearch();
+
+    setupMenuActions();
+
+    setupNewChat();
+
+    setupAccountButton();
+
+    setupKeyboard();
+
+}
+    
 
     /* =========================================================
        17. COMPLETE CSS
