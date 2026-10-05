@@ -138,9 +138,9 @@ function saveConversation(role, text) {
     text: String(text).trim()
   });
      if (
-    typeof addChatToHistory === "function"
+    typeof window.addChatToHistory === "function"
   ) {
-    addChatToHistory({
+    window.addChatToHistory({
       role: role,
       text: String(text).trim()
     });
