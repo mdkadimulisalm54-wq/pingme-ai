@@ -10,17 +10,22 @@
     /* =========================================================
        1. BASIC SETUP
        ========================================================= */
+       const menuButton =
+    document.getElementById("menuButton");
 
-    const menuButton = document.getElementById("menuButton");
+const menuButtonChat =
+    document.getElementById("menuButtonChat");
 
-    if (!menuButton) {
-        console.warn("PingMe AI — menuButton not found.");
-        return;
-    }
+if (!menuButton && !menuButtonChat) {
+    console.warn(
+        "PingMe AI — menu buttons not found."
+    );
+    return;
+}
 
-    let drawer = null;
-    let overlay = null;
-    let searchInput = null;
+let drawer = null;
+let overlay = null;
+let searchInput = null;
 
 
     /* =========================================================
