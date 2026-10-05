@@ -124,3 +124,6 @@ function resetSettings() {
 
 
 console.log("Settings Support Connected");
+function isAutoSaveEnabled() {
+    return getSetting("general.autoSave");
+}
