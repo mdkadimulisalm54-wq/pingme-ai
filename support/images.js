@@ -1,5 +1,6 @@
 // ==========================================================
 // PingMe AI — Images Support
+// Complete Images UI + Gallery + Pollinations Generation
 // ==========================================================
 
 (function () {
@@ -7,7 +8,7 @@
     "use strict";
 
     /* =========================================================
-       IMAGES SUPPORT
+       STATE
        ========================================================= */
 
     let imagesPanel = null;
@@ -16,8 +17,15 @@
 
     let currentPreviewIndex = -1;
 
+    let currentTab = "trending";
+
+    let selectedReferenceImage = null;
+
+    let isGenerating = false;
+
     const IMAGES_STORAGE_KEY =
         "pingme_generated_images";
+
 
     /* =========================================================
        LOAD SAVED IMAGES
@@ -45,7 +53,17 @@
 
             if (Array.isArray(parsed)) {
 
-                imagesData = parsed;
+                imagesData = parsed.filter(
+                    function (image) {
+
+                        return (
+                            image &&
+                            typeof image === "object" &&
+                            image.url
+                        );
+
+                    }
+                );
 
             } else {
 
@@ -65,6 +83,7 @@
         }
 
     }
+
 
     /* =========================================================
        SAVE IMAGES
@@ -86,12 +105,122 @@
                 error
             );
 
+            /*
+             * localStorage can become full when many large
+             * generated images are saved.
+             */
+
+            if (
+                error &&
+                (
+                    error.name === "QuotaExceededError" ||
+                    error.code === 22
+                )
+            ) {
+
+                try {
+
+                    /*
+                     * Keep the newest images first.
+                     */
+
+                    imagesData =
+                        imagesData.slice(
+                            0,
+                            Math.max(
+                                1,
+                                Math.floor(
+                                    imagesData.length * 0.7
+                                )
+                            )
+                        );
+
+                    localStorage.setItem(
+                        IMAGES_STORAGE_KEY,
+                        JSON.stringify(imagesData)
+                    );
+
+                } catch (retryError) {
+
+                    console.error(
+                        "PingMe AI — Images Storage Full:",
+                        retryError
+                    );
+
+                }
+
+            }
+
         }
 
     }
 
+
     /* =========================================================
-       CREATE IMAGES PANEL
+       TEMPLATE DATA
+       ========================================================= */
+
+    const IMAGE_TEMPLATES = [
+
+        {
+            id: "template_nature",
+            title: "Dreamy Nature",
+            prompt:
+                "A breathtaking cinematic mountain landscape at golden hour, misty valleys, dramatic clouds, realistic photography, highly detailed",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/A%20breathtaking%20cinematic%20mountain%20landscape%20at%20golden%20hour%2C%20misty%20valleys%2C%20dramatic%20clouds%2C%20realistic%20photography%2C%20highly%20detailed?width=768&height=768&nologo=true"
+        },
+
+        {
+            id: "template_portrait",
+            title: "Studio Portrait",
+            prompt:
+                "A professional cinematic studio portrait, soft dramatic lighting, elegant fashion, realistic skin texture, premium photography",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/A%20professional%20cinematic%20studio%20portrait%2C%20soft%20dramatic%20lighting%2C%20elegant%20fashion%2C%20realistic%20skin%20texture%2C%20premium%20photography?width=768&height=768&nologo=true"
+        },
+
+        {
+            id: "template_city",
+            title: "Neon City",
+            prompt:
+                "A futuristic neon city at night, glowing signs, wet streets, cinematic atmosphere, cyberpunk architecture, ultra detailed",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/A%20futuristic%20neon%20city%20at%20night%2C%20glowing%20signs%2C%20wet%20streets%2C%20cinematic%20atmosphere%2C%20cyberpunk%20architecture%2C%20ultra%20detailed?width=768&height=768&nologo=true"
+        },
+
+        {
+            id: "template_product",
+            title: "Product Studio",
+            prompt:
+                "A premium product advertisement on a clean studio background, dramatic softbox lighting, realistic reflections, luxury commercial photography",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/A%20premium%20product%20advertisement%20on%20a%20clean%20studio%20background%2C%20dramatic%20softbox%20lighting%2C%20realistic%20reflections%2C%20luxury%20commercial%20photography?width=768&height=768&nologo=true"
+        },
+
+        {
+            id: "template_food",
+            title: "Food Photography",
+            prompt:
+                "Beautiful professional food photography, delicious gourmet dish, warm restaurant lighting, shallow depth of field, realistic details",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/Beautiful%20professional%20food%20photography%2C%20delicious%20gourmet%20dish%2C%20warm%20restaurant%20lighting%2C%20shallow%20depth%20of%20field%2C%20realistic%20details?width=768&height=768&nologo=true"
+        },
+
+        {
+            id: "template_fantasy",
+            title: "Fantasy World",
+            prompt:
+                "A magical fantasy world with glowing waterfalls, ancient castle, enchanted forest, cinematic lighting, epic concept art",
+            imageUrl:
+                "https://image.pollinations.ai/prompt/A%20magical%20fantasy%20world%20with%20glowing%20waterfalls%2C%20ancient%20castle%2C%20enchanted%20forest%2C%20cinematic%20lighting%2C%20epic%20concept%20art?width=768&height=768&nologo=true"
+        }
+
+    ];
+
+
+    /* =========================================================
+       CREATE MAIN PANEL
        ========================================================= */
 
     function createImagesPanel() {
@@ -110,66 +239,273 @@
 
         imagesPanel.innerHTML = `
 
-            <div class="pingme-images-overlay"></div>
+            <div
+                class="pingme-images-shell"
+            >
 
-            <div class="pingme-images-panel">
+                <!-- HEADER -->
 
-                <div class="pingme-images-header">
+                <header
+                    class="pingme-images-header"
+                >
 
                     <button
                         type="button"
                         class="pingme-images-back"
                         id="pingmeImagesBack"
-                        aria-label="Close Images"
+                        aria-label="Back"
                     >
-                        ×
+                        <span>‹</span>
                     </button>
 
-                    <div class="pingme-images-title">
+                    <div
+                        class="pingme-images-title"
+                    >
                         Images
                     </div>
 
-                </div>
+                    <div
+                        class="pingme-images-header-space"
+                    ></div>
 
-                <div class="pingme-images-content">
+                </header>
 
-                    <div class="pingme-images-toolbar">
+
+                <!-- SCROLL CONTENT -->
+
+                <main
+                    class="pingme-images-content"
+                    id="pingmeImagesContent"
+                >
+
+                    <!-- NOTICE -->
+
+                    <section
+                        class="pingme-images-notice"
+                    >
+
+                        <div
+                            class="pingme-images-notice-icon"
+                        >
+                            ✦
+                        </div>
+
+                        <div
+                            class="pingme-images-notice-content"
+                        >
+
+                            <div
+                                class="pingme-images-notice-title"
+                            >
+                                Create images with PingMe AI
+                            </div>
+
+                            <div
+                                class="pingme-images-notice-text"
+                            >
+                                Describe anything you imagine and
+                                turn your ideas into beautiful images.
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- TABS -->
+
+                    <div
+                        class="pingme-images-tabs"
+                        role="tablist"
+                    >
 
                         <button
                             type="button"
-                            class="pingme-images-generate"
-                            id="pingmeImagesGenerate"
+                            class="pingme-images-tab active"
+                            data-images-tab="trending"
+                            role="tab"
+                            aria-selected="true"
                         >
-                            Generate Image
+                            Trending
+                        </button>
+
+                        <button
+                            type="button"
+                            class="pingme-images-tab"
+                            data-images-tab="templates"
+                            role="tab"
+                            aria-selected="false"
+                        >
+                            Templates
                         </button>
 
                     </div>
 
-                    <div
-                        class="pingme-images-gallery"
-                        id="pingmeImagesGallery"
-                    ></div>
 
-                    <div
-                        class="pingme-images-empty"
-                        id="pingmeImagesEmpty"
+                    <!-- DISCOVERY AREA -->
+
+                    <section
+                        id="pingmeImagesDiscovery"
+                        class="pingme-images-discovery"
+                    ></section>
+
+
+                    <!-- MY IMAGES -->
+
+                    <section
+                        class="pingme-my-images-section"
                     >
 
-                        <div class="pingme-images-empty-icon">
-                            🖼️
+                        <div
+                            class="pingme-section-heading"
+                        >
+
+                            <div>
+
+                                <div
+                                    class="pingme-section-title"
+                                >
+                                    My images
+                                </div>
+
+                                <div
+                                    class="pingme-section-subtitle"
+                                >
+                                    Images you've created with PingMe AI
+                                </div>
+
+                            </div>
+
+                            <div
+                                class="pingme-my-images-count"
+                                id="pingmeMyImagesCount"
+                            >
+                                0
+                            </div>
+
                         </div>
 
-                        <div class="pingme-images-empty-title">
-                            No images yet
+
+                        <div
+                            class="pingme-images-gallery"
+                            id="pingmeImagesGallery"
+                        ></div>
+
+
+                        <div
+                            class="pingme-images-empty"
+                            id="pingmeImagesEmpty"
+                        >
+
+                            <div
+                                class="pingme-images-empty-icon"
+                            >
+                                ✦
+                            </div>
+
+                            <div
+                                class="pingme-images-empty-title"
+                            >
+                                No images yet
+                            </div>
+
+                            <div
+                                class="pingme-images-empty-text"
+                            >
+                                Describe an image below and
+                                your creations will appear here.
+                            </div>
+
                         </div>
 
-                        <div class="pingme-images-empty-text">
-                            Your generated images will appear here.
-                        </div>
+                    </section>
+
+
+                    <!-- BOTTOM SPACE -->
+
+                    <div
+                        class="pingme-images-bottom-space"
+                    ></div>
+
+                </main>
+
+
+                <!-- FIXED GENERATION BAR -->
+
+                <div
+                    class="pingme-images-composer-wrap"
+                >
+
+                    <div
+                        class="pingme-images-reference-preview"
+                        id="pingmeImagesReferencePreview"
+                    ></div>
+
+
+                    <div
+                        class="pingme-images-composer"
+                    >
+
+                        <button
+                            type="button"
+                            class="pingme-images-composer-button"
+                            id="pingmeImagesAttach"
+                            aria-label="Add reference image"
+                            title="Add image"
+                        >
+                            <span>＋</span>
+                        </button>
+
+                        <textarea
+                            id="pingmeImagesPrompt"
+                            class="pingme-images-composer-input"
+                            placeholder="Describe an image"
+                            rows="1"
+                            maxlength="4000"
+                            aria-label="Describe an image"
+                        ></textarea>
+
+                        <button
+                            type="button"
+                            class="pingme-images-composer-button mic"
+                            id="pingmeImagesMic"
+                            aria-label="Voice input"
+                            title="Voice input"
+                        >
+                            <span>⌕</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="pingme-images-send"
+                            id="pingmeImagesSend"
+                            aria-label="Generate image"
+                            title="Generate image"
+                        >
+                            <span>↑</span>
+                        </button>
 
                     </div>
 
+
+                    <div
+                        class="pingme-images-composer-hint"
+                        id="pingmeImagesComposerHint"
+                    >
+                        AI generated images may take a moment
+                    </div>
+
                 </div>
+
+
+                <!-- HIDDEN FILE INPUT -->
+
+                <input
+                    type="file"
+                    id="pingmeImagesFileInput"
+                    accept="image/*"
+                    hidden
+                />
 
             </div>
 
@@ -181,14 +517,17 @@
 
         setupImagesEvents();
 
+        renderDiscovery();
+
         renderImages();
 
         return imagesPanel;
 
     }
 
+
     /* =========================================================
-       SETUP EVENTS
+       SETUP MAIN EVENTS
        ========================================================= */
 
     function setupImagesEvents() {
@@ -198,14 +537,29 @@
                 "pingmeImagesBack"
             );
 
-        const overlay =
-            imagesPanel.querySelector(
-                ".pingme-images-overlay"
+        const prompt =
+            document.getElementById(
+                "pingmeImagesPrompt"
             );
 
-        const generateButton =
+        const sendButton =
             document.getElementById(
-                "pingmeImagesGenerate"
+                "pingmeImagesSend"
+            );
+
+        const micButton =
+            document.getElementById(
+                "pingmeImagesMic"
+            );
+
+        const attachButton =
+            document.getElementById(
+                "pingmeImagesAttach"
+            );
+
+        const fileInput =
+            document.getElementById(
+                "pingmeImagesFileInput"
             );
 
         if (backButton) {
@@ -217,25 +571,98 @@
 
         }
 
-        if (overlay) {
+        if (prompt) {
 
-            overlay.addEventListener(
-                "click",
-                closeImages
+            prompt.addEventListener(
+                "input",
+                autoResizePrompt
+            );
+
+            prompt.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key === "Enter" &&
+                        !event.shiftKey
+                    ) {
+
+                        event.preventDefault();
+
+                        handleGenerateImage();
+
+                    }
+
+                }
             );
 
         }
 
-        if (generateButton) {
+        if (sendButton) {
 
-            generateButton.addEventListener(
+            sendButton.addEventListener(
                 "click",
-                openGenerateDialog
+                handleGenerateImage
             );
 
         }
+
+        if (micButton) {
+
+            micButton.addEventListener(
+                "click",
+                handleVoiceInput
+            );
+
+        }
+
+        if (attachButton && fileInput) {
+
+            attachButton.addEventListener(
+                "click",
+                function () {
+
+                    fileInput.click();
+
+                }
+            );
+
+            fileInput.addEventListener(
+                "change",
+                handleReferenceImage
+            );
+
+        }
+
+        const tabs =
+            imagesPanel.querySelectorAll(
+                "[data-images-tab]"
+            );
+
+        tabs.forEach(
+            function (tab) {
+
+                tab.addEventListener(
+                    "click",
+                    function () {
+
+                        const name =
+                            tab.getAttribute(
+                                "data-images-tab"
+                            );
+
+                        setImagesTab(
+                            name
+                        );
+
+                    }
+                );
+
+            }
+        );
 
     }
+
 
     /* =========================================================
        OPEN IMAGES
@@ -254,9 +681,32 @@
             "pingme-images-open"
         );
 
+        loadSavedImages();
+
         renderImages();
 
+        renderDiscovery();
+
+        setTimeout(
+            function () {
+
+                const prompt =
+                    document.getElementById(
+                        "pingmeImagesPrompt"
+                    );
+
+                if (prompt) {
+
+                    prompt.focus();
+
+                }
+
+            },
+            100
+        );
+
     }
+
 
     /* =========================================================
        CLOSE IMAGES
@@ -278,389 +728,321 @@
             "pingme-images-open"
         );
 
-        closeGenerateDialog();
-
         closeImagePreview();
+
+        stopVoiceRecognition();
 
     }
 
+
     /* =========================================================
-       OPEN GENERATE DIALOG
+       SET TAB
        ========================================================= */
 
-    function openGenerateDialog() {
+    function setImagesTab(
+        tabName
+    ) {
 
         if (
-            document.getElementById(
-                "pingmeImagesGenerateDialog"
-            )
+            tabName !== "trending" &&
+            tabName !== "templates"
         ) {
+
+            tabName = "trending";
+
+        }
+
+        currentTab =
+            tabName;
+
+        const tabs =
+            imagesPanel.querySelectorAll(
+                "[data-images-tab]"
+            );
+
+        tabs.forEach(
+            function (tab) {
+
+                const active =
+                    tab.getAttribute(
+                        "data-images-tab"
+                    ) === tabName;
+
+                tab.classList.toggle(
+                    "active",
+                    active
+                );
+
+                tab.setAttribute(
+                    "aria-selected",
+                    active ?
+                    "true" :
+                    "false"
+                );
+
+            }
+        );
+
+        renderDiscovery();
+
+    }
+
+
+    /* =========================================================
+       RENDER DISCOVERY
+       ========================================================= */
+
+    function renderDiscovery() {
+
+        if (!imagesPanel) {
 
             return;
 
         }
 
-        const dialog =
+        const container =
+            document.getElementById(
+                "pingmeImagesDiscovery"
+            );
+
+        if (!container) {
+
+            return;
+
+        }
+
+        container.innerHTML = "";
+
+        if (currentTab === "templates") {
+
+            renderTemplateCards(
+                container
+            );
+
+            return;
+
+        }
+
+        renderTrendingCards(
+            container
+        );
+
+    }
+
+
+    /* =========================================================
+       RENDER TRENDING
+       ========================================================= */
+
+    function renderTrendingCards(
+        container
+    ) {
+
+        const title =
             document.createElement("div");
 
-        dialog.id =
-            "pingmeImagesGenerateDialog";
+        title.className =
+            "pingme-discovery-label";
 
-        dialog.innerHTML = `
+        title.textContent =
+            "Trending now";
+
+        container.appendChild(
+            title
+        );
+
+        const grid =
+            document.createElement("div");
+
+        grid.className =
+            "pingme-discovery-grid";
+
+        IMAGE_TEMPLATES
+            .slice(
+                0,
+                6
+            )
+            .forEach(
+                function (item) {
+
+                    grid.appendChild(
+                        createDiscoveryCard(
+                            item
+                        )
+                    );
+
+                }
+            );
+
+        container.appendChild(
+            grid
+        );
+
+    }
+
+
+    /* =========================================================
+       RENDER TEMPLATES
+       ========================================================= */
+
+    function renderTemplateCards(
+        container
+    ) {
+
+        const title =
+            document.createElement("div");
+
+        title.className =
+            "pingme-discovery-label";
+
+        title.textContent =
+            "Ready-to-use templates";
+
+        container.appendChild(
+            title
+        );
+
+        const grid =
+            document.createElement("div");
+
+        grid.className =
+            "pingme-discovery-grid";
+
+        IMAGE_TEMPLATES.forEach(
+            function (item) {
+
+                grid.appendChild(
+                    createDiscoveryCard(
+                        item
+                    )
+                );
+
+            }
+        );
+
+        container.appendChild(
+            grid
+        );
+
+    }
+
+
+    /* =========================================================
+       CREATE DISCOVERY CARD
+       ========================================================= */
+
+    function createDiscoveryCard(
+        item
+    ) {
+
+        const card =
+            document.createElement("button");
+
+        card.type =
+            "button";
+
+        card.className =
+            "pingme-discovery-card";
+
+        card.innerHTML = `
 
             <div
-                class="pingme-images-dialog-overlay"
-                id="pingmeImagesDialogOverlay"
-            ></div>
-
-            <div
-                class="pingme-images-dialog"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="pingmeImagesDialogTitle"
+                class="pingme-discovery-image-wrap"
             >
 
-                <div class="pingme-images-dialog-header">
+                <img
+                    src="${escapeHtml(
+                        item.imageUrl
+                    )}"
+                    alt="${escapeHtml(
+                        item.title
+                    )}"
+                    loading="lazy"
+                >
 
-                    <div
-                        class="pingme-images-dialog-title"
-                        id="pingmeImagesDialogTitle"
-                    >
-                        Generate Image
-                    </div>
+                <div
+                    class="pingme-discovery-overlay"
+                >
 
-                    <button
-                        type="button"
-                        class="pingme-images-dialog-close"
-                        id="pingmeImagesDialogClose"
-                        aria-label="Close"
-                    >
-                        ×
-                    </button>
-
-                </div>
-
-                <div class="pingme-images-dialog-body">
-
-                    <label
-                        class="pingme-images-field-label"
-                        for="pingmeImagesPrompt"
-                    >
-                        Describe your image
-                    </label>
-
-                    <textarea
-                        id="pingmeImagesPrompt"
-                        class="pingme-images-prompt"
-                        placeholder="Describe the image you want to create..."
-                        rows="5"
-                    ></textarea>
-
-                    <div
-                        class="pingme-images-prompt-error"
-                        id="pingmeImagesPromptError"
-                    ></div>
-
-                    <div class="pingme-images-options">
-
-                        <div class="pingme-images-option">
-
-                            <label
-                                for="pingmeImagesModel"
-                            >
-                                Model
-                            </label>
-
-                            <select
-                                id="pingmeImagesModel"
-                            >
-
-                                <option value="gpt-image-1">
-                                    GPT Image
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="pingme-images-option">
-
-                            <label
-                                for="pingmeImagesSize"
-                            >
-                                Size
-                            </label>
-
-                            <select
-                                id="pingmeImagesSize"
-                            >
-
-                                <option value="1024x1024">
-                                    Square
-                                </option>
-
-                                <option value="1536x1024">
-                                    Landscape
-                                </option>
-
-                                <option value="1024x1536">
-                                    Portrait
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="pingme-images-option">
-
-                            <label
-                                for="pingmeImagesQuality"
-                            >
-                                Quality
-                            </label>
-
-                            <select
-                                id="pingmeImagesQuality"
-                            >
-
-                                <option value="auto">
-                                    Auto
-                                </option>
-
-                                <option value="low">
-                                    Low
-                                </option>
-
-                                <option value="medium">
-                                    Medium
-                                </option>
-
-                                <option value="high">
-                                    High
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="pingme-images-option">
-
-                            <label
-                                for="pingmeImagesCount"
-                            >
-                                Images
-                            </label>
-
-                            <select
-                                id="pingmeImagesCount"
-                            >
-
-                                <option value="1">
-                                    1
-                                </option>
-
-                                <option value="2">
-                                    2
-                                </option>
-
-                                <option value="3">
-                                    3
-                                </option>
-
-                                <option value="4">
-                                    4
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-                    <div
-                        class="pingme-images-generation-error"
-                        id="pingmeImagesGenerationError"
-                    ></div>
-
-                </div>
-
-                <div class="pingme-images-dialog-footer">
-
-                    <button
-                        type="button"
-                        class="pingme-images-cancel"
-                        id="pingmeImagesCancel"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        type="button"
-                        class="pingme-images-generate-confirm"
-                        id="pingmeImagesGenerateConfirm"
-                    >
-                        Generate
-                    </button>
+                    <span>
+                        Use idea
+                    </span>
 
                 </div>
 
             </div>
 
+            <div
+                class="pingme-discovery-card-title"
+            >
+                ${escapeHtml(
+                    item.title
+                )}
+            </div>
+
         `;
 
-        document.body.appendChild(
-            dialog
+        card.addEventListener(
+            "click",
+            function () {
+
+                useTemplate(
+                    item
+                );
+
+            }
         );
 
-        setupGenerateDialogEvents();
+        return card;
+
+    }
+
+
+    /* =========================================================
+       USE TEMPLATE
+       ========================================================= */
+
+    function useTemplate(
+        template
+    ) {
 
         const prompt =
             document.getElementById(
                 "pingmeImagesPrompt"
             );
 
-        if (prompt) {
+        if (!prompt) {
 
-            setTimeout(
-                function () {
-
-                    prompt.focus();
-
-                },
-                50
-            );
+            return;
 
         }
+
+        prompt.value =
+            template.prompt ||
+            "";
+
+        autoResizePrompt();
+
+        prompt.focus();
 
     }
 
-    /* =========================================================
-       SETUP GENERATE DIALOG EVENTS
-       ========================================================= */
-
-    function setupGenerateDialogEvents() {
-
-        const closeButton =
-            document.getElementById(
-                "pingmeImagesDialogClose"
-            );
-
-        const cancelButton =
-            document.getElementById(
-                "pingmeImagesCancel"
-            );
-
-        const overlay =
-            document.getElementById(
-                "pingmeImagesDialogOverlay"
-            );
-
-        const generateButton =
-            document.getElementById(
-                "pingmeImagesGenerateConfirm"
-            );
-
-        if (closeButton) {
-
-            closeButton.addEventListener(
-                "click",
-                closeGenerateDialog
-            );
-
-        }
-
-        if (cancelButton) {
-
-            cancelButton.addEventListener(
-                "click",
-                closeGenerateDialog
-            );
-
-        }
-
-        if (overlay) {
-
-            overlay.addEventListener(
-                "click",
-                closeGenerateDialog
-            );
-
-        }
-
-        if (generateButton) {
-
-            generateButton.addEventListener(
-                "click",
-                handleGenerateImage
-            );
-
-        }
-
-    }
 
     /* =========================================================
-       CLOSE GENERATE DIALOG
-       ========================================================= */
-
-    function closeGenerateDialog() {
-
-        const dialog =
-            document.getElementById(
-                "pingmeImagesGenerateDialog"
-            );
-
-        if (dialog) {
-
-            dialog.remove();
-
-        }
-
-    }
-
-    /* =========================================================
-       HANDLE GENERATE IMAGE
+       GENERATION
        ========================================================= */
 
     async function handleGenerateImage() {
 
+        if (isGenerating) {
+
+            return;
+
+        }
+
         const promptElement =
             document.getElementById(
                 "pingmeImagesPrompt"
-            );
-
-        const modelElement =
-            document.getElementById(
-                "pingmeImagesModel"
-            );
-
-        const sizeElement =
-            document.getElementById(
-                "pingmeImagesSize"
-            );
-
-        const qualityElement =
-            document.getElementById(
-                "pingmeImagesQuality"
-            );
-
-        const countElement =
-            document.getElementById(
-                "pingmeImagesCount"
-            );
-
-        const errorElement =
-            document.getElementById(
-                "pingmeImagesPromptError"
-            );
-
-        const generationError =
-            document.getElementById(
-                "pingmeImagesGenerationError"
-            );
-
-        const generateButton =
-            document.getElementById(
-                "pingmeImagesGenerateConfirm"
             );
 
         if (!promptElement) {
@@ -672,26 +1054,11 @@
         const prompt =
             promptElement.value.trim();
 
-        if (errorElement) {
-
-            errorElement.textContent = "";
-
-        }
-
-        if (generationError) {
-
-            generationError.textContent = "";
-
-        }
-
         if (!prompt) {
 
-            if (errorElement) {
-
-                errorElement.textContent =
-                    "Please describe the image you want to generate.";
-
-            }
+            showComposerMessage(
+                "Describe the image you want to create."
+            );
 
             promptElement.focus();
 
@@ -701,12 +1068,9 @@
 
         if (prompt.length > 4000) {
 
-            if (errorElement) {
-
-                errorElement.textContent =
-                    "Your prompt is too long. Please shorten it.";
-
-            }
+            showComposerMessage(
+                "Your prompt is too long. Please shorten it."
+            );
 
             return;
 
@@ -714,27 +1078,25 @@
 
         const options = {
 
-            prompt: prompt,
+            prompt:
+                prompt,
 
             model:
-                modelElement ?
-                modelElement.value :
-                "gpt-image-1",
+                "flux",
 
             size:
-                sizeElement ?
-                sizeElement.value :
                 "1024x1024",
 
             quality:
-                qualityElement ?
-                qualityElement.value :
                 "auto",
 
             count:
-                countElement ?
-                Number(countElement.value) :
-                1
+                1,
+
+            referenceImage:
+                selectedReferenceImage ?
+                selectedReferenceImage.dataUrl :
+                null
 
         };
 
@@ -758,7 +1120,7 @@
                     result &&
                     result.error
                         ? result.error
-                        : "Image generation service is not connected yet."
+                        : "Image generation failed."
                 );
 
             }
@@ -769,22 +1131,35 @@
                 )
             ) {
 
-                result.images.forEach(
-                    function (image) {
+                for (
+                    let i = 0;
+                    i < result.images.length;
+                    i++
+                ) {
 
-                        addImageToGallery(
-                            image,
-                            options
-                        );
+                    await addImageToGallery(
+                        result.images[i],
+                        options
+                    );
 
-                    }
-                );
+                }
 
             }
 
-            closeGenerateDialog();
+            promptElement.value =
+                "";
+
+            autoResizePrompt();
+
+            clearReferenceImage();
 
             renderImages();
+
+            showComposerMessage(
+                "Image created successfully."
+            );
+
+            scrollToMyImages();
 
         } catch (error) {
 
@@ -793,13 +1168,10 @@
                 error
             );
 
-            if (generationError) {
-
-                generationError.textContent =
-                    error.message ||
-                    "Image generation failed.";
-
-            }
+            showComposerMessage(
+                error.message ||
+                "Image generation failed."
+            );
 
         } finally {
 
@@ -811,25 +1183,29 @@
 
     }
 
+
     /* =========================================================
-       GENERATE LOADING STATE
+       GENERATION LOADING
        ========================================================= */
 
     function setGenerateLoading(
         loading
     ) {
 
-        const button =
+        isGenerating =
+            loading;
+
+        const sendButton =
             document.getElementById(
-                "pingmeImagesGenerateConfirm"
+                "pingmeImagesSend"
             );
 
-        const cancelButton =
+        const hint =
             document.getElementById(
-                "pingmeImagesCancel"
+                "pingmeImagesComposerHint"
             );
 
-        if (!button) {
+        if (!sendButton) {
 
             return;
 
@@ -837,33 +1213,42 @@
 
         if (loading) {
 
-            button.disabled = true;
+            sendButton.disabled =
+                true;
 
-            button.innerHTML = `
+            sendButton.classList.add(
+                "loading"
+            );
+
+            sendButton.innerHTML = `
                 <span
                     class="pingme-images-spinner"
                 ></span>
-                Generating...
             `;
 
-            if (cancelButton) {
+            if (hint) {
 
-                cancelButton.disabled =
-                    true;
+                hint.textContent =
+                    "Creating your image…";
 
             }
 
         } else {
 
-            button.disabled = false;
+            sendButton.disabled =
+                false;
 
-            button.textContent =
-                "Generate";
+            sendButton.classList.remove(
+                "loading"
+            );
 
-            if (cancelButton) {
+            sendButton.innerHTML =
+                "<span>↑</span>";
 
-                cancelButton.disabled =
-                    false;
+            if (hint) {
+
+                hint.textContent =
+                    "AI generated images may take a moment";
 
             }
 
@@ -871,11 +1256,12 @@
 
     }
 
+
     /* =========================================================
        IMAGE GENERATION API CONNECTOR
        ========================================================= */
 
-       async function requestImageGeneration(
+    async function requestImageGeneration(
         options
     ) {
 
@@ -905,9 +1291,14 @@
                                     1024,
 
                                 height:
-                                    1024
+                                    1024,
+
+                                referenceImage:
+                                    options.referenceImage ||
+                                    null
 
                             })
+
                     }
                 );
 
@@ -933,7 +1324,7 @@
 
                 } catch (error) {
 
-                    /* Ignore JSON parsing error */
+                    /* Ignore JSON parsing errors */
 
                 }
 
@@ -950,23 +1341,114 @@
 
             }
 
+            const contentType =
+                (
+                    response.headers
+                        .get("content-type") ||
+                    ""
+                ).toLowerCase();
+
+
+            /*
+             * JSON response support.
+             */
+
+            if (
+                contentType.includes(
+                    "application/json"
+                )
+            ) {
+
+                const data =
+                    await response.json();
+
+                if (
+                    data &&
+                    Array.isArray(
+                        data.images
+                    )
+                ) {
+
+                    return {
+
+                        success: true,
+
+                        images:
+                            data.images,
+
+                        error:
+                            null
+
+                    };
+
+                }
+
+                if (
+                    data &&
+                    (
+                        data.url ||
+                        data.image ||
+                        data.dataUrl
+                    )
+                ) {
+
+                    return {
+
+                        success: true,
+
+                        images: [
+                            data.url ||
+                            data.image ||
+                            data.dataUrl
+                        ],
+
+                        error:
+                            null
+
+                    };
+
+                }
+
+            }
+
+
+            /*
+             * Blob response support.
+             */
+
             const imageBlob =
                 await response.blob();
 
-            const imageUrl =
-                URL.createObjectURL(
+            const dataUrl =
+                await blobToDataUrl(
                     imageBlob
                 );
+
+            if (!dataUrl) {
+
+                return {
+
+                    success: false,
+
+                    images: [],
+
+                    error:
+                        "The image response was empty."
+
+                };
+
+            }
 
             return {
 
                 success: true,
 
                 images: [
-                    imageUrl
+                    dataUrl
                 ],
 
-                error: null
+                error:
+                    null
 
             };
 
@@ -988,11 +1470,57 @@
 
     }
 
+
+    /* =========================================================
+       BLOB TO DATA URL
+       ========================================================= */
+
+    function blobToDataUrl(
+        blob
+    ) {
+
+        return new Promise(
+            function (
+                resolve,
+                reject
+            ) {
+
+                const reader =
+                    new FileReader();
+
+                reader.onload =
+                    function () {
+
+                        resolve(
+                            reader.result
+                        );
+
+                    };
+
+                reader.onerror =
+                    function () {
+
+                        reject(
+                            reader.error
+                        );
+
+                    };
+
+                reader.readAsDataURL(
+                    blob
+                );
+
+            }
+        );
+
+    }
+
+
     /* =========================================================
        ADD IMAGE TO GALLERY
        ========================================================= */
 
-    function addImageToGallery(
+    async function addImageToGallery(
         image,
         options
     ) {
@@ -1002,6 +1530,86 @@
             return;
 
         }
+
+        let imageUrl = "";
+
+        if (
+            typeof image === "string"
+        ) {
+
+            imageUrl =
+                image;
+
+        } else if (
+            image.url
+        ) {
+
+            imageUrl =
+                image.url;
+
+        } else if (
+            image.dataUrl
+        ) {
+
+            imageUrl =
+                image.dataUrl;
+
+        } else if (
+            image.b64_json
+        ) {
+
+            imageUrl =
+                "data:image/png;base64," +
+                image.b64_json;
+
+        }
+
+        if (!imageUrl) {
+
+            return;
+
+        }
+
+
+        /*
+         * If the API still returns a blob URL,
+         * convert it into a persistent Data URL.
+         */
+
+        if (
+            imageUrl.indexOf(
+                "blob:"
+            ) === 0
+        ) {
+
+            try {
+
+                const response =
+                    await fetch(
+                        imageUrl
+                    );
+
+                const blob =
+                    await response.blob();
+
+                imageUrl =
+                    await blobToDataUrl(
+                        blob
+                    );
+
+            } catch (error) {
+
+                console.error(
+                    "PingMe AI — Blob Conversion Error:",
+                    error
+                );
+
+                return;
+
+            }
+
+        }
+
 
         const imageRecord = {
 
@@ -1014,36 +1622,28 @@
                     .slice(2, 9),
 
             url:
-    typeof image === "string" ?
-    image :
-    (
-        image.url ||
-        image.dataUrl ||
-        ""
-    ),
+                imageUrl,
 
             prompt:
                 options.prompt,
 
             model:
-                options.model,
+                options.model ||
+                "flux",
 
             size:
-                options.size,
+                options.size ||
+                "1024x1024",
 
             quality:
-                options.quality,
+                options.quality ||
+                "auto",
 
             createdAt:
                 new Date().toISOString()
 
         };
 
-        if (!imageRecord.url) {
-
-            return;
-
-        }
 
         imagesData.unshift(
             imageRecord
@@ -1053,8 +1653,9 @@
 
     }
 
+
     /* =========================================================
-       RENDER IMAGES
+       RENDER MY IMAGES
        ========================================================= */
 
     function renderImages() {
@@ -1075,13 +1676,33 @@
                 "pingmeImagesEmpty"
             );
 
-        if (!gallery || !empty) {
+        const count =
+            document.getElementById(
+                "pingmeMyImagesCount"
+            );
+
+        if (
+            !gallery ||
+            !empty
+        ) {
 
             return;
 
         }
 
-        gallery.innerHTML = "";
+        gallery.innerHTML =
+            "";
+
+
+        if (count) {
+
+            count.textContent =
+                String(
+                    imagesData.length
+                );
+
+        }
+
 
         if (!imagesData.length) {
 
@@ -1092,8 +1713,10 @@
 
         }
 
+
         empty.style.display =
             "none";
+
 
         imagesData.forEach(
             function (
@@ -1116,6 +1739,7 @@
 
     }
 
+
     /* =========================================================
        CREATE IMAGE CARD
        ========================================================= */
@@ -1126,137 +1750,210 @@
     ) {
 
         const card =
-            document.createElement("div");
+            document.createElement("article");
 
         card.className =
             "pingme-images-card";
 
-        card.innerHTML = `
-
-            <button
-                type="button"
-                class="pingme-images-card-image-button"
-                aria-label="Open image"
-            >
-
-                <img
-                    class="pingme-images-card-image"
-                    src="${escapeHtml(
-                        image.url
-                    )}"
-                    alt="${escapeHtml(
-                        image.prompt ||
-                        "Generated image"
-                    )}"
-                >
-
-            </button>
-
-            <div class="pingme-images-card-info">
-
-                <div class="pingme-images-card-prompt">
-                    ${escapeHtml(
-                        image.prompt ||
-                        "Generated image"
-                    )}
-                </div>
-
-                <div class="pingme-images-card-date">
-                    ${formatImageDate(
-                        image.createdAt
-                    )}
-                </div>
-
-                <div class="pingme-images-card-actions">
-
-                    <button
-                        type="button"
-                        data-image-action="preview"
-                    >
-                        Preview
-                    </button>
-
-                    <button
-                        type="button"
-                        data-image-action="download"
-                    >
-                        Download
-                    </button>
-
-                    <button
-                        type="button"
-                        data-image-action="regenerate"
-                    >
-                        Regenerate
-                    </button>
-
-                    <button
-                        type="button"
-                        data-image-action="delete"
-                        class="danger"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-
-            </div>
-
-        `;
 
         const imageButton =
-            card.querySelector(
-                ".pingme-images-card-image-button"
+            document.createElement("button");
+
+        imageButton.type =
+            "button";
+
+        imageButton.className =
+            "pingme-images-card-image-button";
+
+        imageButton.setAttribute(
+            "aria-label",
+            "Open image"
+        );
+
+
+        const img =
+            document.createElement("img");
+
+        img.className =
+            "pingme-images-card-image";
+
+        img.src =
+            image.url;
+
+        img.alt =
+            image.prompt ||
+            "Generated image";
+
+        img.loading =
+            "lazy";
+
+
+        imageButton.appendChild(
+            img
+        );
+
+
+        const info =
+            document.createElement("div");
+
+        info.className =
+            "pingme-images-card-info";
+
+
+        const prompt =
+            document.createElement("div");
+
+        prompt.className =
+            "pingme-images-card-prompt";
+
+        prompt.textContent =
+            image.prompt ||
+            "Generated image";
+
+
+        const date =
+            document.createElement("div");
+
+        date.className =
+            "pingme-images-card-date";
+
+        date.textContent =
+            formatImageDate(
+                image.createdAt
             );
 
-        if (imageButton) {
 
-            imageButton.addEventListener(
-                "click",
-                function () {
+        const actions =
+            document.createElement("div");
 
-                    openImagePreview(
-                        index
-                    );
+        actions.className =
+            "pingme-images-card-actions";
 
-                }
-            );
 
-        }
+        actions.appendChild(
+            createActionButton(
+                "Preview",
+                "preview",
+                index
+            )
+        );
 
-        const actionButtons =
-            card.querySelectorAll(
-                "[data-image-action]"
-            );
+        actions.appendChild(
+            createActionButton(
+                "Download",
+                "download",
+                index
+            )
+        );
 
-        actionButtons.forEach(
-            function (
-                button
-            ) {
+        actions.appendChild(
+            createActionButton(
+                "Regenerate",
+                "regenerate",
+                index
+            )
+        );
 
-                button.addEventListener(
-                    "click",
-                    function () {
+        actions.appendChild(
+            createActionButton(
+                "Delete",
+                "delete",
+                index,
+                true
+            )
+        );
 
-                        const action =
-                            button.getAttribute(
-                                "data-image-action"
-                            );
 
-                        handleImageAction(
-                            action,
-                            index
-                        );
+        info.appendChild(
+            prompt
+        );
 
-                    }
+        info.appendChild(
+            date
+        );
+
+        info.appendChild(
+            actions
+        );
+
+
+        card.appendChild(
+            imageButton
+        );
+
+        card.appendChild(
+            info
+        );
+
+
+        imageButton.addEventListener(
+            "click",
+            function () {
+
+                openImagePreview(
+                    index
                 );
 
             }
         );
 
+
         return card;
 
     }
+
+
+    /* =========================================================
+       CREATE ACTION BUTTON
+       ========================================================= */
+
+    function createActionButton(
+        text,
+        action,
+        index,
+        danger
+    ) {
+
+        const button =
+            document.createElement("button");
+
+        button.type =
+            "button";
+
+        button.textContent =
+            text;
+
+        button.setAttribute(
+            "data-image-action",
+            action
+        );
+
+        if (danger) {
+
+            button.classList.add(
+                "danger"
+            );
+
+        }
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.stopPropagation();
+
+                handleImageAction(
+                    action,
+                    index
+                );
+
+            }
+        );
+
+        return button;
+
+    }
+
 
     /* =========================================================
        IMAGE ACTIONS
@@ -1286,6 +1983,7 @@
 
                 break;
 
+
             case "download":
 
                 downloadImage(
@@ -1293,6 +1991,7 @@
                 );
 
                 break;
+
 
             case "regenerate":
 
@@ -1302,6 +2001,7 @@
 
                 break;
 
+
             case "delete":
 
                 deleteImage(
@@ -1310,13 +2010,10 @@
 
                 break;
 
-            default:
-
-                break;
-
         }
 
     }
+
 
     /* =========================================================
        DELETE IMAGE
@@ -1337,7 +2034,7 @@
 
         const confirmed =
             window.confirm(
-                "Delete this image?"
+                "Delete this image from My images?"
             );
 
         if (!confirmed) {
@@ -1357,6 +2054,7 @@
 
     }
 
+
     /* =========================================================
        REGENERATE IMAGE
        ========================================================= */
@@ -1371,74 +2069,33 @@
 
         }
 
-        openGenerateDialog();
+        const prompt =
+            document.getElementById(
+                "pingmeImagesPrompt"
+            );
 
-        setTimeout(
-            function () {
+        if (!prompt) {
 
-                const prompt =
-                    document.getElementById(
-                        "pingmeImagesPrompt"
-                    );
+            return;
 
-                const model =
-                    document.getElementById(
-                        "pingmeImagesModel"
-                    );
+        }
 
-                const size =
-                    document.getElementById(
-                        "pingmeImagesSize"
-                    );
+        prompt.value =
+            image.prompt ||
+            "";
 
-                const quality =
-                    document.getElementById(
-                        "pingmeImagesQuality"
-                    );
+        autoResizePrompt();
 
-                if (prompt) {
-
-                    prompt.value =
-                        image.prompt ||
-                        "";
-
-                }
-
-                if (model && image.model) {
-
-                    model.value =
-                        image.model;
-
-                }
-
-                if (size && image.size) {
-
-                    size.value =
-                        image.size;
-
-                }
-
-                if (
-                    quality &&
-                    image.quality
-                ) {
-
-                    quality.value =
-                        image.quality;
-
-                }
-
-            },
-            50
-        );
+        prompt.focus();
 
     }
+
 
     /* =========================================================
        DOWNLOAD IMAGE
        ========================================================= */
 
-    function downloadImage(
+    async function downloadImage(
         image
     ) {
 
@@ -1451,32 +2108,90 @@
 
         }
 
-        const link =
-            document.createElement("a");
+        try {
 
-        link.href =
-            image.url;
+            const response =
+                await fetch(
+                    image.url
+                );
 
-        link.download =
-            "pingme-image-" +
-            (
-                image.id ||
-                Date.now()
-            ) +
-            ".png";
+            const blob =
+                await response.blob();
 
-        link.target =
-            "_blank";
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
 
-        document.body.appendChild(
-            link
-        );
+            const link =
+                document.createElement("a");
 
-        link.click();
+            link.href =
+                url;
 
-        link.remove();
+            link.download =
+                "pingme-image-" +
+                (
+                    image.id ||
+                    Date.now()
+                ) +
+                ".png";
+
+            document.body.appendChild(
+                link
+            );
+
+            link.click();
+
+            link.remove();
+
+            setTimeout(
+                function () {
+
+                    URL.revokeObjectURL(
+                        url
+                    );
+
+                },
+                1000
+            );
+
+        } catch (error) {
+
+            /*
+             * Fallback for remote images where fetch
+             * is blocked by browser CORS.
+             */
+
+            const link =
+                document.createElement("a");
+
+            link.href =
+                image.url;
+
+            link.download =
+                "pingme-image-" +
+                (
+                    image.id ||
+                    Date.now()
+                ) +
+                ".png";
+
+            link.target =
+                "_blank";
+
+            document.body.appendChild(
+                link
+            );
+
+            link.click();
+
+            link.remove();
+
+        }
 
     }
+
 
     /* =========================================================
        IMAGE PREVIEW
@@ -1500,11 +2215,13 @@
 
         closeImagePreview();
 
+
         const preview =
             document.createElement("div");
 
         preview.id =
             "pingmeImagesPreview";
+
 
         preview.innerHTML = `
 
@@ -1513,12 +2230,15 @@
                 id="pingmeImagesPreviewOverlay"
             ></div>
 
-            <div class="pingme-images-preview-panel">
+            <div
+                class="pingme-images-preview-panel"
+            >
 
                 <button
                     type="button"
                     class="pingme-images-preview-close"
                     id="pingmeImagesPreviewClose"
+                    aria-label="Close preview"
                 >
                     ×
                 </button>
@@ -1532,7 +2252,9 @@
                     ‹
                 </button>
 
-                <div class="pingme-images-preview-image-wrap">
+                <div
+                    class="pingme-images-preview-image-wrap"
+                >
 
                     <img
                         id="pingmeImagesPreviewImage"
@@ -1556,32 +2278,36 @@
                     ›
                 </button>
 
-                <div class="pingme-images-preview-info">
+                <div
+                    class="pingme-images-preview-info"
+                >
 
-                    <div class="pingme-images-preview-prompt">
+                    <div
+                        class="pingme-images-preview-prompt"
+                    >
                         ${escapeHtml(
                             image.prompt ||
                             "Generated image"
                         )}
                     </div>
 
-                    <div class="pingme-images-preview-meta">
+                    <div
+                        class="pingme-images-preview-meta"
+                    >
                         ${escapeHtml(
                             image.model ||
-                            ""
+                            "flux"
                         )}
-                        ${image.size
-                            ? " • " +
-                              escapeHtml(
-                                  image.size
-                              )
-                            : ""}
-                        ${image.quality
-                            ? " • " +
-                              escapeHtml(
-                                  image.quality
-                              )
-                            : ""}
+                        ${
+                            image.createdAt
+                                ? " • " +
+                                  escapeHtml(
+                                      formatImageDate(
+                                          image.createdAt
+                                      )
+                                  )
+                                : ""
+                        }
                     </div>
 
                 </div>
@@ -1589,6 +2315,7 @@
             </div>
 
         `;
+
 
         document.body.appendChild(
             preview
@@ -1598,8 +2325,9 @@
 
     }
 
+
     /* =========================================================
-       SETUP PREVIEW EVENTS
+       PREVIEW EVENTS
        ========================================================= */
 
     function setupPreviewEvents() {
@@ -1624,6 +2352,7 @@
                 "pingmeImagesPreviewNext"
             );
 
+
         if (closeButton) {
 
             closeButton.addEventListener(
@@ -1632,6 +2361,7 @@
             );
 
         }
+
 
         if (overlay) {
 
@@ -1642,6 +2372,7 @@
 
         }
 
+
         if (previousButton) {
 
             previousButton.addEventListener(
@@ -1650,6 +2381,7 @@
             );
 
         }
+
 
         if (nextButton) {
 
@@ -1662,8 +2394,9 @@
 
     }
 
+
     /* =========================================================
-       CLOSE IMAGE PREVIEW
+       CLOSE PREVIEW
        ========================================================= */
 
     function closeImagePreview() {
@@ -1683,6 +2416,7 @@
             -1;
 
     }
+
 
     /* =========================================================
        PREVIOUS IMAGE
@@ -1711,6 +2445,7 @@
         );
 
     }
+
 
     /* =========================================================
        NEXT IMAGE
@@ -1742,6 +2477,534 @@
 
     }
 
+
+    /* =========================================================
+       REFERENCE IMAGE
+       ========================================================= */
+
+    function handleReferenceImage(
+        event
+    ) {
+
+        const file =
+            event.target.files &&
+            event.target.files[0];
+
+        if (!file) {
+
+            return;
+
+        }
+
+        if (
+            !file.type ||
+            file.type.indexOf(
+                "image/"
+            ) !== 0
+        ) {
+
+            showComposerMessage(
+                "Please select an image file."
+            );
+
+            return;
+
+        }
+
+        if (
+            file.size >
+            10 * 1024 * 1024
+        ) {
+
+            showComposerMessage(
+                "Please choose an image smaller than 10 MB."
+            );
+
+            return;
+
+        }
+
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload =
+            function () {
+
+                selectedReferenceImage = {
+
+                    name:
+                        file.name,
+
+                    type:
+                        file.type,
+
+                    dataUrl:
+                        reader.result
+
+                };
+
+                renderReferenceImage();
+
+            };
+
+
+        reader.onerror =
+            function () {
+
+                showComposerMessage(
+                    "Could not read that image."
+                );
+
+            };
+
+
+        reader.readAsDataURL(
+            file
+        );
+
+
+        event.target.value =
+            "";
+
+    }
+
+
+    /* =========================================================
+       RENDER REFERENCE IMAGE
+       ========================================================= */
+
+    function renderReferenceImage() {
+
+        const container =
+            document.getElementById(
+                "pingmeImagesReferencePreview"
+            );
+
+        if (!container) {
+
+            return;
+
+        }
+
+        if (!selectedReferenceImage) {
+
+            container.innerHTML =
+                "";
+
+            container.classList.remove(
+                "active"
+            );
+
+            return;
+
+        }
+
+        container.classList.add(
+            "active"
+        );
+
+        container.innerHTML = `
+
+            <div
+                class="pingme-reference-card"
+            >
+
+                <img
+                    src="${escapeHtml(
+                        selectedReferenceImage.dataUrl
+                    )}"
+                    alt="Reference image"
+                >
+
+                <div
+                    class="pingme-reference-info"
+                >
+
+                    <div>
+                        Reference image
+                    </div>
+
+                    <small>
+                        ${escapeHtml(
+                            selectedReferenceImage.name
+                        )}
+                    </small>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="pingmeImagesRemoveReference"
+                    aria-label="Remove reference image"
+                >
+                    ×
+                </button>
+
+            </div>
+
+        `;
+
+
+        const removeButton =
+            document.getElementById(
+                "pingmeImagesRemoveReference"
+            );
+
+        if (removeButton) {
+
+            removeButton.addEventListener(
+                "click",
+                clearReferenceImage
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       CLEAR REFERENCE IMAGE
+       ========================================================= */
+
+    function clearReferenceImage() {
+
+        selectedReferenceImage =
+            null;
+
+        renderReferenceImage();
+
+    }
+
+
+    /* =========================================================
+       VOICE INPUT
+       ========================================================= */
+
+    let voiceRecognition =
+        null;
+
+    let voiceListening =
+        false;
+
+
+    function handleVoiceInput() {
+
+        const Recognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+
+        if (!Recognition) {
+
+            showComposerMessage(
+                "Voice input is not supported by this browser."
+            );
+
+            return;
+
+        }
+
+
+        if (voiceListening) {
+
+            stopVoiceRecognition();
+
+            return;
+
+        }
+
+
+        if (!voiceRecognition) {
+
+            voiceRecognition =
+                new Recognition();
+
+            voiceRecognition.lang =
+                navigator.language ||
+                "en-US";
+
+            voiceRecognition.interimResults =
+                true;
+
+            voiceRecognition.continuous =
+                false;
+
+
+            voiceRecognition.onstart =
+                function () {
+
+                    voiceListening =
+                        true;
+
+                    updateMicState();
+
+                };
+
+
+            voiceRecognition.onresult =
+                function (
+                    event
+                ) {
+
+                    const prompt =
+                        document.getElementById(
+                            "pingmeImagesPrompt"
+                        );
+
+                    if (!prompt) {
+
+                        return;
+
+                    }
+
+                    let transcript =
+                        "";
+
+                    for (
+                        let i = 0;
+                        i < event.results.length;
+                        i++
+                    ) {
+
+                        transcript +=
+                            event.results[i][0]
+                                .transcript;
+
+                    }
+
+                    if (transcript) {
+
+                        prompt.value =
+                            transcript;
+
+                        autoResizePrompt();
+
+                    }
+
+                };
+
+
+            voiceRecognition.onerror =
+                function (
+                    event
+                ) {
+
+                    console.warn(
+                        "PingMe AI — Voice Input:",
+                        event.error
+                    );
+
+                    voiceListening =
+                        false;
+
+                    updateMicState();
+
+                };
+
+
+            voiceRecognition.onend =
+                function () {
+
+                    voiceListening =
+                        false;
+
+                    updateMicState();
+
+                };
+
+        }
+
+
+        try {
+
+            voiceRecognition.start();
+
+        } catch (error) {
+
+            console.warn(
+                "PingMe AI — Voice Start Error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       STOP VOICE
+       ========================================================= */
+
+    function stopVoiceRecognition() {
+
+        if (!voiceRecognition) {
+
+            return;
+
+        }
+
+        try {
+
+            voiceRecognition.stop();
+
+        } catch (error) {
+
+            /* Ignore */
+
+        }
+
+        voiceListening =
+            false;
+
+        updateMicState();
+
+    }
+
+
+    /* =========================================================
+       UPDATE MIC STATE
+       ========================================================= */
+
+    function updateMicState() {
+
+        const button =
+            document.getElementById(
+                "pingmeImagesMic"
+            );
+
+        if (!button) {
+
+            return;
+
+        }
+
+        button.classList.toggle(
+            "recording",
+            voiceListening
+        );
+
+    }
+
+
+    /* =========================================================
+       AUTO RESIZE PROMPT
+       ========================================================= */
+
+    function autoResizePrompt() {
+
+        const prompt =
+            document.getElementById(
+                "pingmeImagesPrompt"
+            );
+
+        if (!prompt) {
+
+            return;
+
+        }
+
+        prompt.style.height =
+            "auto";
+
+        prompt.style.height =
+            Math.min(
+                prompt.scrollHeight,
+                120
+            ) +
+            "px";
+
+    }
+
+
+    /* =========================================================
+       COMPOSER MESSAGE
+       ========================================================= */
+
+    function showComposerMessage(
+        message
+    ) {
+
+        const hint =
+            document.getElementById(
+                "pingmeImagesComposerHint"
+            );
+
+        if (!hint) {
+
+            return;
+
+        }
+
+        hint.textContent =
+            message;
+
+        hint.classList.add(
+            "message"
+        );
+
+
+        clearTimeout(
+            showComposerMessage.timer
+        );
+
+
+        showComposerMessage.timer =
+            setTimeout(
+                function () {
+
+                    if (!isGenerating) {
+
+                        hint.textContent =
+                            "AI generated images may take a moment";
+
+                        hint.classList.remove(
+                            "message"
+                        );
+
+                    }
+
+                },
+                3500
+            );
+
+    }
+
+
+    /* =========================================================
+       SCROLL TO MY IMAGES
+       ========================================================= */
+
+    function scrollToMyImages() {
+
+        const section =
+            imagesPanel &&
+            imagesPanel.querySelector(
+                ".pingme-my-images-section"
+            );
+
+        if (!section) {
+
+            return;
+
+        }
+
+        setTimeout(
+            function () {
+
+                section.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+            },
+            150
+        );
+
+    }
+
+
     /* =========================================================
        KEYBOARD CONTROLS
        ========================================================= */
@@ -1752,31 +3015,19 @@
             "keydown",
             function (event) {
 
+                const preview =
+                    document.getElementById(
+                        "pingmeImagesPreview"
+                    );
+
+
                 if (
                     event.key === "Escape"
                 ) {
 
-                    const preview =
-                        document.getElementById(
-                            "pingmeImagesPreview"
-                        );
-
-                    const dialog =
-                        document.getElementById(
-                            "pingmeImagesGenerateDialog"
-                        );
-
                     if (preview) {
 
                         closeImagePreview();
-
-                        return;
-
-                    }
-
-                    if (dialog) {
-
-                        closeGenerateDialog();
 
                         return;
 
@@ -1795,11 +3046,8 @@
 
                 }
 
-                if (
-                    document.getElementById(
-                        "pingmeImagesPreview"
-                    )
-                ) {
+
+                if (preview) {
 
                     if (
                         event.key ===
@@ -1825,6 +3073,7 @@
         );
 
     }
+
 
     /* =========================================================
        FORMAT IMAGE DATE
@@ -1853,6 +3102,7 @@
         }
 
     }
+
 
     /* =========================================================
        ESCAPE HTML
@@ -1895,6 +3145,7 @@
 
     }
 
+
     /* =========================================================
        INITIALIZE
        ========================================================= */
@@ -1905,11 +3156,14 @@
 
         setupKeyboardControls();
 
+        addImagesStyles();
+
         console.log(
             "PingMe AI — Images Support Ready"
         );
 
     }
+
 
     /* =========================================================
        STYLES
@@ -1927,337 +3181,480 @@
 
         }
 
+
         const style =
             document.createElement("style");
 
         style.id =
             "pingmeImagesStyles";
 
+
         style.textContent = `
 
-            #pingmeImagesPanel {
-                position: fixed;
-                inset: 0;
-                z-index: 10000;
-                display: none;
-            }
-
-            #pingmeImagesPanel.active {
-                display: block;
-            }
-
-            .pingme-images-overlay {
-                position: absolute;
-                inset: 0;
-                background: rgba(
-                    0,
-                    0,
-                    0,
-                    0.45
-                );
-            }
-
-            .pingme-images-panel {
-                position: absolute;
-                top: 0;
-                right: 0;
-                width: min(
-                    100%,
-                    520px
-                );
-                height: 100%;
-                background: #ffffff;
-                display: flex;
-                flex-direction: column;
-                box-shadow:
-                    -10px 0 30px
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.15
-                    );
-            }
-
-            .pingme-images-header {
-                height: 64px;
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                padding: 0 18px;
-                border-bottom:
-                    1px solid
-                    #e5e7eb;
-            }
-
-            .pingme-images-back {
-                width: 40px;
-                height: 40px;
-                border: 0;
-                border-radius: 10px;
-                background: transparent;
-                font-size: 28px;
-                cursor: pointer;
-            }
-
-            .pingme-images-title {
-                font-size: 18px;
-                font-weight: 600;
-            }
-
-            .pingme-images-content {
-                flex: 1;
-                overflow-y: auto;
-                padding: 24px;
-            }
-
-            .pingme-images-toolbar {
-                width: 100%;
-                display: flex;
-                justify-content: flex-end;
-                margin-bottom: 24px;
-            }
-
-            .pingme-images-generate {
-                border: 0;
-                border-radius: 12px;
-                padding: 12px 18px;
-                background: #111827;
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-            }
-
-            .pingme-images-generate:active {
-                transform: scale(0.98);
-            }
-
-            .pingme-images-gallery {
-                display: grid;
-                grid-template-columns:
-                    repeat(
-                        2,
-                        minmax(
-                            0,
-                            1fr
-                        )
-                    );
-                gap: 16px;
-            }
-
-            .pingme-images-card {
-                overflow: hidden;
-                border:
-                    1px solid
-                    #e5e7eb;
-                border-radius: 16px;
-                background: #ffffff;
-            }
-
-            .pingme-images-card-image-button {
-                width: 100%;
-                display: block;
-                padding: 0;
-                border: 0;
-                background: #f3f4f6;
-                cursor: pointer;
-            }
-
-            .pingme-images-card-image {
-                display: block;
-                width: 100%;
-                aspect-ratio: 1 / 1;
-                object-fit: cover;
-            }
-
-            .pingme-images-card-info {
-                padding: 12px;
-            }
-
-            .pingme-images-card-prompt {
-                font-size: 13px;
-                line-height: 1.4;
-                font-weight: 500;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-            }
-
-            .pingme-images-card-date {
-                margin-top: 6px;
-                color: #6b7280;
-                font-size: 11px;
-            }
-
-            .pingme-images-card-actions {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-                margin-top: 10px;
-            }
-
-            .pingme-images-card-actions button {
-                border:
-                    1px solid
-                    #e5e7eb;
-                border-radius: 8px;
-                padding: 6px 8px;
-                background: #ffffff;
-                font-size: 11px;
-                cursor: pointer;
-            }
-
-            .pingme-images-card-actions button.danger {
-                color: #dc2626;
-            }
-
-            .pingme-images-empty {
-                min-height: calc(
-                    100% - 80px
-                );
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
-
-            .pingme-images-empty-icon {
-                width: 64px;
-                height: 64px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 16px;
-                background: #f3f4f6;
-                margin-bottom: 16px;
-                font-size: 28px;
-            }
-
-            .pingme-images-empty-title {
-                font-size: 20px;
-                font-weight: 600;
-                margin-bottom: 8px;
-            }
-
-            .pingme-images-empty-text {
-                max-width: 280px;
-                font-size: 14px;
-                line-height: 1.5;
-                color: #6b7280;
-            }
-
             /* =================================================
-               GENERATE DIALOG
+               MAIN PANEL
                ================================================= */
 
-            #pingmeImagesGenerateDialog {
+            #pingmeImagesPanel {
+
                 position: fixed;
+
                 inset: 0;
-                z-index: 11000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 18px;
+
+                z-index: 10000;
+
+                display: none;
+
+                background:
+                    #f8fafc;
+
             }
 
-            .pingme-images-dialog-overlay {
-                position: absolute;
-                inset: 0;
+
+            #pingmeImagesPanel.active {
+
+                display: block;
+
+            }
+
+
+            .pingme-images-shell {
+
+                position: relative;
+
+                width: 100%;
+
+                height: 100%;
+
+                display: flex;
+
+                flex-direction: column;
+
+                overflow: hidden;
+
+                background:
+                    #f8fafc;
+
+            }
+
+
+            /* =================================================
+               HEADER
+               ================================================= */
+
+            .pingme-images-header {
+
+                flex:
+                    0 0 64px;
+
+                height: 64px;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                position: relative;
+
+                z-index: 3;
+
                 background:
                     rgba(
-                        0,
-                        0,
-                        0,
-                        0.55
+                        255,
+                        255,
+                        255,
+                        0.94
                     );
-            }
 
-            .pingme-images-dialog {
-                position: relative;
-                width: min(
-                    100%,
-                    520px
-                );
-                max-height: 90vh;
-                overflow-y: auto;
-                background: #ffffff;
-                border-radius: 18px;
-                box-shadow:
-                    0 20px 60px
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.25
-                    );
-            }
-
-            .pingme-images-dialog-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 18px 20px;
                 border-bottom:
                     1px solid
-                    #e5e7eb;
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.07
+                    );
+
+                backdrop-filter:
+                    blur(18px);
+
+                -webkit-backdrop-filter:
+                    blur(18px);
+
             }
 
-            .pingme-images-dialog-title {
-                font-size: 18px;
-                font-weight: 600;
-            }
 
-            .pingme-images-dialog-close {
-                width: 36px;
-                height: 36px;
+            .pingme-images-back {
+
+                position: absolute;
+
+                left: 14px;
+
+                top: 12px;
+
+                width: 40px;
+
+                height: 40px;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
                 border: 0;
-                border-radius: 10px;
-                background: transparent;
-                font-size: 26px;
+
+                border-radius: 50%;
+
+                background:
+                    #f1f5f9;
+
+                color:
+                    #0f172a;
+
+                font-size: 31px;
+
+                line-height: 1;
+
                 cursor: pointer;
+
+                transition:
+                    transform 0.18s ease,
+                    background 0.18s ease;
+
             }
 
-            .pingme-images-dialog-body {
-                padding: 20px;
+
+            .pingme-images-back:active {
+
+                transform:
+                    scale(0.92);
+
             }
 
-            .pingme-images-field-label {
-                display: block;
-                margin-bottom: 8px;
-                font-size: 14px;
-                font-weight: 600;
+
+            .pingme-images-back:hover {
+
+                background:
+                    #e2e8f0;
+
             }
 
-            .pingme-images-prompt {
-                width: 100%;
-                box-sizing: border-box;
-                resize: vertical;
+
+            .pingme-images-title {
+
+                font-size:
+                    18px;
+
+                font-weight:
+                    700;
+
+                color:
+                    #0f172a;
+
+                letter-spacing:
+                    -0.2px;
+
+            }
+
+
+            .pingme-images-header-space {
+
+                position:
+                    absolute;
+
+                right:
+                    14px;
+
+                width:
+                    40px;
+
+                height:
+                    40px;
+
+            }
+
+
+            /* =================================================
+               CONTENT
+               ================================================= */
+
+            .pingme-images-content {
+
+                flex:
+                    1;
+
+                overflow-y:
+                    auto;
+
+                overflow-x:
+                    hidden;
+
+                padding:
+                    18px
+                    16px
+                    150px;
+
+                -webkit-overflow-scrolling:
+                    touch;
+
+                scrollbar-width:
+                    thin;
+
+            }
+
+
+            /* =================================================
+               NOTICE
+               ================================================= */
+
+            .pingme-images-notice {
+
+                position:
+                    relative;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                gap:
+                    14px;
+
+                padding:
+                    17px;
+
+                margin-bottom:
+                    20px;
+
+                border-radius:
+                    20px;
+
+                overflow:
+                    hidden;
+
+                background:
+                    linear-gradient(
+                        135deg,
+                        #111827,
+                        #334155
+                    );
+
+                color:
+                    #ffffff;
+
+                box-shadow:
+                    0 12px 30px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.14
+                    );
+
+            }
+
+
+            .pingme-images-notice::after {
+
+                content:
+                    "";
+
+                position:
+                    absolute;
+
+                width:
+                    150px;
+
+                height:
+                    150px;
+
+                right:
+                    -55px;
+
+                top:
+                    -70px;
+
+                border-radius:
+                    50%;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.09
+                    );
+
+            }
+
+
+            .pingme-images-notice-icon {
+
+                flex:
+                    0 0 44px;
+
+                width:
+                    44px;
+
+                height:
+                    44px;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                border-radius:
+                    14px;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.13
+                    );
+
+                font-size:
+                    23px;
+
+            }
+
+
+            .pingme-images-notice-title {
+
+                font-size:
+                    15px;
+
+                font-weight:
+                    700;
+
+                margin-bottom:
+                    4px;
+
+            }
+
+
+            .pingme-images-notice-text {
+
+                max-width:
+                    420px;
+
+                font-size:
+                    12px;
+
+                line-height:
+                    1.5;
+
+                color:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.78
+                    );
+
+            }
+
+
+            /* =================================================
+               TABS
+               ================================================= */
+
+            .pingme-images-tabs {
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                gap:
+                    8px;
+
+                margin-bottom:
+                    15px;
+
+            }
+
+
+            .pingme-images-tab {
+
                 border:
-                    1px solid
-                    #d1d5db;
-                border-radius: 12px;
-                padding: 12px;
-                font-family: inherit;
-                font-size: 14px;
-                outline: none;
+                    0;
+
+                border-radius:
+                    999px;
+
+                padding:
+                    9px
+                    15px;
+
+                background:
+                    #e9eef5;
+
+                color:
+                    #64748b;
+
+                font-size:
+                    13px;
+
+                font-weight:
+                    600;
+
+                cursor:
+                    pointer;
+
+                transition:
+                    all 0.18s ease;
+
             }
 
-            .pingme-images-prompt:focus {
-                border-color: #111827;
+
+            .pingme-images-tab.active {
+
+                background:
+                    #0f172a;
+
+                color:
+                    #ffffff;
+
             }
 
-            .pingme-images-prompt-error {
-                min-height: 18px;
-                margin-top: 6px;
-                color: #dc2626;
-                font-size: 12px;
+
+            /* =================================================
+               DISCOVERY
+               ================================================= */
+
+            .pingme-discovery-label {
+
+                margin-bottom:
+                    10px;
+
+                color:
+                    #334155;
+
+                font-size:
+                    14px;
+
+                font-weight:
+                    700;
+
             }
 
-            .pingme-images-options {
-                display: grid;
+
+            .pingme-discovery-grid {
+
+                display:
+                    grid;
+
                 grid-template-columns:
                     repeat(
                         2,
@@ -2266,206 +3663,1411 @@
                             1fr
                         )
                     );
-                gap: 12px;
-                margin-top: 12px;
+
+                gap:
+                    12px;
+
+                margin-bottom:
+                    26px;
+
             }
 
-            .pingme-images-option label {
-                display: block;
-                margin-bottom: 6px;
-                font-size: 12px;
-                font-weight: 600;
-            }
 
-            .pingme-images-option select {
-                width: 100%;
-                box-sizing: border-box;
+            .pingme-discovery-card {
+
+                min-width:
+                    0;
+
+                padding:
+                    0;
+
+                overflow:
+                    hidden;
+
                 border:
-                    1px solid
-                    #d1d5db;
-                border-radius: 10px;
-                padding: 10px;
-                background: #ffffff;
-                font-size: 13px;
+                    0;
+
+                border-radius:
+                    17px;
+
+                background:
+                    #ffffff;
+
+                box-shadow:
+                    0 5px 18px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.08
+                    );
+
+                text-align:
+                    left;
+
+                cursor:
+                    pointer;
+
+                transition:
+                    transform 0.18s ease,
+                    box-shadow 0.18s ease;
+
             }
 
-            .pingme-images-generation-error {
-                margin-top: 14px;
-                color: #dc2626;
-                font-size: 13px;
-                line-height: 1.5;
+
+            .pingme-discovery-card:hover {
+
+                transform:
+                    translateY(-2px);
+
+                box-shadow:
+                    0 9px 24px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.13
+                    );
+
             }
 
-            .pingme-images-dialog-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 10px;
-                padding: 16px 20px;
-                border-top:
-                    1px solid
-                    #e5e7eb;
+
+            .pingme-discovery-card:active {
+
+                transform:
+                    scale(0.98);
+
             }
 
-            .pingme-images-cancel,
-            .pingme-images-generate-confirm {
-                border: 0;
-                border-radius: 10px;
-                padding: 10px 16px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
+
+            .pingme-discovery-image-wrap {
+
+                position:
+                    relative;
+
+                width:
+                    100%;
+
+                aspect-ratio:
+                    1 / 1;
+
+                overflow:
+                    hidden;
+
+                background:
+                    #e2e8f0;
+
             }
 
-            .pingme-images-cancel {
-                background: #f3f4f6;
-                color: #111827;
+
+            .pingme-discovery-image-wrap img {
+
+                display:
+                    block;
+
+                width:
+                    100%;
+
+                height:
+                    100%;
+
+                object-fit:
+                    cover;
+
+                transition:
+                    transform 0.35s ease;
+
             }
 
-            .pingme-images-generate-confirm {
-                background: #111827;
-                color: #ffffff;
+
+            .pingme-discovery-card:hover
+            .pingme-discovery-image-wrap img {
+
+                transform:
+                    scale(1.045);
+
             }
 
-            .pingme-images-cancel:disabled,
-            .pingme-images-generate-confirm:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
+
+            .pingme-discovery-overlay {
+
+                position:
+                    absolute;
+
+                inset:
+                    0;
+
+                display:
+                    flex;
+
+                align-items:
+                    flex-end;
+
+                justify-content:
+                    center;
+
+                padding:
+                    12px;
+
+                background:
+                    linear-gradient(
+                        transparent 45%,
+                        rgba(
+                            0,
+                            0,
+                            0,
+                            0.62
+                        )
+                    );
+
+                opacity:
+                    0;
+
+                transition:
+                    opacity 0.2s ease;
+
             }
 
-            .pingme-images-spinner {
-                display: inline-block;
-                width: 13px;
-                height: 13px;
-                margin-right: 7px;
-                vertical-align: -2px;
-                border:
-                    2px solid
+
+            .pingme-discovery-card:hover
+            .pingme-discovery-overlay {
+
+                opacity:
+                    1;
+
+            }
+
+
+            .pingme-discovery-overlay span {
+
+                padding:
+                    7px
+                    11px;
+
+                border-radius:
+                    999px;
+
+                background:
                     rgba(
                         255,
                         255,
                         255,
-                        0.4
+                        0.94
                     );
-                border-top-color:
-                    #ffffff;
-                border-radius: 50%;
-                animation:
-                    pingmeImagesSpin
-                    0.7s
-                    linear
-                    infinite;
-            }
 
-            @keyframes pingmeImagesSpin {
+                color:
+                    #0f172a;
 
-                to {
-                    transform:
-                        rotate(360deg);
-                }
+                font-size:
+                    11px;
+
+                font-weight:
+                    700;
 
             }
+
+
+            .pingme-discovery-card-title {
+
+                padding:
+                    11px
+                    12px
+                    13px;
+
+                color:
+                    #1e293b;
+
+                font-size:
+                    12px;
+
+                font-weight:
+                    650;
+
+            }
+
 
             /* =================================================
-               IMAGE PREVIEW
+               MY IMAGES
+               ================================================= */
+
+            .pingme-my-images-section {
+
+                margin-top:
+                    2px;
+
+            }
+
+
+            .pingme-section-heading {
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    space-between;
+
+                gap:
+                    12px;
+
+                margin-bottom:
+                    13px;
+
+            }
+
+
+            .pingme-section-title {
+
+                color:
+                    #0f172a;
+
+                font-size:
+                    16px;
+
+                font-weight:
+                    750;
+
+            }
+
+
+            .pingme-section-subtitle {
+
+                margin-top:
+                    3px;
+
+                color:
+                    #94a3b8;
+
+                font-size:
+                    11px;
+
+            }
+
+
+            .pingme-my-images-count {
+
+                min-width:
+                    28px;
+
+                height:
+                    28px;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                padding:
+                    0 8px;
+
+                border-radius:
+                    999px;
+
+                background:
+                    #e2e8f0;
+
+                color:
+                    #475569;
+
+                font-size:
+                    11px;
+
+                font-weight:
+                    700;
+
+            }
+
+
+            .pingme-images-gallery {
+
+                display:
+                    grid;
+
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(
+                            0,
+                            1fr
+                        )
+                    );
+
+                gap:
+                    12px;
+
+            }
+
+
+            .pingme-images-card {
+
+                min-width:
+                    0;
+
+                overflow:
+                    hidden;
+
+                border:
+                    1px solid
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.07
+                    );
+
+                border-radius:
+                    17px;
+
+                background:
+                    #ffffff;
+
+                box-shadow:
+                    0 5px 18px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.06
+                    );
+
+            }
+
+
+            .pingme-images-card-image-button {
+
+                display:
+                    block;
+
+                width:
+                    100%;
+
+                padding:
+                    0;
+
+                border:
+                    0;
+
+                background:
+                    #e2e8f0;
+
+                cursor:
+                    pointer;
+
+            }
+
+
+            .pingme-images-card-image {
+
+                display:
+                    block;
+
+                width:
+                    100%;
+
+                aspect-ratio:
+                    1 / 1;
+
+                object-fit:
+                    cover;
+
+            }
+
+
+            .pingme-images-card-info {
+
+                padding:
+                    10px;
+
+            }
+
+
+            .pingme-images-card-prompt {
+
+                display:
+                    -webkit-box;
+
+                overflow:
+                    hidden;
+
+                -webkit-line-clamp:
+                    2;
+
+                -webkit-box-orient:
+                    vertical;
+
+                min-height:
+                    30px;
+
+                color:
+                    #334155;
+
+                font-size:
+                    11px;
+
+                line-height:
+                    1.4;
+
+                font-weight:
+                    600;
+
+            }
+
+
+            .pingme-images-card-date {
+
+                margin-top:
+                    5px;
+
+                color:
+                    #94a3b8;
+
+                font-size:
+                    9px;
+
+            }
+
+
+            .pingme-images-card-actions {
+
+                display:
+                    flex;
+
+                flex-wrap:
+                    wrap;
+
+                gap:
+                    5px;
+
+                margin-top:
+                    9px;
+
+            }
+
+
+            .pingme-images-card-actions button {
+
+                flex:
+                    1 1 auto;
+
+                min-width:
+                    0;
+
+                border:
+                    1px solid
+                    #e2e8f0;
+
+                border-radius:
+                    8px;
+
+                padding:
+                    6px 7px;
+
+                background:
+                    #ffffff;
+
+                color:
+                    #475569;
+
+                font-size:
+                    9px;
+
+                font-weight:
+                    600;
+
+                cursor:
+                    pointer;
+
+            }
+
+
+            .pingme-images-card-actions button:hover {
+
+                background:
+                    #f8fafc;
+
+            }
+
+
+            .pingme-images-card-actions
+            button.danger {
+
+                color:
+                    #dc2626;
+
+            }
+
+
+            /* =================================================
+               EMPTY STATE
+               ================================================= */
+
+            .pingme-images-empty {
+
+                min-height:
+                    190px;
+
+                display:
+                    flex;
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                padding:
+                    24px;
+
+                border:
+                    1px dashed
+                    #cbd5e1;
+
+                border-radius:
+                    18px;
+
+                text-align:
+                    center;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.55
+                    );
+
+            }
+
+
+            .pingme-images-empty-icon {
+
+                width:
+                    52px;
+
+                height:
+                    52px;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                margin-bottom:
+                    11px;
+
+                border-radius:
+                    16px;
+
+                background:
+                    #e2e8f0;
+
+                color:
+                    #64748b;
+
+                font-size:
+                    22px;
+
+            }
+
+
+            .pingme-images-empty-title {
+
+                color:
+                    #334155;
+
+                font-size:
+                    15px;
+
+                font-weight:
+                    700;
+
+            }
+
+
+            .pingme-images-empty-text {
+
+                max-width:
+                    280px;
+
+                margin-top:
+                    5px;
+
+                color:
+                    #94a3b8;
+
+                font-size:
+                    11px;
+
+                line-height:
+                    1.5;
+
+            }
+
+
+            /* =================================================
+               COMPOSER
+               ================================================= */
+
+            .pingme-images-composer-wrap {
+
+                position:
+                    absolute;
+
+                left:
+                    0;
+
+                right:
+                    0;
+
+                bottom:
+                    0;
+
+                z-index:
+                    10;
+
+                padding:
+                    8px
+                    12px
+                    calc(
+                        10px +
+                        env(
+                            safe-area-inset-bottom
+                        )
+                    );
+
+                background:
+                    linear-gradient(
+                        to top,
+                        #f8fafc 65%,
+                        rgba(
+                            248,
+                            250,
+                            252,
+                            0
+                        )
+                    );
+
+            }
+
+
+            .pingme-images-composer {
+
+                display:
+                    flex;
+
+                align-items:
+                    flex-end;
+
+                gap:
+                    7px;
+
+                min-height:
+                    52px;
+
+                padding:
+                    6px;
+
+                border:
+                    1px solid
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.11
+                    );
+
+                border-radius:
+                    18px;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.96
+                    );
+
+                box-shadow:
+                    0 10px 30px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.12
+                    );
+
+                backdrop-filter:
+                    blur(16px);
+
+                -webkit-backdrop-filter:
+                    blur(16px);
+
+            }
+
+
+            .pingme-images-composer-input {
+
+                flex:
+                    1;
+
+                min-width:
+                    0;
+
+                max-height:
+                    120px;
+
+                height:
+                    36px;
+
+                resize:
+                    none;
+
+                border:
+                    0;
+
+                outline:
+                    0;
+
+                padding:
+                    9px
+                    2px;
+
+                background:
+                    transparent;
+
+                color:
+                    #0f172a;
+
+                font-family:
+                    inherit;
+
+                font-size:
+                    14px;
+
+                line-height:
+                    1.35;
+
+            }
+
+
+            .pingme-images-composer-input::placeholder {
+
+                color:
+                    #94a3b8;
+
+            }
+
+
+            .pingme-images-composer-button,
+            .pingme-images-send {
+
+                flex:
+                    0 0 36px;
+
+                width:
+                    36px;
+
+                height:
+                    36px;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                border:
+                    0;
+
+                border-radius:
+                    50%;
+
+                cursor:
+                    pointer;
+
+                transition:
+                    transform 0.16s ease,
+                    background 0.16s ease;
+
+            }
+
+
+            .pingme-images-composer-button {
+
+                background:
+                    #f1f5f9;
+
+                color:
+                    #475569;
+
+                font-size:
+                    19px;
+
+            }
+
+
+            .pingme-images-composer-button:hover {
+
+                background:
+                    #e2e8f0;
+
+            }
+
+
+            .pingme-images-composer-button:active,
+            .pingme-images-send:active {
+
+                transform:
+                    scale(0.91);
+
+            }
+
+
+            .pingme-images-composer-button.mic {
+
+                font-size:
+                    19px;
+
+            }
+
+
+            .pingme-images-composer-button.mic.recording {
+
+                background:
+                    #fee2e2;
+
+                color:
+                    #dc2626;
+
+                animation:
+                    pingmeMicPulse
+                    1s
+                    ease-in-out
+                    infinite;
+
+            }
+
+
+            .pingme-images-send {
+
+                background:
+                    #0f172a;
+
+                color:
+                    #ffffff;
+
+                font-size:
+                    20px;
+
+                font-weight:
+                    700;
+
+            }
+
+
+            .pingme-images-send:hover {
+
+                background:
+                    #1e293b;
+
+            }
+
+
+            .pingme-images-send:disabled {
+
+                opacity:
+                    0.72;
+
+                cursor:
+                    not-allowed;
+
+            }
+
+
+            .pingme-images-send.loading {
+
+                cursor:
+                    wait;
+
+            }
+
+
+            .pingme-images-composer-hint {
+
+                min-height:
+                    14px;
+
+                margin-top:
+                    4px;
+
+                text-align:
+                    center;
+
+                color:
+                    #94a3b8;
+
+                font-size:
+                    9px;
+
+                transition:
+                    color 0.2s ease;
+
+            }
+
+
+            .pingme-images-composer-hint.message {
+
+                color:
+                    #475569;
+
+            }
+
+
+            /* =================================================
+               REFERENCE IMAGE
+               ================================================= */
+
+            .pingme-images-reference-preview {
+
+                display:
+                    none;
+
+                margin:
+                    0 auto 7px;
+
+                max-width:
+                    100%;
+
+            }
+
+
+            .pingme-images-reference-preview.active {
+
+                display:
+                    block;
+
+            }
+
+
+            .pingme-reference-card {
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                gap:
+                    9px;
+
+                max-width:
+                    280px;
+
+                padding:
+                    6px 8px;
+
+                border:
+                    1px solid
+                    #e2e8f0;
+
+                border-radius:
+                    13px;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.96
+                    );
+
+                box-shadow:
+                    0 5px 18px
+                    rgba(
+                        15,
+                        23,
+                        42,
+                        0.08
+                    );
+
+            }
+
+
+            .pingme-reference-card img {
+
+                width:
+                    38px;
+
+                height:
+                    38px;
+
+                flex:
+                    0 0 38px;
+
+                object-fit:
+                    cover;
+
+                border-radius:
+                    8px;
+
+            }
+
+
+            .pingme-reference-info {
+
+                min-width:
+                    0;
+
+                flex:
+                    1;
+
+                color:
+                    #334155;
+
+                font-size:
+                    10px;
+
+                font-weight:
+                    700;
+
+            }
+
+
+            .pingme-reference-info small {
+
+                display:
+                    block;
+
+                overflow:
+                    hidden;
+
+                margin-top:
+                    2px;
+
+                color:
+                    #94a3b8;
+
+                font-size:
+                    9px;
+
+                font-weight:
+                    400;
+
+                text-overflow:
+                    ellipsis;
+
+                white-space:
+                    nowrap;
+
+            }
+
+
+            .pingme-reference-card button {
+
+                flex:
+                    0 0 27px;
+
+                width:
+                    27px;
+
+                height:
+                    27px;
+
+                border:
+                    0;
+
+                border-radius:
+                    50%;
+
+                background:
+                    #f1f5f9;
+
+                color:
+                    #64748b;
+
+                font-size:
+                    18px;
+
+                line-height:
+                    1;
+
+                cursor:
+                    pointer;
+
+            }
+
+
+            /* =================================================
+               PREVIEW
                ================================================= */
 
             #pingmeImagesPreview {
-                position: fixed;
-                inset: 0;
-                z-index: 12000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
+
+                position:
+                    fixed;
+
+                inset:
+                    0;
+
+                z-index:
+                    12000;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                padding:
+                    18px;
+
             }
 
+
             .pingme-images-preview-overlay {
-                position: absolute;
-                inset: 0;
+
+                position:
+                    absolute;
+
+                inset:
+                    0;
+
                 background:
+                    rgba(
+                        2,
+                        6,
+                        23,
+                        0.91
+                    );
+
+                backdrop-filter:
+                    blur(8px);
+
+            }
+
+
+            .pingme-images-preview-panel {
+
+                position:
+                    relative;
+
+                z-index:
+                    2;
+
+                width:
+                    min(
+                        100%,
+                        900px
+                    );
+
+                max-height:
+                    94vh;
+
+                display:
+                    flex;
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+            }
+
+
+            .pingme-images-preview-image-wrap {
+
+                max-width:
+                    100%;
+
+                max-height:
+                    78vh;
+
+                overflow:
+                    hidden;
+
+                border-radius:
+                    16px;
+
+                background:
+                    #0f172a;
+
+                box-shadow:
+                    0 25px 70px
                     rgba(
                         0,
                         0,
                         0,
-                        0.85
+                        0.4
                     );
+
             }
 
-            .pingme-images-preview-panel {
-                position: relative;
-                width: min(
-                    100%,
-                    900px
-                );
-                max-height: 95vh;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .pingme-images-preview-image-wrap {
-                max-width: 100%;
-                max-height: 75vh;
-                overflow: hidden;
-                border-radius: 12px;
-            }
 
             .pingme-images-preview-image-wrap img {
-                display: block;
-                max-width: 100%;
-                max-height: 75vh;
-                object-fit: contain;
+
+                display:
+                    block;
+
+                max-width:
+                    100%;
+
+                max-height:
+                    78vh;
+
+                object-fit:
+                    contain;
+
             }
+
 
             .pingme-images-preview-close,
             .pingme-images-preview-prev,
             .pingme-images-preview-next {
-                position: absolute;
-                z-index: 2;
-                width: 42px;
-                height: 42px;
-                border: 0;
-                border-radius: 50%;
+
+                position:
+                    absolute;
+
+                z-index:
+                    4;
+
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
+
+                width:
+                    44px;
+
+                height:
+                    44px;
+
+                border:
+                    0;
+
+                border-radius:
+                    50%;
+
                 background:
                     rgba(
                         255,
                         255,
                         255,
-                        0.9
+                        0.94
                     );
-                color: #111827;
-                font-size: 28px;
-                cursor: pointer;
+
+                color:
+                    #0f172a;
+
+                cursor:
+                    pointer;
+
+                box-shadow:
+                    0 6px 20px
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.2
+                    );
+
             }
+
 
             .pingme-images-preview-close {
-                top: -10px;
-                right: -10px;
+
+                top:
+                    -12px;
+
+                right:
+                    -12px;
+
+                font-size:
+                    27px;
+
             }
+
 
             .pingme-images-preview-prev {
-                left: -55px;
-                top: 50%;
+
+                left:
+                    -58px;
+
+                top:
+                    50%;
+
                 transform:
                     translateY(-50%);
+
+                font-size:
+                    31px;
+
             }
+
 
             .pingme-images-preview-next {
-                right: -55px;
-                top: 50%;
+
+                right:
+                    -58px;
+
+                top:
+                    50%;
+
                 transform:
                     translateY(-50%);
+
+                font-size:
+                    31px;
+
             }
 
+
             .pingme-images-preview-info {
-                width: min(
-                    100%,
-                    700px
-                );
-                margin-top: 14px;
-                padding: 12px 16px;
-                border-radius: 12px;
+
+                width:
+                    min(
+                        100%,
+                        720px
+                    );
+
+                box-sizing:
+                    border-box;
+
+                margin-top:
+                    12px;
+
+                padding:
+                    12px 15px;
+
+                border-radius:
+                    13px;
+
                 background:
                     rgba(
                         255,
@@ -2473,19 +5075,111 @@
                         255,
                         0.95
                     );
+
             }
+
 
             .pingme-images-preview-prompt {
-                font-size: 13px;
-                line-height: 1.5;
-                font-weight: 500;
+
+                color:
+                    #1e293b;
+
+                font-size:
+                    12px;
+
+                line-height:
+                    1.5;
+
+                font-weight:
+                    600;
+
             }
 
+
             .pingme-images-preview-meta {
-                margin-top: 5px;
-                color: #6b7280;
-                font-size: 11px;
+
+                margin-top:
+                    4px;
+
+                color:
+                    #64748b;
+
+                font-size:
+                    9px;
+
             }
+
+
+            /* =================================================
+               SPINNER
+               ================================================= */
+
+            .pingme-images-spinner {
+
+                display:
+                    block;
+
+                width:
+                    15px;
+
+                height:
+                    15px;
+
+                border:
+                    2px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.35
+                    );
+
+                border-top-color:
+                    #ffffff;
+
+                border-radius:
+                    50%;
+
+                animation:
+                    pingmeImagesSpin
+                    0.7s
+                    linear
+                    infinite;
+
+            }
+
+
+            @keyframes pingmeImagesSpin {
+
+                to {
+
+                    transform:
+                        rotate(360deg);
+
+                }
+
+            }
+
+
+            @keyframes pingmeMicPulse {
+
+                0%,
+                100% {
+
+                    transform:
+                        scale(1);
+
+                }
+
+                50% {
+
+                    transform:
+                        scale(1.06);
+
+                }
+
+            }
+
 
             /* =================================================
                MOBILE
@@ -2495,54 +5189,159 @@
                 max-width: 600px
             ) {
 
-                .pingme-images-panel {
-                    width: 100%;
-                }
-
                 .pingme-images-content {
-                    padding: 18px;
+
+                    padding:
+                        15px
+                        12px
+                        150px;
+
                 }
 
-                .pingme-images-toolbar {
-                    justify-content: stretch;
+
+                .pingme-images-notice {
+
+                    padding:
+                        15px;
+
+                    border-radius:
+                        18px;
+
                 }
 
-                .pingme-images-generate {
-                    width: 100%;
-                }
 
+                .pingme-discovery-grid,
                 .pingme-images-gallery {
+
                     grid-template-columns:
-                        1fr;
+                        repeat(
+                            2,
+                            minmax(
+                                0,
+                                1fr
+                            )
+                        );
+
+                    gap:
+                        9px;
+
                 }
 
-                .pingme-images-options {
-                    grid-template-columns:
-                        1fr;
+
+                .pingme-images-card-actions {
+
+                    gap:
+                        4px;
+
                 }
+
+
+                .pingme-images-card-actions button {
+
+                    padding:
+                        6px 5px;
+
+                    font-size:
+                        8px;
+
+                }
+
 
                 .pingme-images-preview-prev {
-                    left: 8px;
+
+                    left:
+                        7px;
+
                 }
+
 
                 .pingme-images-preview-next {
-                    right: 8px;
+
+                    right:
+                        7px;
+
                 }
 
+
                 .pingme-images-preview-close {
-                    top: 8px;
-                    right: 8px;
+
+                    top:
+                        7px;
+
+                    right:
+                        7px;
+
+                }
+
+            }
+
+
+            @media (
+                min-width: 700px
+            ) {
+
+                .pingme-images-content {
+
+                    width:
+                        min(
+                            100%,
+                            760px
+                        );
+
+                    margin:
+                        0 auto;
+
+                    box-sizing:
+                        border-box;
+
+                }
+
+
+                .pingme-images-composer-wrap {
+
+                    left:
+                        50%;
+
+                    right:
+                        auto;
+
+                    width:
+                        min(
+                            calc(
+                                100% -
+                                24px
+                            ),
+                            760px
+                        );
+
+                    transform:
+                        translateX(-50%);
+
+                    background:
+                        linear-gradient(
+                            to top,
+                            #f8fafc 70%,
+                            rgba(
+                                248,
+                                250,
+                                252,
+                                0
+                            )
+                        );
+
                 }
 
             }
 
         `;
 
+
         document.head.appendChild(
             style
         );
 
     }
+
 
     /* =========================================================
        INITIALIZE
@@ -2551,6 +5350,7 @@
     addImagesStyles();
 
     initImages();
+
 
     /* =========================================================
        PUBLIC API
@@ -2568,5 +5368,6 @@
             closeImages
 
     };
+
 
 })();
