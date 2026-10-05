@@ -857,73 +857,77 @@
     /* =========================================================
        10. HANDLE MENU ACTION
        ========================================================= */
+  function handleMenuAction(action) {
 
-    function handleMenuAction(action) {
+    switch (action) {
 
-        switch (action) {
+        case "images":
 
-            case "images":
+            if (
+                typeof window.PingMeImages !==
+                "undefined" &&
+                typeof window.PingMeImages.open ===
+                "function"
+            ) {
+                window.PingMeImages.open();
+            }
 
-                showMenuNotice(
-                    "Images"
-                );
-
-                break;
-
-
-            case "library":
-
-                showMenuNotice(
-                    "Library"
-                );
-
-                break;
+            break;
 
 
-            case "projects":
+        case "library":
 
-                showMenuNotice(
-                    "Projects"
-                );
+            showMenuNotice(
+                "Library"
+            );
 
-                break;
-
-
-            case "remote":
-
-                showMenuNotice(
-                    "Remote"
-                );
-
-                break;
+            break;
 
 
-            case "scheduled":
+        case "projects":
 
-                showMenuNotice(
-                    "Scheduled"
-                );
+            showMenuNotice(
+                "Projects"
+            );
 
-                break;
-
-
-            case "plugins":
-
-                showMenuNotice(
-                    "Plugins"
-                );
-
-                break;
+            break;
 
 
-            default:
+        case "remote":
 
-                break;
+            showMenuNotice(
+                "Remote"
+            );
 
-        }
+            break;
+
+
+        case "scheduled":
+
+            showMenuNotice(
+                "Scheduled"
+            );
+
+            break;
+
+
+        case "plugins":
+
+            showMenuNotice(
+                "Plugins"
+            );
+
+            break;
+
+
+        default:
+
+            break;
 
     }
 
+}
+          
 
     /* =========================================================
        11. MENU NOTICE
