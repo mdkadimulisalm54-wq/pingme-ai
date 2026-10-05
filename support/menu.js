@@ -861,18 +861,20 @@
 
     switch (action) {
 
-        case "images":
+            case "images":
 
-            if (
-                typeof window.PingMeImages !==
-                "undefined" &&
-                typeof window.PingMeImages.open ===
-                "function"
-            ) {
-                window.PingMeImages.open();
-            }
+    closeMenu();
 
-            break;
+    if (
+        typeof window.PingMeImages !==
+        "undefined" &&
+        typeof window.PingMeImages.open ===
+        "function"
+    ) {
+        window.PingMeImages.open();
+    }
+
+    break;
 
 
         case "library":
