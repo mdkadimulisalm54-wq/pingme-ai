@@ -44,6 +44,94 @@ export default async function handler(req, res) {
 
 
     // =====================================================
+    // IMAGE REQUEST
+    // =====================================================
+
+    if (
+      req.body &&
+      req.body.imageGeneration === true
+    ) {
+
+      const {
+        prompt,
+        model = "gpt-image-2",
+        size = "1024x1024",
+        quality = "auto",
+        n = 1
+      } = req.body;
+
+
+      if (!prompt) {
+
+        return res.status(400).json({
+          error: "Image prompt is required"
+        });
+
+      }
+
+
+      const imageResponse = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+
+            "Authorization":
+              `Bearer ${OPENAI_API_KEY}`
+          },
+
+          body: JSON.stringify({
+
+            model,
+            prompt,
+            size,
+            quality,
+            n
+
+          })
+
+        }
+      );
+
+
+      const imageData =
+        await imageResponse.json();
+
+
+      if (!imageResponse.ok) {
+
+        return res.status(
+          imageResponse.status
+        ).json(imageData);
+
+      }
+
+
+      return res.status(200).json({
+
+        mode: "image",
+
+        images:
+          (imageData.data || []).map(
+            function (item) {
+
+              return {
+                b64_json:
+                  item.b64_json || null
+              };
+
+            }
+          )
+
+      });
+
+    }
+
+
+    // =====================================================
     // TEXT REQUEST
     // =====================================================
 
@@ -62,6 +150,7 @@ export default async function handler(req, res) {
     const response = await fetch(
       "https://api.openai.com/v1/responses",
       {
+
         method: "POST",
 
         headers: {
@@ -83,7 +172,8 @@ export default async function handler(req, res) {
     );
 
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
 
     if (!response.ok) {
