@@ -1006,6 +1006,7 @@ let searchInput = null;
                         typeof item === "string"
                             ? item
                             : (
+                                item.text ||
                                 item.title ||
                                 item.name ||
                                 item.message ||
