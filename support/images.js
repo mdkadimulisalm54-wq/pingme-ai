@@ -31,6 +31,7 @@
         imagesPanel.id =
             "pingmeImagesPanel";
 
+
         imagesPanel.innerHTML = `
 
             <div class="pingme-images-overlay"></div>
@@ -43,9 +44,11 @@
                         type="button"
                         class="pingme-images-back"
                         id="pingmeImagesBack"
+                        aria-label="Close Images"
                     >
                         ×
                     </button>
+
 
                     <div class="pingme-images-title">
                         Images
@@ -56,21 +59,38 @@
 
                 <div class="pingme-images-content">
 
+
+                    <div class="pingme-images-toolbar">
+
+                        <button
+                            type="button"
+                            class="pingme-images-generate"
+                            id="pingmeImagesGenerate"
+                        >
+                            Generate Image
+                        </button>
+
+                    </div>
+
+
                     <div class="pingme-images-empty">
 
                         <div class="pingme-images-empty-icon">
-                            Images
+                            🖼️
                         </div>
 
+
                         <div class="pingme-images-empty-title">
-                            Images
+                            No images yet
                         </div>
+
 
                         <div class="pingme-images-empty-text">
                             Your generated images will appear here.
                         </div>
 
                     </div>
+
 
                 </div>
 
@@ -299,8 +319,35 @@
             }
 
 
+            .pingme-images-toolbar {
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                margin-bottom: 24px;
+            }
+
+
+            .pingme-images-generate {
+                border: 0;
+                border-radius: 12px;
+                padding: 12px 18px;
+                background: #111827;
+                color: #ffffff;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+
+            .pingme-images-generate:active {
+                transform: scale(0.98);
+            }
+
+
             .pingme-images-empty {
-                min-height: 100%;
+                min-height: calc(
+                    100% - 80px
+                );
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -318,7 +365,7 @@
                 border-radius: 16px;
                 background: #f3f4f6;
                 margin-bottom: 16px;
-                font-size: 12px;
+                font-size: 28px;
             }
 
 
@@ -342,6 +389,21 @@
             ) {
 
                 .pingme-images-panel {
+                    width: 100%;
+                }
+
+
+                .pingme-images-content {
+                    padding: 18px;
+                }
+
+
+                .pingme-images-toolbar {
+                    justify-content: stretch;
+                }
+
+
+                .pingme-images-generate {
                     width: 100%;
                 }
 
