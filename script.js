@@ -137,7 +137,16 @@ function saveConversation(role, text) {
     role: role,
     text: String(text).trim()
   });
+     if (
+    typeof addChatToHistory === "function"
+  ) {
+    addChatToHistory({
+      role: role,
+      text: String(text).trim()
+    });
+  }
 
+  
   // Keep memory from becoming unnecessarily large
   while (
     pingMeConversation.length >
