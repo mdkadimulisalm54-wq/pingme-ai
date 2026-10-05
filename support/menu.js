@@ -1143,7 +1143,7 @@
             saveChatHistory(
                 history
             );
-
+          loadHistory();
 
         if (
             typeof window.PingMeMenu !==
