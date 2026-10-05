@@ -875,32 +875,116 @@
        IMAGE GENERATION API CONNECTOR
        ========================================================= */
 
-    async function requestImageGeneration(
+       async function requestImageGeneration(
         options
     ) {
 
-        /*
-         * Backend is currently not connected.
-         *
-         * IMPORTANT:
-         * No fake image is returned here.
-         *
-         * Later the real backend request will be
-         * connected from this single function.
-         */
+        try {
 
-        void options;
+            const response =
+                await fetch(
+                    "/api/images",
+                    {
+                        method: "POST",
 
-        return {
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
 
-            success: false,
+                        body:
+                            JSON.stringify({
 
-            images: [],
+                                prompt:
+                                    options.prompt,
 
-            error:
-                "Image generation is not connected yet. Please connect the backend image API first."
+                                model:
+                                    "flux",
 
-        };
+                                width:
+                                    1024,
+
+                                height:
+                                    1024
+
+                            })
+                    }
+                );
+
+            if (!response.ok) {
+
+                let errorMessage =
+                    "Image generation failed.";
+
+                try {
+
+                    const errorData =
+                        await response.json();
+
+                    if (
+                        errorData &&
+                        errorData.error
+                    ) {
+
+                        errorMessage =
+                            errorData.error;
+
+                    }
+
+                } catch (error) {
+
+                    /* Ignore JSON parsing error */
+
+                }
+
+                return {
+
+                    success: false,
+
+                    images: [],
+
+                    error:
+                        errorMessage
+
+                };
+
+            }
+
+            const imageBlob =
+                await response.blob();
+
+            const imageUrl =
+                URL.createObjectURL(
+                    imageBlob
+                );
+
+            return {
+
+                success: true,
+
+                images: [
+                    imageUrl
+                ],
+
+                error: null
+
+            };
+
+        } catch (error) {
+
+            return {
+
+                success: false,
+
+                images: [],
+
+                error:
+                    error.message ||
+                    "Image generation failed."
+
+            };
+
+        }
 
     }
 
