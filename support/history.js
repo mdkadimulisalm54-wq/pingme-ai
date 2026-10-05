@@ -1,61 +1,158 @@
+// ==========================================================
 // PingMe AI — History Support
+// ==========================================================
 
 const PINGME_HISTORY_KEY = "pingme_chat_history";
 
-// Get all saved chat history
+
+// ==========================================================
+// GET HISTORY
+// ==========================================================
+
 function getChatHistory() {
-    try {
-        const history = localStorage.getItem(PINGME_HISTORY_KEY);
-        return history ? JSON.parse(history) : [];
-    } catch (error) {
-        console.error("Failed to load chat history:", error);
-        return [];
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        PINGME_HISTORY_KEY
+      );
+
+    if (!saved) {
+      return [];
     }
+
+    const history =
+      JSON.parse(saved);
+
+    return Array.isArray(history)
+      ? history
+      : [];
+
+  } catch (error) {
+
+    console.error(
+      "PingMe History Load Error:",
+      error
+    );
+
+    return [];
+
+  }
+
 }
 
-// Save chat history
+
+// ==========================================================
+// SAVE HISTORY
+// ==========================================================
+
 function saveChatHistory(history) {
-    try {
-        localStorage.setItem(
-            PINGME_HISTORY_KEY,
-            JSON.stringify(history)
-        );
-    } catch (error) {
-        console.error("Failed to save chat history:", error);
-    }
+
+  try {
+
+    localStorage.setItem(
+      PINGME_HISTORY_KEY,
+      JSON.stringify(history)
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "PingMe History Save Error:",
+      error
+    );
+
+    return false;
+
+  }
+
 }
 
-// Add a new chat to history
+
+// ==========================================================
+// ADD CHAT TO HISTORY
+// ==========================================================
+
 function addChatToHistory(chat) {
-    const history = getChatHistory();
 
-    history.push({
-        ...chat,
-        timestamp: Date.now()
-    });
+  if (!chat) {
+    return false;
+  }
 
-    saveChatHistory(history);
+  const history =
+    getChatHistory();
+
+  history.push({
+
+    ...chat,
+
+    timestamp:
+      Date.now()
+
+  });
+
+  return saveChatHistory(
+    history
+  );
+
 }
 
-// Remove all saved chat history
+
+// ==========================================================
+// CLEAR HISTORY
+// ==========================================================
+
 function clearChatHistory() {
-    try {
-        localStorage.removeItem(PINGME_HISTORY_KEY);
-        console.log("Chat History Cleared");
-    } catch (error) {
-        console.error("Failed to clear chat history:", error);
-    }
+
+  try {
+
+    localStorage.removeItem(
+      PINGME_HISTORY_KEY
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "PingMe History Clear Error:",
+      error
+    );
+
+    return false;
+
+  }
+
 }
 
-// Get the latest chat
+
+// ==========================================================
+// GET LATEST CHAT
+// ==========================================================
+
 function getLatestChat() {
-    const history = getChatHistory();
 
-    if (history.length === 0) {
-        return null;
-    }
+  const history =
+    getChatHistory();
 
-    return history[history.length - 1];
+  if (!history.length) {
+    return null;
+  }
+
+  return history[
+    history.length - 1
+  ];
+
 }
 
-console.log("History Support Connected");
+
+// ==========================================================
+// HISTORY SUPPORT READY
+// ==========================================================
+
+console.log(
+  "PingMe AI — History Support Connected"
+);
