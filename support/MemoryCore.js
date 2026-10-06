@@ -1,23 +1,16 @@
 // PingMe AI — MemoryCore
 // ============================================================
 // Complete Memory System
-// Inspired by the ChatGPT-style Memory experience.
 //
-// Responsibilities:
-// - Save / read / update / delete memories
-// - Memory enabled / disabled state
-// - Memory Summary screen
-// - About Memory menu
-// - Refresh Summary
-// - Delete and turn off memory
-// - "Memory updated" inline indicator
-// - Custom standing/open-book memory icon
-// - AI-facing public Memory API
-// - Local persistent storage
+// DESIGN:
+// - Memory updated is a separate system row.
+// - It appears ABOVE the related AI message.
+// - It is NOT appended inside the AI message.
+// - Clicking it opens Memory Summary.
+// - Memory Summary shows exactly what was saved.
+// - All Memory logic lives in this file.
 //
-// Architecture:
-// All Memory feature logic lives in this file.
-// HTML should only load/connect this Support file.
+// HTML only needs to load this Support file.
 // ============================================================
 
 (function () {
@@ -28,9 +21,15 @@
     // CONFIG
     // ========================================================
 
-    const STORAGE_KEY = "pingme_ai_memory_core_v1";
-    const MEMORY_EVENT = "pingme:memory-updated";
-    const MEMORY_OPEN_EVENT = "pingme:memory-open";
+    const STORAGE_KEY =
+        "pingme_ai_memory_core_v2";
+
+    const MEMORY_EVENT =
+        "pingme:memory-updated";
+
+    const MEMORY_OPEN_EVENT =
+        "pingme:memory-open";
+
     const MEMORY_MAX_ITEMS = 500;
 
     let memoryState = {
@@ -44,8 +43,12 @@
     let aboutMenu = null;
     let isInitialized = false;
 
+    // Memory waiting for the next AI message.
+    let pendingMemoryForAssistant = null;
+
+
     // ========================================================
-    // SAFE ID
+    // ID
     // ========================================================
 
     function createMemoryId() {
@@ -58,8 +61,8 @@
                 .toString(36)
                 .slice(2, 10)
         );
-
     }
+
 
     // ========================================================
     // DATE
@@ -68,26 +71,40 @@
     function getNowISO() {
 
         return new Date().toISOString();
-
     }
 
+
     // ========================================================
-    // ESCAPE HTML
+    // HTML ESCAPE
     // ========================================================
 
     function escapeHTML(value) {
 
-        return String(value == null ? "" : value)
+        return String(
+            value == null ? "" : value
+        )
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
-
     }
 
+
     // ========================================================
-    // LOAD MEMORY
+    // NORMALIZE TEXT
+    // ========================================================
+
+    function normalizeMemoryText(text) {
+
+        return String(text || "")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+
+    // ========================================================
+    // LOAD STATE
     // ========================================================
 
     function loadMemoryState() {
@@ -95,7 +112,9 @@
         try {
 
             const raw =
-                localStorage.getItem(STORAGE_KEY);
+                localStorage.getItem(
+                    STORAGE_KEY
+                );
 
             if (!raw) {
 
@@ -108,18 +127,23 @@
                 return memoryState;
             }
 
-            const parsed = JSON.parse(raw);
+            const parsed =
+                JSON.parse(raw);
 
             memoryState = {
+
                 enabled:
                     parsed &&
-                    typeof parsed.enabled === "boolean"
+                    typeof parsed.enabled ===
+                        "boolean"
                         ? parsed.enabled
                         : true,
 
                 memories:
                     parsed &&
-                    Array.isArray(parsed.memories)
+                    Array.isArray(
+                        parsed.memories
+                    )
                         ? parsed.memories
                         : [],
 
@@ -149,8 +173,9 @@
         }
     }
 
+
     // ========================================================
-    // SAVE MEMORY STATE
+    // SAVE STATE
     // ========================================================
 
     function persistMemoryState() {
@@ -159,7 +184,9 @@
 
             localStorage.setItem(
                 STORAGE_KEY,
-                JSON.stringify(memoryState)
+                JSON.stringify(
+                    memoryState
+                )
             );
 
             return true;
@@ -175,45 +202,42 @@
         }
     }
 
-    // ========================================================
-    // NORMALIZE MEMORY TEXT
-    // ========================================================
-
-    function normalizeMemoryText(text) {
-
-        return String(text || "")
-            .replace(/\s+/g, " ")
-            .trim();
-
-    }
 
     // ========================================================
-    // CHECK DUPLICATE
+    // FIND DUPLICATE
     // ========================================================
 
     function findExistingMemory(text) {
 
         const normalized =
-            normalizeMemoryText(text)
-                .toLowerCase();
+            normalizeMemoryText(
+                text
+            ).toLowerCase();
 
-        return memoryState.memories.find(
-            function (memory) {
+        return (
+            memoryState.memories.find(
+                function (memory) {
 
-                return normalizeMemoryText(
-                    memory.text
-                ).toLowerCase() === normalized;
-
-            }
-        ) || null;
-
+                    return (
+                        normalizeMemoryText(
+                            memory.text
+                        ).toLowerCase() ===
+                        normalized
+                    );
+                }
+            ) || null
+        );
     }
+
 
     // ========================================================
     // SAVE MEMORY
     // ========================================================
 
-    function saveMemory(text, options) {
+    function saveMemory(
+        text,
+        options
+    ) {
 
         options = options || {};
 
@@ -227,7 +251,9 @@
         }
 
         const cleanText =
-            normalizeMemoryText(text);
+            normalizeMemoryText(
+                text
+            );
 
         if (!cleanText) {
 
@@ -239,12 +265,23 @@
         }
 
         const existing =
-            findExistingMemory(cleanText);
+            findExistingMemory(
+                cleanText
+            );
+
+        // ----------------------------------------------------
+        // UPDATE EXISTING MEMORY
+        // ----------------------------------------------------
 
         if (existing) {
 
             existing.updatedAt =
                 getNowISO();
+
+            if (options.source) {
+                existing.source =
+                    options.source;
+            }
 
             memoryState.updatedAt =
                 existing.updatedAt;
@@ -263,17 +300,27 @@
             };
         }
 
+
+        // ----------------------------------------------------
+        // CREATE NEW MEMORY
+        // ----------------------------------------------------
+
+        const now =
+            getNowISO();
+
         const memory = {
 
-            id: createMemoryId(),
+            id:
+                createMemoryId(),
 
-            text: cleanText,
+            text:
+                cleanText,
 
             createdAt:
-                getNowISO(),
+                now,
 
             updatedAt:
-                getNowISO(),
+                now,
 
             source:
                 options.source ||
@@ -284,13 +331,16 @@
                 "general",
 
             pinned:
-                Boolean(options.pinned)
-
+                Boolean(
+                    options.pinned
+                )
         };
+
 
         memoryState.memories.unshift(
             memory
         );
+
 
         if (
             memoryState.memories.length >
@@ -304,15 +354,19 @@
                 );
         }
 
+
         memoryState.updatedAt =
-            memory.updatedAt;
+            now;
+
 
         persistMemoryState();
+
 
         emitMemoryUpdated(
             memory,
             false
         );
+
 
         return {
             success: true,
@@ -321,11 +375,15 @@
         };
     }
 
+
     // ========================================================
     // UPDATE MEMORY
     // ========================================================
 
-    function updateMemory(id, text) {
+    function updateMemory(
+        id,
+        text
+    ) {
 
         if (!memoryState.enabled) {
 
@@ -340,7 +398,6 @@
                 function (item) {
 
                     return item.id === id;
-
                 }
             );
 
@@ -353,7 +410,9 @@
         }
 
         const cleanText =
-            normalizeMemoryText(text);
+            normalizeMemoryText(
+                text
+            );
 
         if (!cleanText) {
 
@@ -363,7 +422,8 @@
             };
         }
 
-        memory.text = cleanText;
+        memory.text =
+            cleanText;
 
         memory.updatedAt =
             getNowISO();
@@ -384,22 +444,24 @@
         };
     }
 
+
     // ========================================================
     // GET MEMORIES
     // ========================================================
 
     function getMemories() {
 
-        return memoryState.memories
-            .map(function (memory) {
+        return memoryState.memories.map(
+            function (memory) {
 
                 return Object.assign(
                     {},
                     memory
                 );
-
-            });
+            }
+        );
     }
+
 
     // ========================================================
     // GET ONE MEMORY
@@ -412,11 +474,11 @@
                 function (memory) {
 
                     return memory.id === id;
-
                 }
             ) || null
         );
     }
+
 
     // ========================================================
     // DELETE MEMORY
@@ -432,7 +494,6 @@
                 function (memory) {
 
                     return memory.id !== id;
-
                 }
             );
 
@@ -448,11 +509,14 @@
             persistMemoryState();
         }
 
+        renderMemorySummary();
+
         return deleted;
     }
 
+
     // ========================================================
-    // CLEAR ALL MEMORIES
+    // CLEAR ALL
     // ========================================================
 
     function clearAllMemories() {
@@ -469,11 +533,14 @@
         return true;
     }
 
+
     // ========================================================
-    // MEMORY ENABLE / DISABLE
+    // ENABLE / DISABLE
     // ========================================================
 
-    function setMemoryEnabled(enabled) {
+    function setMemoryEnabled(
+        enabled
+    ) {
 
         memoryState.enabled =
             Boolean(enabled);
@@ -483,55 +550,22 @@
 
         persistMemoryState();
 
+        renderMemorySummary();
+
         return memoryState.enabled;
     }
+
 
     function isMemoryEnabled() {
 
         return Boolean(
             memoryState.enabled
         );
-
     }
 
-    // ========================================================
-    // EMIT MEMORY EVENT
-    // ========================================================
-
-    function emitMemoryUpdated(
-        memory,
-        updated
-    ) {
-
-        try {
-
-            window.dispatchEvent(
-                new CustomEvent(
-                    MEMORY_EVENT,
-                    {
-                        detail: {
-                            memory: memory,
-                            updated: Boolean(updated)
-                        }
-                    }
-                )
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "PingMe AI — Memory event error:",
-                error
-            );
-        }
-
-        showMemoryUpdatedIndicator(
-            memory
-        );
-    }
 
     // ========================================================
-    // CUSTOM BOOK ICON
+    // BOOK ICON
     // ========================================================
 
     function getMemoryBookIcon() {
@@ -541,85 +575,114 @@
                 class="pingme-memory-book-icon"
                 aria-hidden="true"
             >
+
                 <svg
                     viewBox="0 0 32 32"
-                    width="20"
-                    height="20"
+                    width="19"
+                    height="19"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                 >
+
                     <path
-                        d="M5.5 6.8
-                           C8.2 5.6 11.5 6.1 15.5 8.7
-                           V25.4
-                           C11.9 23.3 8.7 22.7 5.5 23.8
-                           Z"
+                        d="
+                            M5.5 7
+                            C8.6 5.8 11.9 6.2 15.5 8.5
+                            V25
+                            C11.9 23.1 8.5 22.6 5.5 23.7
+                            Z
+                        "
                         stroke="currentColor"
-                        stroke-width="1.9"
+                        stroke-width="1.8"
                         stroke-linejoin="round"
                     />
 
                     <path
-                        d="M26.5 6.8
-                           C23.8 5.6 20.5 6.1 16.5 8.7
-                           V25.4
-                           C20.1 23.3 23.3 22.7 26.5 23.8
-                           Z"
+                        d="
+                            M26.5 7
+                            C23.4 5.8 20.1 6.2 16.5 8.5
+                            V25
+                            C20.1 23.1 23.5 22.6 26.5 23.7
+                            Z
+                        "
                         stroke="currentColor"
-                        stroke-width="1.9"
+                        stroke-width="1.8"
                         stroke-linejoin="round"
                     />
 
                     <path
-                        d="M15.5 8.7
-                           C14.1 7.8 13.1 7.2 11.7 6.9"
+                        d="
+                            M15.5 8.5
+                            C14 7.7 12.7 7.1 11.2 6.9
+                        "
                         stroke="currentColor"
-                        stroke-width="1.5"
+                        stroke-width="1.4"
                         stroke-linecap="round"
                     />
 
                     <path
-                        d="M16.5 8.7
-                           C17.9 7.8 18.9 7.2 20.3 6.9"
+                        d="
+                            M16.5 8.5
+                            C18 7.7 19.3 7.1 20.8 6.9
+                        "
                         stroke="currentColor"
-                        stroke-width="1.5"
+                        stroke-width="1.4"
                         stroke-linecap="round"
                     />
+
                 </svg>
+
             </span>
         `;
     }
 
+
     // ========================================================
-    // MEMORY UPDATED INDICATOR
+    // MEMORY UPDATED SYSTEM ROW
+    //
+    // IMPORTANT:
+    // This is NOT inside the AI message.
+    // It is a separate row ABOVE the AI message.
     // ========================================================
 
-    function createMemoryUpdatedIndicator(
+    function createMemoryUpdatedSystemRow(
         memory
     ) {
 
-        const wrapper =
-            document.createElement("button");
+        const row =
+            document.createElement(
+                "button"
+            );
 
-        wrapper.type = "button";
+        row.type = "button";
 
-        wrapper.className =
-            "pingme-memory-updated";
+        row.className =
+            "pingme-memory-updated-row";
 
-        wrapper.setAttribute(
+        row.setAttribute(
             "aria-label",
             "Memory updated"
         );
 
-        wrapper.innerHTML = `
+        row.dataset.memoryId =
+            memory && memory.id
+                ? memory.id
+                : "";
+
+        row.innerHTML = `
+
             ${getMemoryBookIcon()}
 
-            <span class="pingme-memory-updated-text">
+            <span
+                class="pingme-memory-updated-text"
+            >
                 Memory updated
             </span>
+
         `;
 
-        wrapper.addEventListener(
+
+        row.addEventListener(
             "click",
             function (event) {
 
@@ -627,25 +690,21 @@
                 event.stopPropagation();
 
                 openMemorySummary();
-
             }
         );
 
-        wrapper.dataset.memoryId =
-            memory && memory.id
-                ? memory.id
-                : "";
 
-        return wrapper;
+        return row;
     }
 
+
     // ========================================================
-    // FIND AI MESSAGE CONTAINER
+    // ASSISTANT MESSAGE SELECTOR
     // ========================================================
 
-    function findLatestAssistantMessage() {
+    function getAssistantMessageSelectors() {
 
-        const selectors = [
+        return [
 
             "[data-role='assistant']",
 
@@ -661,11 +720,23 @@
 
             ".message.ai",
 
+            ".message-assistant",
+
             "[class*='assistant-message']",
 
             "[class*='ai-message']"
-
         ];
+    }
+
+
+    // ========================================================
+    // FIND LATEST ASSISTANT MESSAGE
+    // ========================================================
+
+    function findLatestAssistantMessage() {
+
+        const selectors =
+            getAssistantMessageSelectors();
 
         for (
             let i = 0;
@@ -692,83 +763,161 @@
         return null;
     }
 
+
     // ========================================================
-    // SHOW MEMORY UPDATED INDICATOR
+    // INSERT SYSTEM ROW ABOVE AI MESSAGE
     // ========================================================
 
-    function showMemoryUpdatedIndicator(
-        memory
+    function placeMemoryUpdatedAboveAssistant(
+        memory,
+        assistantMessage
     ) {
 
-        if (!memory) return;
+        if (
+            !memory ||
+            !assistantMessage ||
+            !assistantMessage.parentNode
+        ) {
+
+            return false;
+        }
+
+
+        // ----------------------------------------------------
+        // Prevent duplicate row for same memory/message
+        // ----------------------------------------------------
+
+        const existingRows =
+            assistantMessage.parentNode
+                .querySelectorAll(
+                    ".pingme-memory-updated-row"
+                );
+
+
+        for (
+            let i = 0;
+            i < existingRows.length;
+            i++
+        ) {
+
+            if (
+                existingRows[i]
+                    .dataset.memoryId ===
+                memory.id
+            ) {
+
+                return true;
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // Create separate system row
+        // ----------------------------------------------------
+
+        const row =
+            createMemoryUpdatedSystemRow(
+                memory
+            );
+
+
+        // ----------------------------------------------------
+        // Put it directly ABOVE AI message
+        // ----------------------------------------------------
+
+        assistantMessage.parentNode.insertBefore(
+            row,
+            assistantMessage
+        );
+
+
+        return true;
+    }
+
+
+    // ========================================================
+    // PLACE PENDING INDICATOR
+    // ========================================================
+
+    function attachPendingMemoryIndicator() {
+
+        if (
+            !pendingMemoryForAssistant
+        ) {
+
+            return;
+        }
 
         const assistantMessage =
             findLatestAssistantMessage();
 
         if (!assistantMessage) {
 
-            window.__pingMePendingMemoryIndicator =
-                memory;
-
             return;
         }
 
-        if (
-            assistantMessage.querySelector(
-                ".pingme-memory-updated"
-            )
-        ) {
-
-            return;
-        }
-
-        const indicator =
-            createMemoryUpdatedIndicator(
-                memory
+        const placed =
+            placeMemoryUpdatedAboveAssistant(
+                pendingMemoryForAssistant,
+                assistantMessage
             );
 
-        assistantMessage.appendChild(
-            indicator
-        );
+        if (placed) {
+
+            pendingMemoryForAssistant =
+                null;
+        }
     }
 
+
     // ========================================================
-    // RETRY PENDING INDICATOR
+    // EMIT MEMORY UPDATED
     // ========================================================
 
-    function attachPendingMemoryIndicator() {
+    function emitMemoryUpdated(
+        memory,
+        updated
+    ) {
 
-        const memory =
-            window.__pingMePendingMemoryIndicator;
+        try {
 
-        if (!memory) return;
+            window.dispatchEvent(
+                new CustomEvent(
+                    MEMORY_EVENT,
+                    {
+                        detail: {
+                            memory: memory,
+                            updated:
+                                Boolean(
+                                    updated
+                                )
+                        }
+                    }
+                )
+            );
 
-        const assistantMessage =
-            findLatestAssistantMessage();
+        } catch (error) {
 
-        if (!assistantMessage) return;
-
-        if (
-            assistantMessage.querySelector(
-                ".pingme-memory-updated"
-            )
-        ) {
-
-            delete window
-                .__pingMePendingMemoryIndicator;
-
-            return;
+            console.warn(
+                "PingMe AI — Memory event error:",
+                error
+            );
         }
 
-        assistantMessage.appendChild(
-            createMemoryUpdatedIndicator(
-                memory
-            )
-        );
 
-        delete window
-            .__pingMePendingMemoryIndicator;
+        // ----------------------------------------------------
+        // Do NOT append to AI message.
+        // Wait for the assistant response and place the row
+        // above it.
+        // ----------------------------------------------------
+
+        pendingMemoryForAssistant =
+            memory;
+
+
+        attachPendingMemoryIndicator();
     }
+
 
     // ========================================================
     // MEMORY SUMMARY UI
@@ -795,14 +944,18 @@
             return;
         }
 
+
         memoryOverlay =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
         memoryOverlay.id =
             "pingmeMemoryOverlay";
 
         memoryOverlay.className =
             "pingme-memory-overlay";
+
 
         memoryOverlay.innerHTML = `
 
@@ -824,12 +977,14 @@
                         id="pingmeMemoryBack"
                         aria-label="Back"
                     >
+
                         <svg
                             viewBox="0 0 24 24"
                             width="24"
                             height="24"
                             fill="none"
                         >
+
                             <path
                                 d="M15 5L8 12L15 19"
                                 stroke="currentColor"
@@ -837,8 +992,11 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             />
+
                         </svg>
+
                     </button>
+
 
                     <div
                         class="pingme-memory-title-area"
@@ -856,18 +1014,22 @@
 
                     </div>
 
+
                     <button
                         type="button"
                         class="pingme-memory-more"
                         id="pingmeMemoryMore"
                         aria-label="More"
                     >
+
                         <span></span>
                         <span></span>
                         <span></span>
+
                     </button>
 
                 </header>
+
 
                 <main
                     class="pingme-memory-content"
@@ -875,22 +1037,25 @@
                 ></main>
 
             </div>
-
         `;
+
 
         document.body.appendChild(
             memoryOverlay
         );
+
 
         memoryPanel =
             document.getElementById(
                 "pingmeMemoryPanel"
             );
 
+
         const backButton =
             document.getElementById(
                 "pingmeMemoryBack"
             );
+
 
         if (backButton) {
 
@@ -900,10 +1065,12 @@
             );
         }
 
+
         const moreButton =
             document.getElementById(
                 "pingmeMemoryMore"
             );
+
 
         if (moreButton) {
 
@@ -912,6 +1079,7 @@
                 toggleAboutMemoryMenu
             );
         }
+
 
         memoryOverlay.addEventListener(
             "click",
@@ -923,17 +1091,18 @@
                 ) {
 
                     closeMemorySummary();
-
                 }
             }
         );
+
 
         document.addEventListener(
             "keydown",
             function (event) {
 
                 if (
-                    event.key === "Escape" &&
+                    event.key ===
+                        "Escape" &&
                     memoryOverlay &&
                     memoryOverlay.classList.contains(
                         "show"
@@ -941,11 +1110,11 @@
                 ) {
 
                     closeMemorySummary();
-
                 }
             }
         );
     }
+
 
     // ========================================================
     // RENDER MEMORY SUMMARY
@@ -958,15 +1127,20 @@
                 "pingmeMemoryContent"
             );
 
-        if (!content) return;
+        if (!content) {
+            return;
+        }
+
 
         const memories =
             memoryState.memories;
+
 
         const updatedElement =
             document.getElementById(
                 "pingmeMemoryUpdatedAt"
             );
+
 
         if (updatedElement) {
 
@@ -976,13 +1150,16 @@
                 );
         }
 
+
         content.innerHTML = `
 
             <section
                 class="pingme-memory-overview"
             >
 
-                <h2>Overview</h2>
+                <h2>
+                    Overview
+                </h2>
 
                 <p>
                     PingMe AI remembers information
@@ -992,6 +1169,7 @@
                 </p>
 
             </section>
+
 
             <section
                 class="pingme-memory-status"
@@ -1003,7 +1181,9 @@
                     ${getMemoryBookIcon()}
                 </div>
 
+
                 <div>
+
                     <strong>
                         Memory is
                         ${
@@ -1020,9 +1200,11 @@
                                 : "PingMe AI will not save new memories."
                         }
                     </span>
+
                 </div>
 
             </section>
+
 
             <section
                 class="pingme-memory-list-section"
@@ -1031,11 +1213,17 @@
                 <div
                     class="pingme-memory-section-title"
                 >
-                    <h2>Saved memories</h2>
+
+                    <h2>
+                        Saved memories
+                    </h2>
+
                     <span>
                         ${memories.length}
                     </span>
+
                 </div>
+
 
                 <div
                     class="pingme-memory-list"
@@ -1053,6 +1241,7 @@
                                 <div
                                     class="pingme-memory-empty"
                                 >
+
                                     <div
                                         class="pingme-memory-empty-icon"
                                     >
@@ -1068,6 +1257,7 @@
                                         something you want
                                         it to remember.
                                     </span>
+
                                 </div>
                             `
                     }
@@ -1075,14 +1265,15 @@
                 </div>
 
             </section>
-
         `;
+
 
         bindMemoryItemActions();
     }
 
+
     // ========================================================
-    // RENDER MEMORY ITEM
+    // MEMORY ITEM
     // ========================================================
 
     function renderMemoryItem(
@@ -1104,6 +1295,7 @@
                     ${getMemoryBookIcon()}
                 </div>
 
+
                 <div
                     class="pingme-memory-item-body"
                 >
@@ -1116,6 +1308,7 @@
                         )}
                     </div>
 
+
                     <div
                         class="pingme-memory-item-date"
                     >
@@ -1126,6 +1319,7 @@
                     </div>
 
                 </div>
+
 
                 <button
                     type="button"
@@ -1139,12 +1333,12 @@
                 </button>
 
             </article>
-
         `;
     }
 
+
     // ========================================================
-    // BIND MEMORY ACTIONS
+    // MEMORY ITEM ACTIONS
     // ========================================================
 
     function bindMemoryItemActions() {
@@ -1153,6 +1347,7 @@
             document.querySelectorAll(
                 "[data-delete-memory]"
             );
+
 
         buttons.forEach(
             function (button) {
@@ -1164,13 +1359,13 @@
                         event.preventDefault();
                         event.stopPropagation();
 
+
                         const id =
                             button.dataset
                                 .deleteMemory;
 
-                        deleteMemory(id);
 
-                        renderMemorySummary();
+                        deleteMemory(id);
 
                     }
                 );
@@ -1178,6 +1373,7 @@
             }
         );
     }
+
 
     // ========================================================
     // ABOUT MEMORY MENU
@@ -1199,20 +1395,27 @@
             return;
         }
 
+
         aboutMenu =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
+
 
         aboutMenu.id =
             "pingmeAboutMemoryMenu";
 
+
         aboutMenu.className =
             "pingme-about-memory-menu";
+
 
         aboutMenu.innerHTML = `
 
             <div
                 class="pingme-about-memory-title"
             >
+
                 <span
                     class="pingme-about-info-icon"
                 >
@@ -1222,7 +1425,9 @@
                 <strong>
                     About memory
                 </strong>
+
             </div>
+
 
             <button
                 type="button"
@@ -1242,6 +1447,7 @@
 
             </button>
 
+
             <button
                 type="button"
                 id="pingmeDeleteTurnOffMemory"
@@ -1251,12 +1457,14 @@
                 <span
                     class="pingme-trash-icon"
                 >
+
                     <svg
                         viewBox="0 0 24 24"
                         width="23"
                         height="23"
                         fill="none"
                     >
+
                         <path
                             d="M4 7H20"
                             stroke="currentColor"
@@ -1291,7 +1499,9 @@
                             stroke-width="2"
                             stroke-linecap="round"
                         />
+
                     </svg>
+
                 </span>
 
                 <span>
@@ -1299,17 +1509,19 @@
                 </span>
 
             </button>
-
         `;
+
 
         document.body.appendChild(
             aboutMenu
         );
 
+
         const refreshButton =
             document.getElementById(
                 "pingmeRefreshMemory"
             );
+
 
         if (refreshButton) {
 
@@ -1327,10 +1539,12 @@
             );
         }
 
+
         const deleteButton =
             document.getElementById(
                 "pingmeDeleteTurnOffMemory"
             );
+
 
         if (deleteButton) {
 
@@ -1346,6 +1560,7 @@
             );
         }
 
+
         document.addEventListener(
             "click",
             function (event) {
@@ -1360,13 +1575,16 @@
                     return;
                 }
 
+
                 const moreButton =
                     document.getElementById(
                         "pingmeMemoryMore"
                     );
 
+
                 if (
-                    event.target === aboutMenu ||
+                    event.target ===
+                        aboutMenu ||
                     aboutMenu.contains(
                         event.target
                     ) ||
@@ -1381,14 +1599,16 @@
                     return;
                 }
 
+
                 closeAboutMemoryMenu();
 
             }
         );
     }
 
+
     // ========================================================
-    // TOGGLE ABOUT MENU
+    // ABOUT MENU TOGGLE
     // ========================================================
 
     function toggleAboutMemoryMenu(
@@ -1399,17 +1619,22 @@
 
             event.preventDefault();
             event.stopPropagation();
-
         }
+
 
         createAboutMemoryMenu();
 
-        if (!aboutMenu) return;
+
+        if (!aboutMenu) {
+            return;
+        }
+
 
         aboutMenu.classList.toggle(
             "show"
         );
     }
+
 
     // ========================================================
     // CLOSE ABOUT MENU
@@ -1417,12 +1642,16 @@
 
     function closeAboutMemoryMenu() {
 
-        if (!aboutMenu) return;
+        if (!aboutMenu) {
+            return;
+        }
+
 
         aboutMenu.classList.remove(
             "show"
         );
     }
+
 
     // ========================================================
     // DELETE + TURN OFF
@@ -1435,7 +1664,11 @@
                 "Delete all saved memories and turn off memory?"
             );
 
-        if (!confirmed) return;
+
+        if (!confirmed) {
+            return;
+        }
+
 
         memoryState.memories = [];
 
@@ -1444,13 +1677,15 @@
         memoryState.updatedAt =
             getNowISO();
 
+
         persistMemoryState();
 
         renderMemorySummary();
     }
 
+
     // ========================================================
-    // OPEN MEMORY SUMMARY
+    // OPEN SUMMARY
     // ========================================================
 
     function openMemorySummary() {
@@ -1463,6 +1698,7 @@
 
         renderMemorySummary();
 
+
         if (memoryOverlay) {
 
             memoryOverlay.classList.add(
@@ -1474,6 +1710,7 @@
             );
         }
 
+
         window.dispatchEvent(
             new CustomEvent(
                 MEMORY_OPEN_EVENT
@@ -1481,24 +1718,31 @@
         );
     }
 
+
     // ========================================================
-    // CLOSE MEMORY SUMMARY
+    // CLOSE SUMMARY
     // ========================================================
 
     function closeMemorySummary() {
 
         closeAboutMemoryMenu();
 
-        if (!memoryOverlay) return;
+
+        if (!memoryOverlay) {
+            return;
+        }
+
 
         memoryOverlay.classList.remove(
             "show"
         );
 
+
         document.body.classList.remove(
             "pingme-memory-open"
         );
     }
+
 
     // ========================================================
     // UPDATED TIME
@@ -1511,11 +1755,12 @@
         if (!iso) {
 
             return "Updated just now";
-
         }
+
 
         const date =
             new Date(iso);
+
 
         if (
             Number.isNaN(
@@ -1526,6 +1771,7 @@
             return "Updated just now";
         }
 
+
         return (
             "Updated " +
             formatRelativeTime(
@@ -1533,6 +1779,7 @@
             )
         );
     }
+
 
     // ========================================================
     // RELATIVE TIME
@@ -1550,10 +1797,12 @@
                 ) / 1000
             );
 
+
         if (seconds < 10) {
 
             return "just now";
         }
+
 
         if (seconds < 60) {
 
@@ -1563,10 +1812,12 @@
             );
         }
 
+
         const minutes =
             Math.floor(
                 seconds / 60
             );
+
 
         if (minutes < 60) {
 
@@ -1580,10 +1831,12 @@
             );
         }
 
+
         const hours =
             Math.floor(
                 minutes / 60
             );
+
 
         if (hours < 24) {
 
@@ -1597,10 +1850,12 @@
             );
         }
 
+
         const days =
             Math.floor(
                 hours / 24
             );
+
 
         return (
             days +
@@ -1612,6 +1867,7 @@
         );
     }
 
+
     // ========================================================
     // MEMORY DATE
     // ========================================================
@@ -1620,10 +1876,14 @@
         iso
     ) {
 
-        if (!iso) return "";
+        if (!iso) {
+            return "";
+        }
+
 
         const date =
             new Date(iso);
+
 
         if (
             Number.isNaN(
@@ -1633,6 +1893,7 @@
 
             return "";
         }
+
 
         try {
 
@@ -1653,8 +1914,9 @@
         }
     }
 
+
     // ========================================================
-    // AI MEMORY COMMAND DETECTION
+    // MEMORY COMMAND DETECTION
     // ========================================================
 
     function looksLikeMemoryCommand(
@@ -1666,7 +1928,11 @@
                 text
             ).toLowerCase();
 
-        if (!value) return false;
+
+        if (!value) {
+            return false;
+        }
+
 
         const patterns = [
 
@@ -1682,6 +1948,7 @@
             /এটা মনে রাখবে/,
             /এই কথাটা মনে রাখ/,
             /এই তথ্যটা মনে রাখ/,
+
             /remember this/,
             /remember that/,
             /save this to memory/,
@@ -1692,19 +1959,20 @@
 
         ];
 
+
         return patterns.some(
             function (pattern) {
 
                 return pattern.test(
                     value
                 );
-
             }
         );
     }
 
+
     // ========================================================
-    // EXTRACT MEMORY FROM COMMAND
+    // EXTRACT MEMORY
     // ========================================================
 
     function extractMemoryFromCommand(
@@ -1716,10 +1984,15 @@
                 text
             );
 
-        if (!original) return "";
+
+        if (!original) {
+            return "";
+        }
+
 
         let result =
             original;
+
 
         const replacements = [
 
@@ -1755,6 +2028,7 @@
 
         ];
 
+
         replacements.some(
             function (pattern) {
 
@@ -1763,6 +2037,7 @@
                         pattern,
                         ""
                     );
+
 
                 if (
                     cleaned !==
@@ -1775,10 +2050,11 @@
                     return true;
                 }
 
-                return false;
 
+                return false;
             }
         );
+
 
         return (
             result ||
@@ -1786,17 +2062,22 @@
         );
     }
 
+
     // ========================================================
-    // OBSERVE USER MESSAGE
+    // PROCESS MEMORY COMMAND
     // ========================================================
 
     function processPossibleMemoryCommand(
         text
     ) {
 
-        if (!isMemoryEnabled()) {
+        if (
+            !isMemoryEnabled()
+        ) {
+
             return null;
         }
+
 
         if (
             !looksLikeMemoryCommand(
@@ -1807,26 +2088,30 @@
             return null;
         }
 
+
         const memoryText =
             extractMemoryFromCommand(
                 text
             );
 
-        if (!memoryText) {
 
+        if (!memoryText) {
             return null;
         }
+
 
         return saveMemory(
             memoryText,
             {
-                source: "user-command"
+                source:
+                    "user-command"
             }
         );
     }
 
+
     // ========================================================
-    // PUBLIC AI API
+    // PUBLIC API
     // ========================================================
 
     function pingMeRemember(
@@ -1840,6 +2125,7 @@
         );
     }
 
+
     function pingMeForget(
         id
     ) {
@@ -1849,21 +2135,18 @@
         );
     }
 
+
     function pingMeForgetAll() {
 
         return clearAllMemories();
-
     }
+
 
     function pingMeMemorySummary() {
 
         return getMemories();
-
     }
 
-    // ========================================================
-    // GLOBAL API
-    // ========================================================
 
     window.PingMeMemory = {
 
@@ -1904,48 +2187,59 @@
             function () {
 
                 loadMemoryState();
-                renderMemorySummary();
 
+                renderMemorySummary();
             },
 
         processCommand:
             processPossibleMemoryCommand
-
     };
+
 
     window.savePingMeMemory =
         pingMeRemember;
 
+
     window.rememberPingMe =
         pingMeRemember;
+
 
     window.getPingMeMemories =
         getMemories;
 
+
     window.deletePingMeMemory =
         pingMeForget;
+
 
     window.openPingMeMemory =
         openMemorySummary;
 
+
     window.closePingMeMemory =
         closeMemorySummary;
+
 
     window.isPingMeMemoryEnabled =
         isMemoryEnabled;
 
+
     window.setPingMeMemoryEnabled =
         setMemoryEnabled;
 
+
     // ========================================================
-    // DOM OBSERVER
+    // MESSAGE TEXT
     // ========================================================
 
     function getMessageTextFromElement(
         element
     ) {
 
-        if (!element) return "";
+        if (!element) {
+            return "";
+        }
+
 
         return normalizeMemoryText(
             element.innerText ||
@@ -1954,11 +2248,19 @@
         );
     }
 
+
+    // ========================================================
+    // MESSAGE ROLE
+    // ========================================================
+
     function detectMessageRole(
         element
     ) {
 
-        if (!element) return "";
+        if (!element) {
+            return "";
+        }
+
 
         const role =
             (
@@ -1969,25 +2271,29 @@
                     "data-message-role"
                 ) ||
                 ""
-            )
-                .toLowerCase();
+            ).toLowerCase();
+
 
         if (role === "user") {
             return "user";
         }
 
+
         if (
             role === "assistant" ||
             role === "ai"
         ) {
+
             return "assistant";
         }
+
 
         const className =
             String(
                 element.className ||
                 ""
             ).toLowerCase();
+
 
         if (
             className.includes(
@@ -2001,20 +2307,30 @@
             return "user";
         }
 
+
         if (
             className.includes(
                 "assistant-message"
             ) ||
             className.includes(
                 "ai-message"
+            ) ||
+            className.includes(
+                "message-assistant"
             )
         ) {
 
             return "assistant";
         }
 
+
         return "";
     }
+
+
+    // ========================================================
+    // SCAN ADDED NODE
+    // ========================================================
 
     function scanAddedNode(
         node
@@ -2028,10 +2344,16 @@
             return;
         }
 
+
         const role =
             detectMessageRole(
                 node
             );
+
+
+        // ----------------------------------------------------
+        // USER MESSAGE
+        // ----------------------------------------------------
 
         if (role === "user") {
 
@@ -2039,6 +2361,7 @@
                 getMessageTextFromElement(
                     node
                 );
+
 
             if (
                 text &&
@@ -2052,61 +2375,97 @@
                 );
             }
 
-            return;
-        }
-
-        if (role === "assistant") {
-
-            attachPendingMemoryIndicator();
 
             return;
         }
 
-        const userCandidates =
-            node.querySelectorAll
-                ? node.querySelectorAll(
-                    "[data-role='user'], [data-message-role='user'], .user-message, .message-user"
-                )
-                : [];
 
-        userCandidates.forEach(
-            function (element) {
-
-                const text =
-                    getMessageTextFromElement(
-                        element
-                    );
-
-                if (
-                    text &&
-                    looksLikeMemoryCommand(
-                        text
-                    )
-                ) {
-
-                    processPossibleMemoryCommand(
-                        text
-                    );
-                }
-
-            }
-        );
-
-        const assistantCandidates =
-            node.querySelectorAll
-                ? node.querySelectorAll(
-                    "[data-role='assistant'], [data-message-role='assistant'], .assistant-message, .ai-message, .message-assistant"
-                )
-                : [];
+        // ----------------------------------------------------
+        // ASSISTANT MESSAGE
+        // ----------------------------------------------------
 
         if (
-            assistantCandidates.length
+            role === "assistant"
         ) {
 
             attachPendingMemoryIndicator();
 
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // NESTED USER MESSAGES
+        // ----------------------------------------------------
+
+        if (
+            node.querySelectorAll
+        ) {
+
+            const userCandidates =
+                node.querySelectorAll(
+                    [
+                        "[data-role='user']",
+                        "[data-message-role='user']",
+                        ".user-message",
+                        ".message-user"
+                    ].join(",")
+                );
+
+
+            userCandidates.forEach(
+                function (element) {
+
+                    const text =
+                        getMessageTextFromElement(
+                            element
+                        );
+
+
+                    if (
+                        text &&
+                        looksLikeMemoryCommand(
+                            text
+                        )
+                    ) {
+
+                        processPossibleMemoryCommand(
+                            text
+                        );
+                    }
+                }
+            );
+
+
+            // ------------------------------------------------
+            // Nested assistant messages
+            // ------------------------------------------------
+
+            const assistantCandidates =
+                node.querySelectorAll(
+                    [
+                        "[data-role='assistant']",
+                        "[data-message-role='assistant']",
+                        ".assistant-message",
+                        ".ai-message",
+                        ".message-assistant"
+                    ].join(",")
+                );
+
+
+            if (
+                assistantCandidates.length
+            ) {
+
+                attachPendingMemoryIndicator();
+            }
         }
     }
+
+
+    // ========================================================
+    // MESSAGE OBSERVER
+    // ========================================================
 
     function startMessageObserver() {
 
@@ -2119,6 +2478,7 @@
             return;
         }
 
+
         const observer =
             new MutationObserver(
                 function (mutations) {
@@ -2126,21 +2486,27 @@
                     mutations.forEach(
                         function (mutation) {
 
-                            mutation.addedNodes.forEach(
-                                function (node) {
+                            mutation.addedNodes
+                                .forEach(
+                                    function (node) {
 
-                                    scanAddedNode(
-                                        node
-                                    );
+                                        scanAddedNode(
+                                            node
+                                        );
 
-                                }
-                            );
-
+                                    }
+                                );
                         }
                     );
 
+
+                    // Assistant message can be added
+                    // after memory was saved.
+                    attachPendingMemoryIndicator();
+
                 }
             );
+
 
         observer.observe(
             document.body,
@@ -2150,6 +2516,7 @@
             }
         );
     }
+
 
     // ========================================================
     // STYLES
@@ -2166,78 +2533,123 @@
             return;
         }
 
+
         const style =
             document.createElement(
                 "style"
             );
 
+
         style.id =
             "pingmeMemoryCoreStyles";
+
 
         style.textContent = `
 
             /* ==================================================
-               MEMORY UPDATED INDICATOR
+               MEMORY UPDATED SYSTEM ROW
                ================================================== */
 
-            .pingme-memory-updated {
+            .pingme-memory-updated-row {
 
-                display: inline-flex;
+                display: flex;
                 align-items: center;
-                gap: 8px;
 
-                margin-top: 10px;
-                padding: 3px 0;
+                width: fit-content;
+
+                margin:
+                    7px
+                    0
+                    6px;
+
+                padding:
+                    2px
+                    0;
 
                 border: 0;
-                background: transparent;
 
-                color: #777;
+                background:
+                    transparent;
 
-                font-family: inherit;
-                font-size: 14px;
-                line-height: 1.3;
+                color:
+                    rgba(80,80,80,.78);
 
-                cursor: pointer;
+                font-family:
+                    inherit;
 
-                opacity: .92;
+                font-size:
+                    13px;
+
+                line-height:
+                    1.25;
+
+                font-weight:
+                    450;
+
+                cursor:
+                    pointer;
+
+                text-align:
+                    left;
+
+                opacity:
+                    .92;
 
                 transition:
-                    opacity .2s ease,
-                    color .2s ease,
-                    transform .2s ease;
-
+                    opacity .18s ease,
+                    color .18s ease,
+                    transform .18s ease;
             }
 
-            .pingme-memory-updated:hover {
 
-                color: #555;
-                opacity: 1;
+            .pingme-memory-updated-row:hover {
 
+                color:
+                    rgba(40,40,40,.95);
+
+                opacity:
+                    1;
             }
 
-            .pingme-memory-updated:active {
 
-                transform: scale(.98);
+            .pingme-memory-updated-row:active {
 
+                transform:
+                    scale(.985);
             }
+
 
             .pingme-memory-book-icon {
 
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
+                display:
+                    inline-flex;
 
-                flex: 0 0 auto;
+                align-items:
+                    center;
 
-                color: currentColor;
+                justify-content:
+                    center;
 
+                flex:
+                    0 0 auto;
+
+                color:
+                    currentColor;
             }
+
+
+            .pingme-memory-updated-row
+            .pingme-memory-book-icon {
+
+                margin-right:
+                    6px;
+            }
+
 
             .pingme-memory-book-icon svg {
 
-                display: block;
-
+                display:
+                    block;
             }
 
 
@@ -2247,40 +2659,57 @@
 
             .pingme-memory-overlay {
 
-                position: fixed;
-                inset: 0;
+                position:
+                    fixed;
 
-                z-index: 999999;
+                inset:
+                    0;
 
-                display: flex;
-                align-items: stretch;
-                justify-content: center;
+                z-index:
+                    999999;
 
-                background: rgba(
-                    255,
-                    255,
-                    255,
-                    .98
-                );
+                display:
+                    flex;
 
-                opacity: 0;
-                visibility: hidden;
+                align-items:
+                    stretch;
 
-                pointer-events: none;
+                justify-content:
+                    center;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        .98
+                    );
+
+                opacity:
+                    0;
+
+                visibility:
+                    hidden;
+
+                pointer-events:
+                    none;
 
                 transition:
                     opacity .2s ease,
                     visibility .2s ease;
-
             }
+
 
             .pingme-memory-overlay.show {
 
-                opacity: 1;
-                visibility: visible;
+                opacity:
+                    1;
 
-                pointer-events: auto;
+                visibility:
+                    visible;
 
+                pointer-events:
+                    auto;
             }
 
 
@@ -2290,23 +2719,32 @@
 
             .pingme-memory-panel {
 
-                position: relative;
+                position:
+                    relative;
 
-                width: min(
-                    100%,
-                    720px
-                );
+                width:
+                    min(
+                        100%,
+                        720px
+                    );
 
-                height: 100%;
+                height:
+                    100%;
 
-                display: flex;
-                flex-direction: column;
+                display:
+                    flex;
 
-                background: #fff;
+                flex-direction:
+                    column;
 
-                color: #171717;
+                background:
+                    #fff;
 
-                overflow: hidden;
+                color:
+                    #171717;
+
+                overflow:
+                    hidden;
 
                 font-family:
                     system-ui,
@@ -2314,7 +2752,6 @@
                     BlinkMacSystemFont,
                     "Segoe UI",
                     sans-serif;
-
             }
 
 
@@ -2324,18 +2761,22 @@
 
             .pingme-memory-header {
 
-                position: relative;
+                position:
+                    relative;
 
-                display: grid;
+                display:
+                    grid;
 
                 grid-template-columns:
                     48px
                     1fr
                     48px;
 
-                align-items: center;
+                align-items:
+                    center;
 
-                min-height: 82px;
+                min-height:
+                    82px;
 
                 padding:
                     10px
@@ -2343,88 +2784,131 @@
 
                 border-bottom:
                     1px solid
-                    rgba(0,0,0,.06);
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .06
+                    );
 
-                background: #fff;
-
+                background:
+                    #fff;
             }
+
 
             .pingme-memory-back,
             .pingme-memory-more {
 
-                width: 48px;
-                height: 48px;
+                width:
+                    48px;
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    48px;
 
-                border: 0;
-                border-radius: 50%;
+                display:
+                    flex;
 
-                background: transparent;
+                align-items:
+                    center;
 
-                color: #111;
+                justify-content:
+                    center;
 
-                cursor: pointer;
+                border:
+                    0;
 
+                border-radius:
+                    50%;
+
+                background:
+                    transparent;
+
+                color:
+                    #111;
+
+                cursor:
+                    pointer;
             }
+
 
             .pingme-memory-back:hover,
             .pingme-memory-more:hover {
 
                 background:
-                    rgba(0,0,0,.055);
-
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .055
+                    );
             }
+
 
             .pingme-memory-title-area {
 
-                min-width: 0;
+                min-width:
+                    0;
 
-                text-align: center;
-
+                text-align:
+                    center;
             }
+
 
             .pingme-memory-title-area h1 {
 
-                margin: 0;
+                margin:
+                    0;
 
-                font-size: 21px;
-                line-height: 1.25;
+                font-size:
+                    21px;
 
-                font-weight: 700;
+                line-height:
+                    1.25;
 
+                font-weight:
+                    700;
             }
+
 
             .pingme-memory-title-area span {
 
-                display: block;
+                display:
+                    block;
 
-                margin-top: 4px;
+                margin-top:
+                    4px;
 
-                color: #777;
+                color:
+                    #777;
 
-                font-size: 13px;
-
+                font-size:
+                    13px;
             }
+
 
             .pingme-memory-more {
 
-                flex-direction: column;
-                gap: 3px;
+                flex-direction:
+                    column;
 
+                gap:
+                    3px;
             }
+
 
             .pingme-memory-more span {
 
-                width: 4px;
-                height: 4px;
+                width:
+                    4px;
 
-                border-radius: 50%;
+                height:
+                    4px;
 
-                background: currentColor;
+                border-radius:
+                    50%;
 
+                background:
+                    currentColor;
             }
 
 
@@ -2434,9 +2918,11 @@
 
             .pingme-memory-content {
 
-                flex: 1;
+                flex:
+                    1;
 
-                overflow-y: auto;
+                overflow-y:
+                    auto;
 
                 padding:
                     30px
@@ -2445,22 +2931,28 @@
 
                 -webkit-overflow-scrolling:
                     touch;
-
             }
+
 
             .pingme-memory-content::-webkit-scrollbar {
 
-                width: 6px;
-
+                width:
+                    6px;
             }
+
 
             .pingme-memory-content::-webkit-scrollbar-thumb {
 
-                border-radius: 10px;
+                border-radius:
+                    10px;
 
                 background:
-                    rgba(0,0,0,.16);
-
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .16
+                    );
             }
 
 
@@ -2470,9 +2962,10 @@
 
             .pingme-memory-overview {
 
-                margin-bottom: 28px;
-
+                margin-bottom:
+                    28px;
             }
+
 
             .pingme-memory-overview h2 {
 
@@ -2481,24 +2974,33 @@
                     0
                     10px;
 
-                font-size: 28px;
-                line-height: 1.15;
+                font-size:
+                    28px;
 
-                font-weight: 750;
+                line-height:
+                    1.15;
 
-                letter-spacing: -.5px;
+                font-weight:
+                    750;
 
+                letter-spacing:
+                    -.5px;
             }
+
 
             .pingme-memory-overview p {
 
-                margin: 0;
+                margin:
+                    0;
 
-                color: #333;
+                color:
+                    #333;
 
-                font-size: 17px;
-                line-height: 1.7;
+                font-size:
+                    17px;
 
+                line-height:
+                    1.7;
             }
 
 
@@ -2508,64 +3010,94 @@
 
             .pingme-memory-status {
 
-                display: flex;
-                align-items: center;
-                gap: 15px;
+                display:
+                    flex;
 
-                margin-bottom: 30px;
-                padding: 17px;
+                align-items:
+                    center;
 
-                border-radius: 18px;
+                gap:
+                    15px;
+
+                margin-bottom:
+                    30px;
+
+                padding:
+                    17px;
+
+                border-radius:
+                    18px;
 
                 background:
                     #f6f6f6;
-
             }
+
 
             .pingme-memory-status-icon {
 
-                width: 46px;
-                height: 46px;
+                width:
+                    46px;
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    46px;
 
-                border-radius: 14px;
+                display:
+                    flex;
 
-                background: #fff;
+                align-items:
+                    center;
 
-                color: #555;
+                justify-content:
+                    center;
 
+                border-radius:
+                    14px;
+
+                background:
+                    #fff;
+
+                color:
+                    #555;
             }
+
 
             .pingme-memory-status-icon
             .pingme-memory-book-icon svg {
 
-                width: 27px;
-                height: 27px;
+                width:
+                    27px;
 
+                height:
+                    27px;
             }
+
 
             .pingme-memory-status strong {
 
-                display: block;
+                display:
+                    block;
 
-                margin-bottom: 3px;
+                margin-bottom:
+                    3px;
 
-                font-size: 16px;
-
+                font-size:
+                    16px;
             }
+
 
             .pingme-memory-status span {
 
-                display: block;
+                display:
+                    block;
 
-                color: #777;
+                color:
+                    #777;
 
-                font-size: 13px;
-                line-height: 1.45;
+                font-size:
+                    13px;
 
+                line-height:
+                    1.45;
             }
 
 
@@ -2575,166 +3107,251 @@
 
             .pingme-memory-list-section {
 
-                margin-top: 12px;
-
+                margin-top:
+                    12px;
             }
+
 
             .pingme-memory-section-title {
 
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
+                display:
+                    flex;
 
-                margin-bottom: 12px;
+                align-items:
+                    center;
 
+                justify-content:
+                    space-between;
+
+                margin-bottom:
+                    12px;
             }
+
 
             .pingme-memory-section-title h2 {
 
-                margin: 0;
+                margin:
+                    0;
 
-                font-size: 21px;
-
+                font-size:
+                    21px;
             }
+
 
             .pingme-memory-section-title span {
 
-                min-width: 28px;
-                height: 28px;
+                min-width:
+                    28px;
 
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    28px;
 
-                border-radius: 50%;
+                display:
+                    inline-flex;
 
-                background: #f1f1f1;
+                align-items:
+                    center;
 
-                color: #666;
+                justify-content:
+                    center;
 
-                font-size: 13px;
+                border-radius:
+                    50%;
 
+                background:
+                    #f1f1f1;
+
+                color:
+                    #666;
+
+                font-size:
+                    13px;
             }
+
 
             .pingme-memory-list {
 
-                display: flex;
-                flex-direction: column;
+                display:
+                    flex;
 
-                gap: 10px;
+                flex-direction:
+                    column;
 
+                gap:
+                    10px;
             }
+
 
             .pingme-memory-item {
 
-                position: relative;
+                position:
+                    relative;
 
-                display: flex;
-                align-items: flex-start;
+                display:
+                    flex;
 
-                gap: 13px;
+                align-items:
+                    flex-start;
 
-                padding: 15px;
+                gap:
+                    13px;
+
+                padding:
+                    15px;
 
                 border:
                     1px solid
-                    rgba(0,0,0,.08);
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .08
+                    );
 
-                border-radius: 17px;
+                border-radius:
+                    17px;
 
-                background: #fff;
-
+                background:
+                    #fff;
             }
+
 
             .pingme-memory-item-icon {
 
-                flex: 0 0 auto;
+                flex:
+                    0 0 auto;
 
-                width: 34px;
-                height: 34px;
+                width:
+                    34px;
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    34px;
 
-                border-radius: 10px;
+                display:
+                    flex;
 
-                background: #f5f5f5;
+                align-items:
+                    center;
 
-                color: #555;
+                justify-content:
+                    center;
 
+                border-radius:
+                    10px;
+
+                background:
+                    #f5f5f5;
+
+                color:
+                    #555;
             }
+
 
             .pingme-memory-item-icon
             .pingme-memory-book-icon svg {
 
-                width: 22px;
-                height: 22px;
+                width:
+                    22px;
 
+                height:
+                    22px;
             }
+
 
             .pingme-memory-item-body {
 
-                min-width: 0;
+                min-width:
+                    0;
 
-                flex: 1;
+                flex:
+                    1;
 
-                padding-right: 30px;
-
+                padding-right:
+                    30px;
             }
+
 
             .pingme-memory-item-text {
 
-                color: #202020;
+                color:
+                    #202020;
 
-                font-size: 15px;
-                line-height: 1.55;
+                font-size:
+                    15px;
 
-                word-break: break-word;
+                line-height:
+                    1.55;
 
+                word-break:
+                    break-word;
             }
+
 
             .pingme-memory-item-date {
 
-                margin-top: 6px;
+                margin-top:
+                    6px;
 
-                color: #8a8a8a;
+                color:
+                    #8a8a8a;
 
-                font-size: 12px;
-
+                font-size:
+                    12px;
             }
+
 
             .pingme-memory-item-delete {
 
-                position: absolute;
+                position:
+                    absolute;
 
-                top: 9px;
-                right: 9px;
+                top:
+                    9px;
 
-                width: 30px;
-                height: 30px;
+                right:
+                    9px;
 
-                border: 0;
-                border-radius: 50%;
+                width:
+                    30px;
 
-                background: transparent;
+                height:
+                    30px;
 
-                color: #999;
+                border:
+                    0;
 
-                font-size: 23px;
-                line-height: 1;
+                border-radius:
+                    50%;
 
-                cursor: pointer;
+                background:
+                    transparent;
 
+                color:
+                    #999;
+
+                font-size:
+                    23px;
+
+                line-height:
+                    1;
+
+                cursor:
+                    pointer;
             }
+
 
             .pingme-memory-item-delete:hover {
 
                 background:
-                    rgba(0,0,0,.06);
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .06
+                    );
 
-                color: #333;
-
+                color:
+                    #333;
             }
 
 
@@ -2744,63 +3361,95 @@
 
             .pingme-memory-empty {
 
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
+                display:
+                    flex;
 
-                padding: 55px 25px;
+                flex-direction:
+                    column;
 
-                text-align: center;
+                align-items:
+                    center;
 
-                color: #777;
+                justify-content:
+                    center;
 
+                padding:
+                    55px
+                    25px;
+
+                text-align:
+                    center;
+
+                color:
+                    #777;
             }
+
 
             .pingme-memory-empty-icon {
 
-                width: 64px;
-                height: 64px;
+                width:
+                    64px;
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    64px;
 
-                margin-bottom: 15px;
+                display:
+                    flex;
 
-                border-radius: 18px;
+                align-items:
+                    center;
 
-                background: #f5f5f5;
+                justify-content:
+                    center;
 
-                color: #777;
+                margin-bottom:
+                    15px;
 
+                border-radius:
+                    18px;
+
+                background:
+                    #f5f5f5;
+
+                color:
+                    #777;
             }
+
 
             .pingme-memory-empty-icon
             .pingme-memory-book-icon svg {
 
-                width: 34px;
-                height: 34px;
+                width:
+                    34px;
 
+                height:
+                    34px;
             }
+
 
             .pingme-memory-empty strong {
 
-                color: #333;
+                color:
+                    #333;
 
-                font-size: 16px;
-
+                font-size:
+                    16px;
             }
+
 
             .pingme-memory-empty span {
 
-                max-width: 340px;
+                max-width:
+                    340px;
 
-                margin-top: 6px;
+                margin-top:
+                    6px;
 
-                font-size: 14px;
-                line-height: 1.5;
+                font-size:
+                    14px;
 
+                line-height:
+                    1.5;
             }
 
 
@@ -2810,155 +3459,233 @@
 
             .pingme-about-memory-menu {
 
-                position: fixed;
+                position:
+                    fixed;
 
-                top: 76px;
-                right: 18px;
+                top:
+                    76px;
 
-                z-index: 1000001;
+                right:
+                    18px;
 
-                width: min(
-                    340px,
-                    calc(100vw - 36px)
-                );
+                z-index:
+                    1000001;
 
-                padding: 17px 0 10px;
+                width:
+                    min(
+                        340px,
+                        calc(
+                            100vw - 36px
+                        )
+                    );
 
-                border-radius: 25px;
+                padding:
+                    17px 0 10px;
 
-                background: #fff;
+                border-radius:
+                    25px;
+
+                background:
+                    #fff;
 
                 box-shadow:
                     0 18px 55px
-                    rgba(0,0,0,.16),
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .16
+                    ),
                     0 2px 10px
-                    rgba(0,0,0,.06);
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .06
+                    );
 
-                opacity: 0;
-                visibility: hidden;
+                opacity:
+                    0;
+
+                visibility:
+                    hidden;
 
                 transform:
                     translateY(-7px)
                     scale(.98);
 
-                pointer-events: none;
+                pointer-events:
+                    none;
 
                 transition:
                     opacity .18s ease,
                     visibility .18s ease,
                     transform .18s ease;
-
             }
+
 
             .pingme-about-memory-menu.show {
 
-                opacity: 1;
-                visibility: visible;
+                opacity:
+                    1;
+
+                visibility:
+                    visible;
 
                 transform:
                     translateY(0)
                     scale(1);
 
-                pointer-events: auto;
-
+                pointer-events:
+                    auto;
             }
+
 
             .pingme-about-memory-title {
 
-                display: flex;
-                align-items: center;
-                gap: 15px;
+                display:
+                    flex;
+
+                align-items:
+                    center;
+
+                gap:
+                    15px;
 
                 padding:
                     0
                     24px
                     17px;
 
-                font-size: 19px;
-
+                font-size:
+                    19px;
             }
+
 
             .pingme-about-info-icon {
 
-                width: 32px;
-                height: 32px;
+                width:
+                    32px;
 
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
+                height:
+                    32px;
+
+                display:
+                    inline-flex;
+
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
 
                 border:
                     2px solid
                     currentColor;
 
-                border-radius: 50%;
+                border-radius:
+                    50%;
 
-                font-size: 19px;
-                font-weight: 600;
+                font-size:
+                    19px;
 
+                font-weight:
+                    600;
             }
+
 
             .pingme-about-memory-action {
 
-                width: 100%;
+                width:
+                    100%;
 
-                display: flex;
-                align-items: center;
+                display:
+                    flex;
 
-                gap: 18px;
+                align-items:
+                    center;
 
-                min-height: 76px;
+                gap:
+                    18px;
+
+                min-height:
+                    76px;
 
                 padding:
                     12px
                     24px;
 
-                border: 0;
+                border:
+                    0;
 
-                background: transparent;
+                background:
+                    transparent;
 
-                color: #aaa;
+                color:
+                    #aaa;
 
-                text-align: left;
+                text-align:
+                    left;
 
-                font-family: inherit;
-                font-size: 17px;
+                font-family:
+                    inherit;
 
-                cursor: pointer;
+                font-size:
+                    17px;
 
+                cursor:
+                    pointer;
             }
+
 
             .pingme-about-memory-action:hover {
 
                 background:
-                    rgba(0,0,0,.035);
-
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        .035
+                    );
             }
+
 
             .pingme-about-memory-action.danger {
 
-                color: #b12c2c;
-
+                color:
+                    #b12c2c;
             }
+
 
             .pingme-refresh-icon {
 
-                width: 32px;
+                width:
+                    32px;
 
-                font-size: 38px;
-                font-weight: 300;
-                line-height: 1;
+                font-size:
+                    38px;
 
+                font-weight:
+                    300;
+
+                line-height:
+                    1;
             }
+
 
             .pingme-trash-icon {
 
-                width: 32px;
+                width:
+                    32px;
 
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                display:
+                    flex;
 
+                align-items:
+                    center;
+
+                justify-content:
+                    center;
             }
 
 
@@ -2972,13 +3699,14 @@
 
                 .pingme-memory-header {
 
-                    min-height: 76px;
+                    min-height:
+                        76px;
 
                     padding:
                         8px
                         10px;
-
                 }
+
 
                 .pingme-memory-content {
 
@@ -2986,31 +3714,38 @@
                         25px
                         18px
                         45px;
-
                 }
+
 
                 .pingme-memory-overview h2 {
 
-                    font-size: 27px;
-
+                    font-size:
+                        27px;
                 }
+
 
                 .pingme-memory-overview p {
 
-                    font-size: 16px;
-
+                    font-size:
+                        16px;
                 }
+
 
                 .pingme-about-memory-menu {
 
-                    top: 68px;
-                    right: 12px;
+                    top:
+                        68px;
+
+                    right:
+                        12px;
 
                     width:
-                        calc(100vw - 24px);
+                        calc(
+                            100vw - 24px
+                        );
 
-                    border-radius: 24px;
-
+                    border-radius:
+                        24px;
                 }
 
             }
@@ -3022,16 +3757,18 @@
 
             body.pingme-memory-open {
 
-                overflow: hidden;
-
+                overflow:
+                    hidden;
             }
 
         `;
+
 
         document.head.appendChild(
             style
         );
     }
+
 
     // ========================================================
     // INITIALIZE
@@ -3039,9 +3776,13 @@
 
     function initializeMemoryCore() {
 
-        if (isInitialized) return;
+        if (isInitialized) {
+            return;
+        }
+
 
         isInitialized = true;
+
 
         loadMemoryState();
 
@@ -3053,6 +3794,7 @@
 
         startMessageObserver();
 
+
         setTimeout(
             function () {
 
@@ -3062,10 +3804,12 @@
             300
         );
 
+
         console.log(
             "PingMe AI — MemoryCore Connected"
         );
     }
+
 
     // ========================================================
     // DOM READY
