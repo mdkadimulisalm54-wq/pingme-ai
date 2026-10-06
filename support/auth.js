@@ -19,8 +19,8 @@ let pingmeAuthReady = false;
 
 const pingmeFirebaseConfig = {
 
-    apiKey:"AIzaSyCsEcQWDup57v5l58Ul9PCP_RzYsx3Vb7w",
-
+    apiKey:
+        "AIzaSyCsEcQWDup57v5l58Ul9PCP_RzYsx3Vb7w",
 
     authDomain:
         "pingme-ai-bd38d.firebaseapp.com",
@@ -39,6 +39,7 @@ const pingmeFirebaseConfig = {
 
     measurementId:
         "G-7W2NQPXF2B"
+
 };
 
 
