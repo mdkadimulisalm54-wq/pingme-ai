@@ -1869,7 +1869,32 @@
         setupAccountButton();
 
         waitForAuthAndRefresh();
+                // Refresh account UI whenever the page/app becomes active again
+        window.addEventListener(
+            "pageshow",
+            refreshAccount
+        );
 
+        document.addEventListener(
+            "visibilitychange",
+            function () {
+
+                if (
+                    document.visibilityState ===
+                    "visible"
+                ) {
+
+                    refreshAccount();
+
+                }
+
+            }
+        );
+
+        window.addEventListener(
+            "focus",
+            refreshAccount
+        );
 
         console.log(
             "PingMe AI — Account Support Ready"
