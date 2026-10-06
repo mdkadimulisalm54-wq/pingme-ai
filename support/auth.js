@@ -20,25 +20,25 @@ let pingmeAuthReady = false;
 const pingmeFirebaseConfig = {
 
     apiKey:
-        "AIzaSyB4dAUhxEao415YdVg4l4WYJ21hQ9V-tyk",
+        "AIzaSyCsEcQWDup57v5l58Ul9PCP_RzYsx3Vb7w",
 
     authDomain:
-        "pingme-ai-8d8cc.firebaseapp.com",
+        "pingme-ai-bd38d.firebaseapp.com",
 
     projectId:
-        "pingme-ai-8d8cc",
+        "pingme-ai-bd38d",
 
     storageBucket:
-        "pingme-ai-8d8cc.firebasestorage.app",
+        "pingme-ai-bd38d.firebasestorage.app",
 
     messagingSenderId:
-        "547217020747",
+        "389510337713",
 
     appId:
-        "1:547217020747:web:62b7d3843672703d8abace",
+        "1:389510337713:web:0af55eeb00b996c620fe90",
 
     measurementId:
-        "G-3WRC64CRDR"
+        "G-7W2NQPXF2B"
 };
 
 
@@ -422,12 +422,6 @@ async function signInWithGoogle() {
         );
 
 
-        /*
-         * IMPORTANT:
-         * Do not hide the Firebase error.
-         * Account Support can now receive it.
-         */
-
         throw error;
 
     }
@@ -623,50 +617,38 @@ window.PingMeAuth = {
 window.setAuthUser =
     setAuthUser;
 
-
 window.getAuthUser =
     getAuthUser;
-
 
 window.setAuthToken =
     setAuthToken;
 
-
 window.getAuthToken =
     getAuthToken;
-
 
 window.isAuthenticated =
     isAuthenticated;
 
-
 window.isAuthReady =
     isAuthReady;
-
 
 window.getAuthUserName =
     getAuthUserName;
 
-
 window.getAuthUserEmail =
     getAuthUserEmail;
-
 
 window.getAuthUserPhoto =
     getAuthUserPhoto;
 
-
 window.signInWithGoogle =
     signInWithGoogle;
-
 
 window.signOutPingMe =
     signOutPingMe;
 
-
 window.clearAuthSession =
     clearAuthSession;
-
 
 window.getAuthState =
     getAuthState;
