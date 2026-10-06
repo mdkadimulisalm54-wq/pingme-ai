@@ -19,7 +19,7 @@ let pingmeAuthReady = false;
 
 const pingmeFirebaseConfig = {
 
-    apiKey:"AIzaSyB4dAUhxEao415YdVg4l4WYJ21hQ9V-tyk",
+    apiKey:"AIzaSyCsEcQWDup57v5l58Ul9PCP_RzYsx3Vb7w",
 
 
     authDomain:
