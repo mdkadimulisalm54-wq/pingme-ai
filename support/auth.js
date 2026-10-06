@@ -1,1315 +1,684 @@
-// PingMe AI — Account Support
+// PingMe AI — Auth Support
 // =========================================================
-// Complete Account / Google Login / Profile Support
+// Firebase Authentication + Google Login Support
 // =========================================================
 
-(function () {
+let pingmeAuthUser = null;
+let pingmeAuthToken = null;
 
-    "use strict";
+let pingmeFirebaseApp = null;
+let pingmeFirebaseAuth = null;
+let pingmeGoogleProvider = null;
 
-
-    /* =========================================================
-       STATE
-       ========================================================= */
-
-    let accountOverlay = null;
-    let accountPanel = null;
+let pingmeAuthReady = false;
 
 
-    /* =========================================================
-       CREATE ACCOUNT UI
-       ========================================================= */
+// =========================================================
+// FIREBASE CONFIG
+// =========================================================
 
-    function createAccountUI() {
+const pingmeFirebaseConfig = {
 
-        if (
-            document.getElementById(
-                "pingmeAccountOverlay"
-            )
-        ) {
-            accountOverlay =
-                document.getElementById(
-                    "pingmeAccountOverlay"
+    apiKey:
+        "AIzaSyB4dAUhxEao415YdVg4l4WYJ21hQ9V-tyk",
+
+    authDomain:
+        "pingme-ai-8d8cc.firebaseapp.com",
+
+    projectId:
+        "pingme-ai-8d8cc",
+
+    storageBucket:
+        "pingme-ai-8d8cc.firebasestorage.app",
+
+    messagingSenderId:
+        "547217020747",
+
+    appId:
+        "1:547217020747:web:62b7d3843672703d8abace",
+
+    measurementId:
+        "G-3WRC64CRDR"
+};
+
+
+// =========================================================
+// FIREBASE MODULES
+// =========================================================
+
+let pingmeFirebaseModules = null;
+
+
+// =========================================================
+// INITIALIZE FIREBASE AUTH
+// =========================================================
+
+async function initializePingMeAuth() {
+
+    try {
+
+        const firebaseAppModule =
+            await import(
+                "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js"
+            );
+
+
+        const firebaseAuthModule =
+            await import(
+                "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
+            );
+
+
+        pingmeFirebaseModules = {
+            app: firebaseAppModule,
+            auth: firebaseAuthModule
+        };
+
+
+        const {
+            initializeApp,
+            getApps
+        } = firebaseAppModule;
+
+
+        const {
+            getAuth,
+            GoogleAuthProvider,
+            onAuthStateChanged
+        } = firebaseAuthModule;
+
+
+        if (getApps().length > 0) {
+
+            pingmeFirebaseApp =
+                getApps()[0];
+
+        } else {
+
+            pingmeFirebaseApp =
+                initializeApp(
+                    pingmeFirebaseConfig
                 );
 
-            accountPanel =
-                document.getElementById(
-                    "pingmeAccountPanel"
-                );
-
-            return;
         }
 
 
-        accountOverlay =
-            document.createElement("div");
-
-        accountOverlay.id =
-            "pingmeAccountOverlay";
-
-
-        accountOverlay.innerHTML = `
-
-            <div
-                id="pingmeAccountPanel"
-                class="pingme-account-panel"
-                role="dialog"
-                aria-modal="true"
-            >
-
-                <button
-                    type="button"
-                    class="pingme-account-close"
-                    id="pingmeAccountClose"
-                    aria-label="Close"
-                >
-                    ×
-                </button>
-
-
-                <div
-                    id="pingmeAccountContent"
-                    class="pingme-account-content"
-                >
-                </div>
-
-            </div>
-
-        `;
-
-
-        document.body.appendChild(
-            accountOverlay
-        );
-
-
-        accountPanel =
-            document.getElementById(
-                "pingmeAccountPanel"
+        pingmeFirebaseAuth =
+            getAuth(
+                pingmeFirebaseApp
             );
 
 
-        const closeButton =
-            document.getElementById(
-                "pingmeAccountClose"
-            );
+        pingmeGoogleProvider =
+            new GoogleAuthProvider();
 
 
-        if (closeButton) {
+        pingmeGoogleProvider.setCustomParameters({
 
-            closeButton.addEventListener(
-                "click",
-                closeAccountPanel
-            );
+            prompt:
+                "select_account"
 
-        }
+        });
 
 
-        accountOverlay.addEventListener(
-            "click",
-            function (event) {
+        onAuthStateChanged(
+            pingmeFirebaseAuth,
+            function (user) {
 
-                if (
-                    event.target ===
-                    accountOverlay
-                ) {
+                setAuthUser(user);
 
-                    closeAccountPanel();
+
+                if (user) {
+
+                    console.log(
+                        "PingMe AI — User Signed In:",
+                        user.displayName ||
+                        user.email ||
+                        "Google User"
+                    );
+
+                } else {
+
+                    console.log(
+                        "PingMe AI — No User Signed In"
+                    );
 
                 }
 
             }
         );
 
+
+        pingmeAuthReady = true;
+
+
+        console.log(
+            "Firebase Auth Connected"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Firebase Auth Initialization Error:",
+            error
+        );
+
+
+        pingmeAuthReady = false;
+
+    }
+
+}
+
+
+// =========================================================
+// SET AUTHENTICATED USER
+// =========================================================
+
+function setAuthUser(user) {
+
+    pingmeAuthUser =
+        user || null;
+
+}
+
+
+// =========================================================
+// GET AUTHENTICATED USER
+// =========================================================
+
+function getAuthUser() {
+
+    return pingmeAuthUser;
+
+}
+
+
+// =========================================================
+// SET AUTHENTICATION TOKEN
+// =========================================================
+
+function setAuthToken(token) {
+
+    pingmeAuthToken =
+        token || null;
+
+}
+
+
+// =========================================================
+// GET AUTHENTICATION TOKEN
+// =========================================================
+
+function getAuthToken() {
+
+    return pingmeAuthToken;
+
+}
+
+
+// =========================================================
+// CHECK AUTHENTICATION
+// =========================================================
+
+function isAuthenticated() {
+
+    return !!pingmeAuthUser;
+
+}
+
+
+// =========================================================
+// CHECK AUTH READY
+// =========================================================
+
+function isAuthReady() {
+
+    return pingmeAuthReady;
+
+}
+
+
+// =========================================================
+// GET USER NAME
+// =========================================================
+
+function getAuthUserName() {
+
+    if (!pingmeAuthUser) {
+
+        return "";
+
     }
 
 
-    /* =========================================================
-       ACCOUNT BUTTON
-       ========================================================= */
+    return (
+        pingmeAuthUser.displayName ||
+        "PingMe User"
+    );
 
-    function setupAccountButton() {
+}
 
-        /*
-         * Account button is created by menu.js.
-         * Event delegation makes this work even when
-         * the button is dynamically created.
-         */
+
+// =========================================================
+// GET USER EMAIL
+// =========================================================
+
+function getAuthUserEmail() {
+
+    if (!pingmeAuthUser) {
+
+        return "";
+
+    }
+
+
+    return (
+        pingmeAuthUser.email ||
+        ""
+    );
+
+}
+
+
+// =========================================================
+// GET USER PHOTO
+// =========================================================
+
+function getAuthUserPhoto() {
+
+    if (!pingmeAuthUser) {
+
+        return "";
+
+    }
+
+
+    return (
+        pingmeAuthUser.photoURL ||
+        ""
+    );
+
+}
+
+
+// =========================================================
+// GOOGLE SIGN IN
+// =========================================================
+
+async function signInWithGoogle() {
+
+    try {
+
+        if (!pingmeFirebaseAuth) {
+
+            throw new Error(
+                "Firebase Authentication is not initialized."
+            );
+
+        }
+
+
+        if (!pingmeGoogleProvider) {
+
+            throw new Error(
+                "Google Authentication provider is not initialized."
+            );
+
+        }
+
+
+        let signInWithPopup;
+
 
         if (
-            window.__pingmeAccountDelegationReady
+            pingmeFirebaseModules &&
+            pingmeFirebaseModules.auth
         ) {
-            return;
+
+            signInWithPopup =
+                pingmeFirebaseModules
+                    .auth
+                    .signInWithPopup;
+
         }
 
 
-        window.__pingmeAccountDelegationReady =
-            true;
+        if (
+            typeof signInWithPopup !==
+            "function"
+        ) {
+
+            const firebaseAuthModule =
+                await import(
+                    "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
+                );
 
 
-        document.addEventListener(
-            "click",
-            function (event) {
+            signInWithPopup =
+                firebaseAuthModule
+                    .signInWithPopup;
 
-                const button =
-                    event.target.closest(
-                        "#pingmeAccountButton"
-                    );
+        }
 
 
-                if (!button) {
-                    return;
-                }
-
-
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                openPingMeAccountPanel();
-
-            },
-            true
-        );
-
-    }
-
-
-    /* =========================================================
-       OPEN ACCOUNT PANEL
-       ========================================================= */
-
-    function openPingMeAccountPanel() {
-
-        createAccountUI();
-
-        renderAccountScreen();
-
-
-        if (accountOverlay) {
-
-            accountOverlay.classList.add(
-                "show"
+        const result =
+            await signInWithPopup(
+                pingmeFirebaseAuth,
+                pingmeGoogleProvider
             );
-
-        }
-
-
-        document.body.classList.add(
-            "pingme-account-open"
-        );
-
-    }
-
-
-    /* =========================================================
-       CLOSE ACCOUNT PANEL
-       ========================================================= */
-
-    function closeAccountPanel() {
-
-        if (!accountOverlay) {
-            return;
-        }
-
-
-        accountOverlay.classList.remove(
-            "show"
-        );
-
-
-        document.body.classList.remove(
-            "pingme-account-open"
-        );
-
-    }
-
-
-    /* =========================================================
-       RENDER ACCOUNT SCREEN
-       ========================================================= */
-
-    function renderAccountScreen() {
-
-        const content =
-            document.getElementById(
-                "pingmeAccountContent"
-            );
-
-
-        if (!content) {
-            return;
-        }
 
 
         const user =
-            typeof window.getAuthUser ===
-            "function"
-                ? window.getAuthUser()
-                : null;
+            result.user;
 
 
-        if (!user) {
-
-            renderLoginScreen(
-                content
-            );
-
-            return;
-
-        }
-
-
-        renderProfileScreen(
-            content,
+        setAuthUser(
             user
         );
 
-    }
+
+        if (user) {
+
+            try {
+
+                const token =
+                    await user.getIdToken(
+                        true
+                    );
 
 
-    /* =========================================================
-       LOGIN SCREEN
-       ========================================================= */
+                setAuthToken(
+                    token
+                );
 
-    function renderLoginScreen(
-        content
-    ) {
+            } catch (tokenError) {
 
-        content.innerHTML = `
+                console.warn(
+                    "Could not get Firebase ID token:",
+                    tokenError
+                );
 
-            <div
-                class="pingme-login-screen"
-            >
-
-                <div
-                    class="pingme-login-logo"
-                >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-
-
-                <h2>
-                    Welcome to PingMe AI
-                </h2>
-
-
-                <p>
-                    Sign in to sync your
-                    account and personalize
-                    your PingMe experience.
-                </p>
-
-
-                <button
-                    type="button"
-                    id="pingmeGoogleLogin"
-                    class="pingme-google-login"
-                >
-
-                    <span
-                        class="pingme-google-icon"
-                    >
-                        G
-                    </span>
-
-                    <span>
-                        Continue with Google
-                    </span>
-
-                </button>
-
-
-                <div
-                    id="pingmeLoginStatus"
-                    class="pingme-login-status"
-                >
-                </div>
-
-            </div>
-
-        `;
-
-
-        const googleButton =
-            document.getElementById(
-                "pingmeGoogleLogin"
-            );
-
-
-        if (googleButton) {
-
-            googleButton.addEventListener(
-                "click",
-                handleGoogleLogin
-            );
+            }
 
         }
 
-    }
+
+        console.log(
+            "Google Sign-In Successful:",
+            user?.email || ""
+        );
 
 
-    /* =========================================================
-       GOOGLE LOGIN
-       ========================================================= */
-
-    async function handleGoogleLogin() {
-
-        const button =
-            document.getElementById(
-                "pingmeGoogleLogin"
-            );
+        return user;
 
 
-        const status =
-            document.getElementById(
-                "pingmeLoginStatus"
-            );
+    } catch (error) {
+
+        console.error(
+            "Google Sign-In Error:",
+            error
+        );
 
 
         /*
-         * Auth Support is loaded as a classic script.
-         * Functions are therefore available through
-         * the global window scope.
+         * IMPORTANT:
+         * Do not hide the Firebase error.
+         * Account Support can now receive it.
          */
 
-        const googleLoginFunction =
-            window.signInWithGoogle;
+        throw error;
+
+    }
+
+}
+
+
+// =========================================================
+// SIGN OUT
+// =========================================================
+
+async function signOutPingMe() {
+
+    try {
+
+        if (!pingmeFirebaseAuth) {
+
+            clearAuthSession();
+
+            return true;
+
+        }
+
+
+        let firebaseSignOut;
 
 
         if (
-            typeof googleLoginFunction !==
+            pingmeFirebaseModules &&
+            pingmeFirebaseModules.auth
+        ) {
+
+            firebaseSignOut =
+                pingmeFirebaseModules
+                    .auth
+                    .signOut;
+
+        }
+
+
+        if (
+            typeof firebaseSignOut !==
             "function"
         ) {
 
-            if (status) {
-
-                status.textContent =
-                    "Google Authentication is not connected yet.";
-
-            }
-
-
-            console.error(
-                "PingMe AI — signInWithGoogle() was not found."
-            );
-
-
-            return;
-
-        }
-
-
-        if (button) {
-
-            button.disabled = true;
-
-            button.innerHTML = `
-                <span class="pingme-login-spinner"></span>
-                Signing in...
-            `;
-
-        }
-
-
-        if (status) {
-
-            status.textContent = "";
-
-        }
-
-
-        try {
-
-            const user =
-                await googleLoginFunction();
-
-
-            if (user) {
-
-                updateMenuAccount(
-                    user
+            const firebaseAuthModule =
+                await import(
+                    "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
                 );
 
 
-                renderAccountScreen();
-
-
-            } else {
-
-                if (status) {
-
-                    status.textContent =
-                        "Google Sign-In was not completed.";
-
-                }
-
-
-                restoreGoogleButton();
-
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "PingMe AI — Google Login Error:",
-                error
-            );
-
-
-            if (status) {
-
-                status.textContent =
-                    getFriendlyAuthError(
-                        error
-                    );
-
-            }
-
-
-            restoreGoogleButton();
+            firebaseSignOut =
+                firebaseAuthModule.signOut;
 
         }
 
-    }
 
-
-    /* =========================================================
-       RESTORE GOOGLE BUTTON
-       ========================================================= */
-
-    function restoreGoogleButton() {
-
-        const button =
-            document.getElementById(
-                "pingmeGoogleLogin"
-            );
-
-
-        if (!button) {
-            return;
-        }
-
-
-        button.disabled = false;
-
-
-        button.innerHTML = `
-
-            <span
-                class="pingme-google-icon"
-            >
-                G
-            </span>
-
-            <span>
-                Continue with Google
-            </span>
-
-        `;
-
-    }
-
-
-    /* =========================================================
-       PROFILE SCREEN
-       ========================================================= */
-
-    function renderProfileScreen(
-        content,
-        user
-    ) {
-
-        const name =
-            user.displayName ||
-            "PingMe User";
-
-
-        const email =
-            user.email ||
-            "";
-
-
-        const photo =
-            user.photoURL ||
-            "";
-
-
-        const initial =
-            getInitial(
-                name,
-                email
-            );
-
-
-        content.innerHTML = `
-
-            <div
-                class="pingme-profile-screen"
-            >
-
-                <div
-                    class="pingme-profile-avatar"
-                >
-                    ${
-                        photo
-                        ?
-                        `
-                        <img
-                            src="${escapeHTML(photo)}"
-                            alt="Profile photo"
-                        >
-                        `
-                        :
-                        `
-                        <span>
-                            ${escapeHTML(initial)}
-                        </span>
-                        `
-                    }
-                </div>
-
-
-                <h2>
-                    ${escapeHTML(name)}
-                </h2>
-
-
-                <div
-                    class="pingme-profile-email"
-                >
-                    ${escapeHTML(email)}
-                </div>
-
-
-                <div
-                    class="pingme-account-card"
-                >
-
-                    <div
-                        class="pingme-account-card-icon"
-                    >
-                        ✓
-                    </div>
-
-                    <div>
-
-                        <strong>
-                            Google account connected
-                        </strong>
-
-                        <span>
-                            Your PingMe AI account is
-                            signed in.
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    id="pingmeSettingsButton"
-                    class="pingme-account-action"
-                >
-                    <span>⚙</span>
-                    <span>Settings</span>
-                    <b>›</b>
-                </button>
-
-
-                <button
-                    type="button"
-                    id="pingmeLogoutButton"
-                    class="pingme-logout-button"
-                >
-                    Sign out
-                </button>
-
-
-                <div
-                    id="pingmeLogoutStatus"
-                    class="pingme-login-status"
-                >
-                </div>
-
-            </div>
-
-        `;
-
-
-        const logoutButton =
-            document.getElementById(
-                "pingmeLogoutButton"
-            );
-
-
-        if (logoutButton) {
-
-            logoutButton.addEventListener(
-                "click",
-                handleLogout
-            );
-
-        }
-
-
-        const settingsButton =
-            document.getElementById(
-                "pingmeSettingsButton"
-            );
-
-
-        if (settingsButton) {
-
-            settingsButton.addEventListener(
-                "click",
-                function () {
-
-                    openSettings();
-
-                }
-            );
-
-        }
-
-    }
-
-
-    /* =========================================================
-       LOGOUT
-       ========================================================= */
-
-    async function handleLogout() {
-
-        const button =
-            document.getElementById(
-                "pingmeLogoutButton"
-            );
-
-
-        const status =
-            document.getElementById(
-                "pingmeLogoutStatus"
-            );
-
-
-        const logoutFunction =
-            window.signOutPingMe;
-
-
-        if (
-            typeof logoutFunction !==
-            "function"
-        ) {
-
-            if (status) {
-
-                status.textContent =
-                    "Authentication system is not connected.";
-
-            }
-
-            return;
-
-        }
-
-
-        if (button) {
-
-            button.disabled = true;
-
-            button.textContent =
-                "Signing out...";
-
-        }
-
-
-        try {
-
-            await logoutFunction();
-
-
-            updateMenuAccount(
-                null
-            );
-
-
-            renderAccountScreen();
-
-
-        } catch (error) {
-
-            console.error(
-                "PingMe AI — Logout Error:",
-                error
-            );
-
-
-            if (status) {
-
-                status.textContent =
-                    "Could not sign out.";
-
-            }
-
-
-            if (button) {
-
-                button.disabled = false;
-
-                button.textContent =
-                    "Sign out";
-
-            }
-
-        }
-
-    }
-
-
-    /* =========================================================
-       UPDATE SIDE MENU ACCOUNT
-       ========================================================= */
-
-    function updateMenuAccount(
-        user
-    ) {
-
-        const nameElement =
-            document.getElementById(
-                "pingmeAccountName"
-            );
-
-
-        const emailElement =
-            document.getElementById(
-                "pingmeAccountEmail"
-            );
-
-
-        const avatarElement =
-            document.getElementById(
-                "pingmeAccountAvatar"
-            );
-
-
-        if (!user) {
-
-            if (nameElement) {
-
-                nameElement.textContent =
-                    "PingMe User";
-
-            }
-
-
-            if (emailElement) {
-
-                emailElement.textContent =
-                    "Not signed in";
-
-            }
-
-
-            if (avatarElement) {
-
-                avatarElement.innerHTML = `
-
-                    <span
-                        id="pingmeAccountInitial"
-                    >
-                        P
-                    </span>
-
-                `;
-
-            }
-
-            return;
-
-        }
-
-
-        const name =
-            user.displayName ||
-            "PingMe User";
-
-
-        const email =
-            user.email ||
-            "Signed in";
-
-
-        const photo =
-            user.photoURL ||
-            "";
-
-
-        if (nameElement) {
-
-            nameElement.textContent =
-                name;
-
-        }
-
-
-        if (emailElement) {
-
-            emailElement.textContent =
-                email;
-
-        }
-
-
-        if (avatarElement) {
-
-            if (photo) {
-
-                avatarElement.innerHTML = `
-
-                    <img
-                        src="${escapeHTML(photo)}"
-                        alt="Google profile photo"
-                    >
-
-                `;
-
-            } else {
-
-                avatarElement.innerHTML = `
-
-                    <span
-                        id="pingmeAccountInitial"
-                    >
-                        ${escapeHTML(
-                            getInitial(
-                                name,
-                                email
-                            )
-                        )}
-                    </span>
-
-                `;
-
-            }
-
-        }
-
-    }
-
-
-    /* =========================================================
-       SETTINGS CONNECTION
-       ========================================================= */
-
-    function openSettings() {
-
-        closeAccountPanel();
-
-
-        if (
-            typeof window.openPingMeSettings ===
-            "function"
-        ) {
-
-            window.openPingMeSettings();
-
-            return;
-
-        }
-
-
-        if (
-            window.PingMeSettings &&
-            typeof window.PingMeSettings.open ===
-            "function"
-        ) {
-
-            window.PingMeSettings.open();
-
-            return;
-
-        }
-
-
-        console.warn(
-            "PingMe AI — Settings Support is not connected yet."
+        await firebaseSignOut(
+            pingmeFirebaseAuth
         );
 
-    }
+
+        clearAuthSession();
 
 
-    /* =========================================================
-       AUTH ERROR MESSAGE
-       ========================================================= */
-
-    function getFriendlyAuthError(
-        error
-    ) {
-
-        if (!error) {
-
-            return "Sign-in failed.";
-
-        }
-
-
-        const code =
-            error.code ||
-            "";
-
-
-        if (
-            code ===
-            "auth/popup-blocked"
-        ) {
-
-            return "The Google sign-in popup was blocked.";
-
-        }
-
-
-        if (
-            code ===
-            "auth/popup-closed-by-user"
-        ) {
-
-            return "Google sign-in was cancelled.";
-
-        }
-
-
-        if (
-            code ===
-            "auth/cancelled-popup-request"
-        ) {
-
-            return "The sign-in request was cancelled.";
-
-        }
-
-
-        if (
-            code ===
-            "auth/unauthorized-domain"
-        ) {
-
-            return "This website is not authorized in Firebase.";
-
-        }
-
-
-        if (
-            code ===
-            "auth/operation-not-allowed"
-        ) {
-
-            return "Google Sign-In is not enabled in Firebase.";
-
-        }
-
-
-        if (
-            code ===
-            "auth/network-request-failed"
-        ) {
-
-            return "Network error. Check your internet connection.";
-
-        }
-
-
-        return (
-            error.message ||
-            "Unable to sign in with Google."
+        console.log(
+            "PingMe AI — Signed Out"
         );
 
-    }
+
+        return true;
 
 
-    /* =========================================================
-       INITIAL LETTER
-       ========================================================= */
+    } catch (error) {
 
-    function getInitial(
-        name,
-        email
-    ) {
-
-        const value =
-            name ||
-            email ||
-            "P";
-
-
-        return value
-            .trim()
-            .charAt(0)
-            .toUpperCase();
-
-    }
-
-
-    /* =========================================================
-       SAFE HTML
-       ========================================================= */
-
-    function escapeHTML(
-        value
-    ) {
-
-        return String(
-            value || ""
-        )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
+        console.error(
+            "PingMe AI — Sign Out Error:",
+            error
         );
 
+
+        throw error;
+
     }
 
+}
 
-    /* =========================================================
-       CSS
-       ========================================================= */
 
-    function addStyles() {
+// =========================================================
+// CLEAR AUTH SESSION
+// =========================================================
 
-        if (
-            document.getElementById(
-                "pingmeAccountSupportStyles"
-            )
-        ) {
+function clearAuthSession() {
 
-            return;
+    pingmeAuthUser = null;
 
-        }
+    pingmeAuthToken = null;
 
 
-        const style =
-            document.createElement(
-                "style"
-            );
+    console.log(
+        "Auth Session Cleared"
+    );
 
+}
 
-        style.id =
-            "pingmeAccountSupportStyles";
 
+// =========================================================
+// GET AUTHENTICATION STATE
+// =========================================================
 
-        style.textContent = `
+function getAuthState() {
 
-            #pingmeAccountOverlay {
+    return {
 
-                position: fixed;
+        authenticated:
+            isAuthenticated(),
 
-                inset: 0;
+        ready:
+            isAuthReady(),
 
-                z-index: 100000;
+        user:
+            pingmeAuthUser,
 
-                display: flex;
+        token:
+            pingmeAuthToken,
 
-                align-items: center;
+        name:
+            getAuthUserName(),
 
-                justify-content: center;
+        email:
+            getAuthUserEmail(),
 
-                padding: 20px;
+        photo:
+            getAuthUserPhoto()
 
-                background:
-                    rgba(0,0,0,0.42);
+    };
 
-                backdrop-filter:
-                    blur(8px);
+}
 
-                -webkit-backdrop-filter:
-                    blur(8px);
 
-                opacity: 0;
+// =========================================================
+// EXPOSE AUTH API
+// =========================================================
 
-                visibility: hidden;
+window.PingMeAuth = {
 
-                pointer-events: none;
+    setUser:
+        setAuthUser,
 
-                transition:
-                    opacity 0.22s ease,
-                    visibility 0.22s ease;
+    getUser:
+        getAuthUser,
 
-            }
+    setToken:
+        setAuthToken,
 
+    getToken:
+        getAuthToken,
 
-            #pingmeAccountOverlay.show {
+    isAuthenticated:
+        isAuthenticated,
 
-                opacity: 1;
+    isReady:
+        isAuthReady,
 
-                visibility: visible;
+    getUserName:
+        getAuthUserName,
 
-                pointer-events: auto;
+    getUserEmail:
+        getAuthUserEmail,
 
-            }
+    getUserPhoto:
+        getAuthUserPhoto,
 
+    signInWithGoogle:
+        signInWithGoogle,
 
-            .pingme-account-panel {
+    signOut:
+        signOutPingMe,
 
-                position: relative;
+    clearSession:
+        clearAuthSession,
 
-                width:
-                    min(410px, 100%);
+    getState:
+        getAuthState
 
-                max-height:
-                    min(700px, 90dvh);
+};
 
-                overflow-y: auto;
 
-                background:
-                    #ffffff;
+// =========================================================
+// GLOBAL FUNCTIONS FOR OTHER SUPPORT FILES
+// =========================================================
 
-                color:
-                    #171717;
+window.setAuthUser =
+    setAuthUser;
 
-                border-radius:
-                    24px;
 
-                padding:
-                    30px 24px 26px;
+window.getAuthUser =
+    getAuthUser;
 
-                box-shadow:
-                    0 24px 70px
-                    rgba(0,0,0,0.25);
 
-                transform:
-                    translateY(18px)
-                    scale(0.97);
+window.setAuthToken =
+    setAuthToken;
 
-                transition:
-                    transform 0.25s
-                    cubic-bezier(.2,.8,.2,1);
 
-            }
+window.getAuthToken =
+    getAuthToken;
 
 
-            #pingmeAccountOverlay.show
-            .pingme-account-panel {
+window.isAuthenticated =
+    isAuthenticated;
 
-                transform:
-                    translateY(0)
-                    scale(1);
 
-            }
+window.isAuthReady =
+    isAuthReady;
 
 
-            .pingme-account-close {
+window.getAuthUserName =
+    getAuthUserName;
 
-                position: absolute;
 
-                top: 12px;
+window.getAuthUserEmail =
+    getAuthUserEmail;
 
-                right: 12px;
 
-                width: 40px;
+window.getAuthUserPhoto =
+    getAuthUserPhoto;
 
-                height: 40px;
 
-                border: 0;
+window.signInWithGoogle =
+    signInWithGoogle;
 
-                border-radius: 50%;
 
-                background:
-                    #f2f2f2;
+window.signOutPingMe =
+    signOutPingMe;
 
-                color:
-                    #555555;
 
-                font-size: 27px;
+window.clearAuthSession =
+    clearAuthSession;
 
-                line-height: 1;
 
-                cursor: pointer;
+window.getAuthState =
+    getAuthState;
 
-            }
 
+// =========================================================
+// START AUTH SYSTEM
+// =========================================================
 
-            .pingme-account-close:active {
+initializePingMeAuth();
 
-                transform:
-                    scale(0.94);
 
-            }
-
-
-            .pingme-login-screen,
-            .pingme-profile-screen {
-
-                text-align: center;
-
-                padding:
-                    18px 4px 4px;
-
-            }
-
-
-            .pingme-login-logo {
-
-                width: 68px;
-
-                height: 68px;
-
-                margin:
-                    10px auto 20px;
-
-                border-radius: 20px;
-
-                background:
-                    #111111;
-
-                display: flex;
-
-                align-items: center;
-
-                justify-content: center;
-
-                gap: 4px;
-
-                box-shadow:
-                    0 10px 25px
-                    rgba(0,0,0,0.16);
-
-            }
-
-
-            .pingme-login-logo span {
-
-                display: block;
-
-                width: 5px;
-
-                border-radius: 10px;
-
-                background:
-                    #ffffff;
-
-            }
-
-
-            .pingme-login-logo span:nth-child(1) {
-
-                height: 17px;
+console.log(
+    "PingMe AI — Auth Support Connected"
+);
