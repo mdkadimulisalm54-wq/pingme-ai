@@ -1,8 +1,9 @@
 // PingMe AI — Chat Support
-// Message UI + Smooth Animations
+// Message UI + Smooth Animations + History Connection
 
 (() => {
     "use strict";
+
 
     /* =========================================================
        MESSAGE UI STYLE
@@ -273,6 +274,330 @@
 
 
     /* =========================================================
+       HISTORY CONNECTION
+       ========================================================= */
+
+    const ACTIVE_CHAT_KEY =
+        "pingme_active_chat_id";
+
+
+    let activeChatId = null;
+
+
+    function getHistory() {
+
+        if (
+            window.PingMeHistory &&
+            typeof window.PingMeHistory === "object"
+        ) {
+            return window.PingMeHistory;
+        }
+
+        return null;
+    }
+
+
+    function getActiveChatId() {
+
+        if (activeChatId) {
+            return activeChatId;
+        }
+
+
+        try {
+
+            const savedId =
+                localStorage.getItem(
+                    ACTIVE_CHAT_KEY
+                );
+
+            if (savedId) {
+                activeChatId = savedId;
+                return activeChatId;
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "PingMe: Could not read active chat ID.",
+                error
+            );
+
+        }
+
+        return null;
+    }
+
+
+    function setActiveChatId(chatId) {
+
+        if (!chatId) {
+            return;
+        }
+
+
+        activeChatId = chatId;
+
+
+        try {
+
+            localStorage.setItem(
+                ACTIVE_CHAT_KEY,
+                chatId
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "PingMe: Could not save active chat ID.",
+                error
+            );
+
+        }
+
+    }
+
+
+    function ensureActiveChat(firstMessage = "") {
+
+        const history =
+            getHistory();
+
+        if (!history) {
+            return null;
+        }
+
+
+        const existingId =
+            getActiveChatId();
+
+
+        if (existingId) {
+
+            const existingChat =
+                history.getChat(
+                    existingId
+                );
+
+            if (existingChat) {
+                return existingId;
+            }
+
+        }
+
+
+        try {
+
+            const title =
+                createChatTitle(
+                    firstMessage
+                );
+
+
+            const newChat =
+                history.createChat(
+                    title
+                );
+
+
+            if (
+                newChat &&
+                newChat.id
+            ) {
+
+                setActiveChatId(
+                    newChat.id
+                );
+
+                return newChat.id;
+            }
+
+        } catch (error) {
+
+            console.error(
+                "PingMe: Could not create history chat.",
+                error
+            );
+
+        }
+
+
+        return null;
+    }
+
+
+    function createChatTitle(text) {
+
+        const clean =
+            String(text || "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+
+        if (!clean) {
+            return "New Chat";
+        }
+
+
+        if (clean.length <= 45) {
+            return clean;
+        }
+
+
+        return (
+            clean.substring(0, 45)
+            + "..."
+        );
+
+    }
+
+
+    function getMessageText(node) {
+
+        if (!node) {
+            return "";
+        }
+
+
+        /*
+         * textContent is intentionally used instead of
+         * innerHTML so History stores clean readable text
+         * rather than UI markup.
+         */
+
+        return String(
+            node.textContent || ""
+        )
+            .replace(/\s+/g, " ")
+            .trim();
+
+    }
+
+
+    function saveMessageToHistory(node) {
+
+        const history =
+            getHistory();
+
+        if (!history || !node) {
+            return;
+        }
+
+
+        /*
+         * Prevent the same DOM message from being
+         * stored more than once.
+         */
+
+        if (
+            node.dataset &&
+            node.dataset.historySaved === "true"
+        ) {
+            return;
+        }
+
+
+        let role = null;
+
+
+        if (
+            node.classList.contains(
+                "user-message"
+            )
+        ) {
+
+            role = "user";
+
+        } else if (
+            node.classList.contains(
+                "ai-message"
+            )
+        ) {
+
+            role = "assistant";
+
+        }
+
+
+        if (!role) {
+            return;
+        }
+
+
+        const content =
+            getMessageText(node);
+
+
+        if (!content) {
+            return;
+        }
+
+
+        const chatId =
+            ensureActiveChat(
+                role === "user"
+                    ? content
+                    : ""
+            );
+
+
+        if (!chatId) {
+            return;
+        }
+
+
+        try {
+
+            if (
+                role === "user" &&
+                typeof history.addUserMessage === "function"
+            ) {
+
+                history.addUserMessage(
+                    chatId,
+                    content
+                );
+
+            } else if (
+                role === "assistant" &&
+                typeof history.addAssistantMessage === "function"
+            ) {
+
+                history.addAssistantMessage(
+                    chatId,
+                    content
+                );
+
+            } else if (
+                typeof history.addMessage === "function"
+            ) {
+
+                history.addMessage(
+                    chatId,
+                    role,
+                    content
+                );
+
+            }
+
+
+            node.dataset.historySaved =
+                "true";
+
+
+        } catch (error) {
+
+            console.error(
+                "PingMe: Could not save message to history.",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
        MESSAGE OBSERVER
        ========================================================= */
 
@@ -303,6 +628,10 @@
                             }
 
 
+                            /* ---------------------------------
+                               USER MESSAGE
+                               --------------------------------- */
+
                             if (
                                 node.classList.contains(
                                     "user-message"
@@ -316,8 +645,18 @@
 
                                 node.style.animation =
                                     "pingmeUserIn 0.38s cubic-bezier(.2,.8,.2,1) both";
+
+
+                                saveMessageToHistory(
+                                    node
+                                );
+
                             }
 
+
+                            /* ---------------------------------
+                               AI MESSAGE
+                               --------------------------------- */
 
                             if (
                                 node.classList.contains(
@@ -332,8 +671,18 @@
 
                                 node.style.animation =
                                     "pingmeAIIn 0.45s cubic-bezier(.2,.8,.2,1) both";
+
+
+                                saveMessageToHistory(
+                                    node
+                                );
+
                             }
 
+
+                            /* ---------------------------------
+                               AI ERROR
+                               --------------------------------- */
 
                             if (
                                 node.classList.contains(
@@ -348,6 +697,7 @@
 
                                 node.style.animation =
                                     "pingmeErrorIn 0.4s ease both";
+
                             }
 
                         }
@@ -366,12 +716,15 @@
         );
 
     }
-          /* =========================================================
+
+
+    /* =========================================================
        KEEP THINKING AT BOTTOM
        ========================================================= */
 
     const thinking =
         document.getElementById("thinking");
+
 
     if (thinking) {
 
@@ -379,19 +732,29 @@
             new MutationObserver(() => {
 
                 if (
-                    thinking.classList.contains("show")
+                    thinking.classList.contains(
+                        "show"
+                    )
                 ) {
 
                     const chatArea =
-                        document.getElementById("chatArea");
+                        document.getElementById(
+                            "chatArea"
+                        );
+
 
                     if (chatArea) {
-                        chatArea.appendChild(thinking);
+
+                        chatArea.appendChild(
+                            thinking
+                        );
+
                     }
 
                 }
 
             });
+
 
         thinkingObserver.observe(
             thinking,
@@ -403,6 +766,28 @@
 
     }
 
+
+    /* =========================================================
+       HISTORY READY CHECK
+       ========================================================= */
+
+    if (
+        window.PingMeHistory
+    ) {
+
+        console.log(
+            "Chat Support: History Connected"
+        );
+
+    } else {
+
+        console.warn(
+            "Chat Support: History Support not found. Make sure History Support.js is loaded."
+        );
+
+    }
+
+
     /* =========================================================
        CONNECTED
        ========================================================= */
@@ -412,3 +797,5 @@
     );
 
 })();
+
+এখন শুধু এই "Chat Support.js"-টা Save কর। অন্য কোনো ফাইল বা HTML এখন পরিবর্তন করিস না। এরপর আমরা একটা মাত্র টেস্ট করব—নতুন একটা message পাঠিয়ে History-তে সত্যিই ঢুকেছে কি না।
