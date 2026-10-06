@@ -11,6 +11,7 @@ let pingmeFirebaseAuth = null;
 let pingmeGoogleProvider = null;
 
 let pingmeAuthReady = false;
+let pingmeFirebaseModules = null;
 
 
 // =========================================================
@@ -20,25 +21,26 @@ let pingmeAuthReady = false;
 const pingmeFirebaseConfig = {
 
     apiKey:
-        "AIzaSyB4dAUhxEao415YdVg4l4WYJ21hQ9V-tyk",
+        "AIzaSyCsEcQWDup57v5l58Ul9PCP_RzYsx3Vb7w",
 
     authDomain:
-        "pingme-ai-8d8cc.firebaseapp.com",
+        "pingme-ai-bd38d.firebaseapp.com",
 
     projectId:
-        "pingme-ai-8d8cc",
+        "pingme-ai-bd38d",
 
     storageBucket:
-        "pingme-ai-8d8cc.firebasestorage.app",
+        "pingme-ai-bd38d.firebasestorage.app",
 
     messagingSenderId:
-        "547217020747",
+        "389510337713",
 
     appId:
-        "1:547217020747:web:62b7d3843672703d8abace",
+        "1:389510337713:web:0af55eeb00b996c620fe90",
 
     measurementId:
-        "G-3WRC64CRDR"
+        "G-7W2NQPXF2B"
+
 };
 
 
@@ -62,6 +64,17 @@ async function initializePingMeAuth() {
             );
 
 
+        pingmeFirebaseModules = {
+
+            app:
+                firebaseAppModule,
+
+            auth:
+                firebaseAuthModule
+
+        };
+
+
         const {
             initializeApp,
             getApps
@@ -75,10 +88,41 @@ async function initializePingMeAuth() {
         } = firebaseAuthModule;
 
 
-        if (getApps().length > 0) {
+        // -------------------------------------------------
+        // FIREBASE APP
+        // -------------------------------------------------
 
-            pingmeFirebaseApp =
-                getApps()[0];
+        const existingApps =
+            getApps();
+
+
+        if (existingApps.length > 0) {
+
+            const existingApp =
+                existingApps.find(function (app) {
+
+                    return (
+                        app.options &&
+                        app.options.projectId ===
+                        pingmeFirebaseConfig.projectId
+                    );
+
+                });
+
+
+            if (existingApp) {
+
+                pingmeFirebaseApp =
+                    existingApp;
+
+            } else {
+
+                pingmeFirebaseApp =
+                    initializeApp(
+                        pingmeFirebaseConfig
+                    );
+
+            }
 
         } else {
 
@@ -90,11 +134,19 @@ async function initializePingMeAuth() {
         }
 
 
+        // -------------------------------------------------
+        // FIREBASE AUTH
+        // -------------------------------------------------
+
         pingmeFirebaseAuth =
             getAuth(
                 pingmeFirebaseApp
             );
 
+
+        // -------------------------------------------------
+        // GOOGLE PROVIDER
+        // -------------------------------------------------
 
         pingmeGoogleProvider =
             new GoogleAuthProvider();
@@ -108,14 +160,38 @@ async function initializePingMeAuth() {
         });
 
 
+        // -------------------------------------------------
+        // AUTH STATE
+        // -------------------------------------------------
+
         onAuthStateChanged(
             pingmeFirebaseAuth,
-            function (user) {
+            async function (user) {
 
                 setAuthUser(user);
 
 
                 if (user) {
+
+                    try {
+
+                        const token =
+                            await user.getIdToken();
+
+
+                        setAuthToken(
+                            token
+                        );
+
+                    } catch (tokenError) {
+
+                        console.warn(
+                            "Firebase ID token unavailable:",
+                            tokenError
+                        );
+
+                    }
+
 
                     console.log(
                         "PingMe AI — User Signed In:",
@@ -125,6 +201,11 @@ async function initializePingMeAuth() {
                     );
 
                 } else {
+
+                    setAuthToken(
+                        null
+                    );
+
 
                     console.log(
                         "PingMe AI — No User Signed In"
@@ -136,7 +217,8 @@ async function initializePingMeAuth() {
         );
 
 
-        pingmeAuthReady = true;
+        pingmeAuthReady =
+            true;
 
 
         console.log(
@@ -145,6 +227,10 @@ async function initializePingMeAuth() {
 
 
     } catch (error) {
+
+        pingmeAuthReady =
+            false;
+
 
         console.error(
             "Firebase Auth Initialization Error:",
@@ -231,7 +317,9 @@ function isAuthReady() {
 function getAuthUserName() {
 
     if (!pingmeAuthUser) {
+
         return "";
+
     }
 
 
@@ -250,7 +338,9 @@ function getAuthUserName() {
 function getAuthUserEmail() {
 
     if (!pingmeAuthUser) {
+
         return "";
+
     }
 
 
@@ -269,7 +359,9 @@ function getAuthUserEmail() {
 function getAuthUserPhoto() {
 
     if (!pingmeAuthUser) {
+
         return "";
+
     }
 
 
@@ -291,21 +383,54 @@ async function signInWithGoogle() {
 
         if (!pingmeFirebaseAuth) {
 
-            console.warn(
-                "Firebase Auth is not ready yet."
+            throw new Error(
+                "Firebase Authentication is not initialized."
             );
-
-            return null;
 
         }
 
 
-        const {
-            signInWithPopup
-        } =
-            await import(
-                "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
+        if (!pingmeGoogleProvider) {
+
+            throw new Error(
+                "Google Authentication provider is not initialized."
             );
+
+        }
+
+
+        let signInWithPopup;
+
+
+        if (
+            pingmeFirebaseModules &&
+            pingmeFirebaseModules.auth
+        ) {
+
+            signInWithPopup =
+                pingmeFirebaseModules
+                    .auth
+                    .signInWithPopup;
+
+        }
+
+
+        if (
+            typeof signInWithPopup !==
+            "function"
+        ) {
+
+            const firebaseAuthModule =
+                await import(
+                    "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
+                );
+
+
+            signInWithPopup =
+                firebaseAuthModule
+                    .signInWithPopup;
+
+        }
 
 
         const result =
@@ -319,7 +444,9 @@ async function signInWithGoogle() {
             result.user;
 
 
-        setAuthUser(user);
+        setAuthUser(
+            user
+        );
 
 
         if (user) {
@@ -327,14 +454,19 @@ async function signInWithGoogle() {
             try {
 
                 const token =
-                    await user.getIdToken();
+                    await user.getIdToken(
+                        true
+                    );
 
-                setAuthToken(token);
+
+                setAuthToken(
+                    token
+                );
 
             } catch (tokenError) {
 
                 console.warn(
-                    "Firebase ID token unavailable:",
+                    "Could not get Firebase ID token:",
                     tokenError
                 );
 
@@ -344,7 +476,8 @@ async function signInWithGoogle() {
 
 
         console.log(
-            "Google Sign-In Successful"
+            "Google Sign-In Successful:",
+            user?.email || ""
         );
 
 
@@ -359,7 +492,7 @@ async function signInWithGoogle() {
         );
 
 
-        return null;
+        throw error;
 
     }
 
@@ -378,20 +511,45 @@ async function signOutPingMe() {
 
             clearAuthSession();
 
-            return;
+            return true;
 
         }
 
 
-        const {
-            signOut
-        } =
-            await import(
-                "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
-            );
+        let firebaseSignOut;
 
 
-        await signOut(
+        if (
+            pingmeFirebaseModules &&
+            pingmeFirebaseModules.auth
+        ) {
+
+            firebaseSignOut =
+                pingmeFirebaseModules
+                    .auth
+                    .signOut;
+
+        }
+
+
+        if (
+            typeof firebaseSignOut !==
+            "function"
+        ) {
+
+            const firebaseAuthModule =
+                await import(
+                    "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js"
+                );
+
+
+            firebaseSignOut =
+                firebaseAuthModule.signOut;
+
+        }
+
+
+        await firebaseSignOut(
             pingmeFirebaseAuth
         );
 
@@ -404,12 +562,18 @@ async function signOutPingMe() {
         );
 
 
+        return true;
+
+
     } catch (error) {
 
         console.error(
             "PingMe AI — Sign Out Error:",
             error
         );
+
+
+        throw error;
 
     }
 
@@ -422,8 +586,12 @@ async function signOutPingMe() {
 
 function clearAuthSession() {
 
-    pingmeAuthUser = null;
-    pingmeAuthToken = null;
+    pingmeAuthUser =
+        null;
+
+    pingmeAuthToken =
+        null;
+
 
     console.log(
         "Auth Session Cleared"
@@ -467,6 +635,98 @@ function getAuthState() {
 
 
 // =========================================================
+// EXPOSE AUTH API
+// =========================================================
+
+window.PingMeAuth = {
+
+    setUser:
+        setAuthUser,
+
+    getUser:
+        getAuthUser,
+
+    setToken:
+        setAuthToken,
+
+    getToken:
+        getAuthToken,
+
+    isAuthenticated:
+        isAuthenticated,
+
+    isReady:
+        isAuthReady,
+
+    getUserName:
+        getAuthUserName,
+
+    getUserEmail:
+        getAuthUserEmail,
+
+    getUserPhoto:
+        getAuthUserPhoto,
+
+    signInWithGoogle:
+        signInWithGoogle,
+
+    signOut:
+        signOutPingMe,
+
+    clearSession:
+        clearAuthSession,
+
+    getState:
+        getAuthState
+
+};
+
+
+// =========================================================
+// GLOBAL FUNCTIONS FOR OTHER SUPPORT FILES
+// =========================================================
+
+window.setAuthUser =
+    setAuthUser;
+
+window.getAuthUser =
+    getAuthUser;
+
+window.setAuthToken =
+    setAuthToken;
+
+window.getAuthToken =
+    getAuthToken;
+
+window.isAuthenticated =
+    isAuthenticated;
+
+window.isAuthReady =
+    isAuthReady;
+
+window.getAuthUserName =
+    getAuthUserName;
+
+window.getAuthUserEmail =
+    getAuthUserEmail;
+
+window.getAuthUserPhoto =
+    getAuthUserPhoto;
+
+window.signInWithGoogle =
+    signInWithGoogle;
+
+window.signOutPingMe =
+    signOutPingMe;
+
+window.clearAuthSession =
+    clearAuthSession;
+
+window.getAuthState =
+    getAuthState;
+
+
+// =========================================================
 // START AUTH SYSTEM
 // =========================================================
 
@@ -474,5 +734,5 @@ initializePingMeAuth();
 
 
 console.log(
-    "Auth Support Connected"
+    "PingMe AI — Auth Support Connected"
 );
