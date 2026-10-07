@@ -1,4 +1,4 @@
-/* PingMe AI — Message Actions */
+ /* PingMe AI — Message Actions */
 (() => {
   "use strict";
 
@@ -63,13 +63,6 @@
     return b;
   };
 
-  const copy = el => {
-    const t = textOf(el);
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
-    } else fallbackCopy(t);
-  };
-
   const fallbackCopy = t => {
     const x = document.createElement("textarea");
     x.value = t;
@@ -79,10 +72,16 @@
     x.remove();
   };
 
+  const copy = el => {
+    const t = textOf(el);
+    if (navigator.clipboard?.writeText)
+      navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
+    else fallbackCopy(t);
+  };
+
   const feedback = (el,type) => {
     el.dispatchEvent(new CustomEvent("pingme:message-feedback",{
-      bubbles:true,
-      detail:{message:el,text:textOf(el),type}
+      bubbles:true,detail:{message:el,text:textOf(el),type}
     }));
   };
 
@@ -112,12 +111,10 @@
     if (!v) return "Time unavailable";
 
     const d = new Date(v);
-    if (!isNaN(d.getTime()) && /[-/:T]/.test(v)) {
+    if (!isNaN(d.getTime()) && /[-/:T]/.test(v))
       return new Intl.DateTimeFormat([],{
-        hour:"numeric",
-        minute:"2-digit"
+        hour:"numeric",minute:"2-digit"
       }).format(d);
-    }
 
     return v;
   };
@@ -141,8 +138,7 @@
 
     branch.onclick = () => {
       el.dispatchEvent(new CustomEvent("pingme:branch-message",{
-        bubbles:true,
-        detail:{message:el,text:textOf(el)}
+        bubbles:true,detail:{message:el,text:textOf(el)}
       }));
 
       if (typeof window.branchInNewChat === "function")
@@ -159,8 +155,7 @@
 
     retry.onclick = () => {
       el.dispatchEvent(new CustomEvent("pingme:retry-message",{
-        bubbles:true,
-        detail:{message:el,text:textOf(el)}
+        bubbles:true,detail:{message:el,text:textOf(el)}
       }));
 
       if (typeof window.retryMessage === "function")
@@ -194,16 +189,11 @@
   const attach = el => {
     if (!el || el.dataset.pingmeActions === "1") return;
 
-    const assistant =
-      el.matches?.(".assistant,.ai-message,[data-role='assistant'],.message.assistant,.chat-message.assistant") ||
-      el.querySelector?.(".assistant,.ai-message,[data-role='assistant']");
+    const user = el.matches?.(
+      ".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user"
+    );
 
-    const user =
-      el.matches?.(".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user") ||
-      el.querySelector?.(".user,.user-message,.human,[data-role='user']");
-
-    if (!assistant && user) return;
-    if (!assistant && !textOf(el)) return;
+    if (user) return;
 
     el.dataset.pingmeActions = "1";
 
@@ -222,24 +212,21 @@
     el.appendChild(bar);
   };
 
-  const scan = () =>
+  const scan = () => {
     document.querySelectorAll(ROOT).forEach(attach);
+  };
 
   const observer = new MutationObserver(scan);
 
   const start = () => {
     scan();
-    observer.observe(document.body,{
-      childList:true,
-      subtree:true
-    });
+    observer.observe(document.body,{childList:true,subtree:true});
   };
 
   document.addEventListener("click",e => {
-    if (
-      !e.target.closest(".pingme-action-menu") &&
-      !e.target.closest(`.${BAR} button:last-child`)
-    ) closeMenus();
+    if (!e.target.closest(".pingme-action-menu") &&
+        !e.target.closest(`.${BAR} button:last-child`))
+      closeMenus();
   });
 
   document.addEventListener("keydown",e => {
