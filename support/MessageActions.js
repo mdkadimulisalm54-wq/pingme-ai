@@ -4,7 +4,6 @@
 
   const ROOT = ".message,.chat-message,[data-message]";
   const BAR = "pingme-message-actions";
-  const DONE = "pingme-actions-ready";
 
   const icons = {
     copy:`<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`,
@@ -19,24 +18,26 @@
 
   const css = `
   .${BAR}{display:flex;align-items:center;gap:5px;margin-top:7px}
-  .${BAR} button{width:31px;height:31px;border:0;background:transparent;
-    border-radius:8px;display:grid;place-items:center;cursor:pointer;
-    color:inherit;padding:6px}
+  .${BAR} button{width:31px;height:31px;border:0;background:transparent;border-radius:8px;
+  display:grid;place-items:center;cursor:pointer;color:inherit;padding:6px}
   .${BAR} button:hover{background:rgba(128,128,128,.12)}
-  .${BAR} svg{width:17px;height:17px;fill:none;stroke:currentColor;
-    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  .pingme-action-menu{position:absolute;z-index:9999;min-width:175px;
-    padding:7px;background:var(--background-primary,#fff);
-    color:inherit;border:1px solid rgba(128,128,128,.18);
-    border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.16)}
-  .pingme-menu-time{font-size:11px;opacity:.55;padding:3px 9px 6px}
-  .pingme-menu-item{display:flex;align-items:center;gap:9px;width:100%;
-    min-height:34px;padding:7px 9px;border:0;background:transparent;
-    color:inherit;border-radius:8px;text-align:left;cursor:pointer}
+  .${BAR} svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+
+  .pingme-action-menu{position:fixed;z-index:99999;min-width:180px;padding:7px;
+  background:var(--background-primary,#fff);color:inherit;border:1px solid rgba(128,128,128,.18);
+  border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.16)}
+
+  .pingme-menu-time{font-size:11px;opacity:.55;padding:3px 9px 7px}
+
+  .pingme-menu-item{display:flex;align-items:center;gap:9px;width:100%;min-height:35px;
+  padding:7px 9px;border:0;background:transparent;color:inherit;border-radius:8px;
+  text-align:left;cursor:pointer}
+
   .pingme-menu-item+.pingme-menu-item{margin-top:3px}
   .pingme-menu-item:hover{background:rgba(128,128,128,.12)}
   .pingme-menu-item svg{width:16px;height:16px;fill:none;stroke:currentColor;
-    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   `;
 
   if (!document.getElementById("pingme-message-actions-css")) {
@@ -50,30 +51,38 @@
     el?.querySelector?.(".message-text,.content,.text,[data-message-text]")?.innerText ||
     el?.innerText || "";
 
-  const make = (icon, label, fn) => {
+  const make = (icon,label,fn) => {
     const b = document.createElement("button");
     b.innerHTML = icon;
-    b.setAttribute("aria-label", label);
+    b.setAttribute("aria-label",label);
     b.title = label;
-    b.onclick = e => { e.stopPropagation(); fn(e); };
+    b.onclick = e => {
+      e.stopPropagation();
+      fn(e);
+    };
     return b;
   };
 
   const copy = el => {
     const t = textOf(el);
-    navigator.clipboard?.writeText(t).catch(() => {
-      const x = document.createElement("textarea");
-      x.value = t;
-      document.body.appendChild(x);
-      x.select();
-      document.execCommand("copy");
-      x.remove();
-    });
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
+    } else fallbackCopy(t);
   };
 
-  const feedback = (el, type) => {
-    el.dispatchEvent(new CustomEvent("pingme:message-feedback", {
-      bubbles:true, detail:{message:el,text:textOf(el),type}
+  const fallbackCopy = t => {
+    const x = document.createElement("textarea");
+    x.value = t;
+    document.body.appendChild(x);
+    x.select();
+    document.execCommand("copy");
+    x.remove();
+  };
+
+  const feedback = (el,type) => {
+    el.dispatchEvent(new CustomEvent("pingme:message-feedback",{
+      bubbles:true,
+      detail:{message:el,text:textOf(el),type}
     }));
   };
 
@@ -87,25 +96,28 @@
     const t = textOf(el);
     if (navigator.share) {
       try { await navigator.share({text:t}); } catch (_) {}
-    } else {
-      copy(el);
-    }
+    } else fallbackCopy(t);
   };
 
   const getTime = el => {
     const t = el?.querySelector?.(
       "time,[data-message-time],[data-time],.message-time,.timestamp,.time"
     );
-    let v = t?.getAttribute("datetime") || t?.getAttribute("data-message-time") ||
-            t?.getAttribute("data-time") || t?.textContent?.trim();
+
+    const v = t?.getAttribute("datetime") ||
+      t?.getAttribute("data-message-time") ||
+      t?.getAttribute("data-time") ||
+      t?.textContent?.trim();
 
     if (!v) return "Time unavailable";
 
     const d = new Date(v);
-    if (!isNaN(d.getTime()) && /[-/:T]/.test(v))
-      return new Intl.DateTimeFormat([], {
-        hour:"numeric", minute:"2-digit"
+    if (!isNaN(d.getTime()) && /[-/:T]/.test(v)) {
+      return new Intl.DateTimeFormat([],{
+        hour:"numeric",
+        minute:"2-digit"
       }).format(d);
+    }
 
     return v;
   };
@@ -113,7 +125,7 @@
   const closeMenus = () =>
     document.querySelectorAll(".pingme-action-menu").forEach(x => x.remove());
 
-  const openMenu = (el, button) => {
+  const openMenu = (el,button) => {
     closeMenus();
 
     const menu = document.createElement("div");
@@ -122,55 +134,76 @@
     const time = document.createElement("div");
     time.className = "pingme-menu-time";
     time.textContent = getTime(el);
-    menu.appendChild(time);
 
     const branch = document.createElement("button");
     branch.className = "pingme-menu-item";
     branch.innerHTML = icons.branch + "<span>Branch in new chat</span>";
+
     branch.onclick = () => {
-      el.dispatchEvent(new CustomEvent("pingme:branch-message", {
-        bubbles:true, detail:{message:el,text:textOf(el)}
+      el.dispatchEvent(new CustomEvent("pingme:branch-message",{
+        bubbles:true,
+        detail:{message:el,text:textOf(el)}
       }));
+
       if (typeof window.branchInNewChat === "function")
         window.branchInNewChat(el);
       else if (typeof window.createNewChatFromMessage === "function")
         window.createNewChatFromMessage(el);
+
       closeMenus();
     };
 
     const retry = document.createElement("button");
     retry.className = "pingme-menu-item";
     retry.innerHTML = icons.retry + "<span>Retry</span>";
+
     retry.onclick = () => {
-      el.dispatchEvent(new CustomEvent("pingme:retry-message", {
-        bubbles:true, detail:{message:el,text:textOf(el)}
+      el.dispatchEvent(new CustomEvent("pingme:retry-message",{
+        bubbles:true,
+        detail:{message:el,text:textOf(el)}
       }));
+
       if (typeof window.retryMessage === "function")
         window.retryMessage(el);
       else if (typeof window.retryLastMessage === "function")
         window.retryLastMessage(el);
       else if (typeof window.regenerateResponse === "function")
         window.regenerateResponse(el);
+
       closeMenus();
     };
 
-    menu.append(branch, retry);
+    menu.append(time,branch,retry);
     document.body.appendChild(menu);
 
     const r = button.getBoundingClientRect();
     const mw = menu.offsetWidth;
-    menu.style.left = Math.max(8, r.right - mw) + "px";
-    menu.style.top = (r.bottom + 6) + "px";
+
+    let left = r.right - mw;
+    let top = r.bottom + 6;
+
+    if (left < 8) left = 8;
+    if (left + mw > innerWidth - 8) left = innerWidth - mw - 8;
+    if (top + menu.offsetHeight > innerHeight - 8)
+      top = r.top - menu.offsetHeight - 6;
+
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
   };
 
   const attach = el => {
     if (!el || el.dataset.pingmeActions === "1") return;
 
-    const isAssistant =
-      el.matches?.(".assistant,.ai-message,[data-role='assistant']") ||
+    const assistant =
+      el.matches?.(".assistant,.ai-message,[data-role='assistant'],.message.assistant,.chat-message.assistant") ||
       el.querySelector?.(".assistant,.ai-message,[data-role='assistant']");
 
-    if (!isAssistant) return;
+    const user =
+      el.matches?.(".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user") ||
+      el.querySelector?.(".user,.user-message,.human,[data-role='user']");
+
+    if (!assistant && user) return;
+    if (!assistant && !textOf(el)) return;
 
     el.dataset.pingmeActions = "1";
 
@@ -182,11 +215,9 @@
       make(icons.like,"Like",() => feedback(el,"like")),
       make(icons.dislike,"Dislike",() => feedback(el,"dislike")),
       make(icons.voice,"Read aloud",() => speak(el)),
-      make(icons.share,"Share",() => share(el))
+      make(icons.share,"Share",() => share(el)),
+      make(icons.more,"More",e => openMenu(el,e.currentTarget))
     );
-
-    const more = make(icons.more,"More",e => openMenu(el,e.currentTarget));
-    bar.appendChild(more);
 
     el.appendChild(bar);
   };
@@ -195,14 +226,20 @@
     document.querySelectorAll(ROOT).forEach(attach);
 
   const observer = new MutationObserver(scan);
+
   const start = () => {
     scan();
-    observer.observe(document.body,{childList:true,subtree:true});
+    observer.observe(document.body,{
+      childList:true,
+      subtree:true
+    });
   };
 
   document.addEventListener("click",e => {
-    if (!e.target.closest(".pingme-action-menu") &&
-        !e.target.closest(`.${BAR} button:last-child`)) closeMenus();
+    if (
+      !e.target.closest(".pingme-action-menu") &&
+      !e.target.closest(`.${BAR} button:last-child`)
+    ) closeMenus();
   });
 
   document.addEventListener("keydown",e => {
@@ -218,4 +255,5 @@
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded",start,{once:true});
   else start();
+
 })();
