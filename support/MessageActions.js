@@ -295,18 +295,22 @@
                 color: #1683ff;
             }
 
+            /* =================================================
+               COMPACT THREE-DOT POPUP
+               ================================================= */
+
             .${CONFIG.menuClass} {
                 position: absolute;
                 left: 0;
-                bottom: 43px;
-                width: min(285px, calc(100vw - 32px));
-                padding: 9px;
+                bottom: 41px;
+                width: min(235px, calc(100vw - 32px));
+                padding: 7px;
                 background: #fff;
                 border: 1px solid rgba(0,0,0,.07);
-                border-radius: 20px;
+                border-radius: 16px;
                 box-shadow:
-                    0 14px 40px rgba(0,0,0,.14),
-                    0 3px 10px rgba(0,0,0,.07);
+                    0 10px 28px rgba(0,0,0,.12),
+                    0 2px 8px rgba(0,0,0,.06);
                 display: none;
                 z-index: 99999;
                 box-sizing: border-box;
@@ -320,7 +324,7 @@
             @keyframes pingmeMessageMenuIn {
                 from {
                     opacity: 0;
-                    transform: translateY(5px) scale(.98);
+                    transform: translateY(4px) scale(.98);
                 }
 
                 to {
@@ -331,16 +335,16 @@
 
             .pingme-message-menu-row {
                 width: 100%;
-                min-height: 55px;
+                min-height: 46px;
                 border: 0;
                 background: transparent;
-                border-radius: 13px;
-                padding: 9px 11px;
+                border-radius: 11px;
+                padding: 7px 10px;
                 display: flex;
                 align-items: center;
-                gap: 15px;
+                gap: 12px;
                 color: #151515;
-                font-size: 16px;
+                font-size: 15px;
                 text-align: left;
                 cursor: pointer;
                 box-sizing: border-box;
@@ -356,21 +360,21 @@
             }
 
             .pingme-message-menu-row svg {
-                width: 25px;
-                height: 25px;
-                flex: 0 0 25px;
+                width: 22px;
+                height: 22px;
+                flex: 0 0 22px;
             }
 
             .pingme-message-menu-divider {
                 height: 1px;
-                width: calc(100% - 18px);
-                margin: 2px auto;
-                background: rgba(0,0,0,.09);
+                width: calc(100% - 14px);
+                margin: 1px auto;
+                background: rgba(0,0,0,.08);
             }
 
             .pingme-message-menu-label {
                 flex: 1;
-                line-height: 1.25;
+                line-height: 1.2;
             }
 
             @media (max-width: 600px) {
@@ -390,8 +394,22 @@
                 }
 
                 .${CONFIG.menuClass} {
-                    width: min(285px, calc(100vw - 28px));
-                    border-radius: 19px;
+                    width: min(225px, calc(100vw - 28px));
+                    padding: 6px;
+                    border-radius: 15px;
+                }
+
+                .pingme-message-menu-row {
+                    min-height: 44px;
+                    padding: 6px 9px;
+                    gap: 11px;
+                    font-size: 15px;
+                }
+
+                .pingme-message-menu-row svg {
+                    width: 21px;
+                    height: 21px;
+                    flex-basis: 21px;
                 }
             }
 
