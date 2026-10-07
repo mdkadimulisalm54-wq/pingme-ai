@@ -5,8 +5,7 @@
 // DESIGN:
 // - Memory is saved immediately.
 // - "Memory updated" appears immediately after the user message.
-// - When the real AI response appears, the indicator moves directly
-//   above that AI response.
+// - The indicator stays above the AI response.
 // - It is NOT appended inside the AI message.
 // - Thinking/loading rows are ignored.
 // - Clicking it opens Memory Summary.
@@ -44,13 +43,6 @@
     let memoryPanel = null;
     let aboutMenu = null;
     let isInitialized = false;
-
-    // --------------------------------------------------------
-    // Memory indicator waiting for the real AI response.
-    // The row is created immediately when memory is saved.
-    // --------------------------------------------------------
-
-    let pendingMemoryIndicator = null;
 
 
     // ========================================================
@@ -275,6 +267,7 @@
                 cleanText
             );
 
+
         // ----------------------------------------------------
         // UPDATE EXISTING MEMORY
         // ----------------------------------------------------
@@ -366,8 +359,16 @@
             now;
 
 
+        // ----------------------------------------------------
+        // MEMORY IS SAVED FIRST.
+        // ----------------------------------------------------
+
         persistMemoryState();
 
+
+        // ----------------------------------------------------
+        // INDICATOR IS SHOWN IMMEDIATELY.
+        // ----------------------------------------------------
 
         emitMemoryUpdated(
             memory,
@@ -748,378 +749,6 @@
 
 
     // ========================================================
-    // ASSISTANT MESSAGE SELECTOR
-    // ========================================================
-
-    function getAssistantMessageSelectors() {
-
-        return [
-
-            "[data-role='assistant']",
-
-            "[data-message-role='assistant']",
-
-            ".assistant-message",
-
-            ".ai-message",
-
-            ".pingme-ai-message",
-
-            ".message.assistant",
-
-            ".message.ai",
-
-            ".message-assistant",
-
-            ".message-row.ai",
-
-            ".message-row.assistant",
-
-            "[class*='assistant-message']",
-
-            "[class*='ai-message']"
-        ];
-    }
-
-
-    // ========================================================
-    // FIND LATEST REAL ASSISTANT MESSAGE
-    // ========================================================
-
-    function findLatestAssistantMessage() {
-
-        const selectors =
-            getAssistantMessageSelectors();
-
-        const found = [];
-
-        selectors.forEach(
-            function (selector) {
-
-                let elements = [];
-
-                try {
-
-                    elements =
-                        document.querySelectorAll(
-                            selector
-                        );
-
-                } catch (error) {
-
-                    return;
-                }
-
-
-                elements.forEach(
-                    function (element) {
-
-                        if (
-                            !isThinkingMessage(
-                                element
-                            )
-                        ) {
-
-                            if (
-                                !found.includes(
-                                    element
-                                )
-                            ) {
-
-                                found.push(
-                                    element
-                                );
-                            }
-                        }
-                    }
-                );
-            }
-        );
-
-
-        if (!found.length) {
-            return null;
-        }
-
-
-        // ----------------------------------------------------
-        // Return the last one in DOM order.
-        // ----------------------------------------------------
-
-        let latest =
-            found[0];
-
-        found.forEach(
-            function (element) {
-
-                if (
-                    latest.compareDocumentPosition(
-                        element
-                    ) &
-                    Node.DOCUMENT_POSITION_FOLLOWING
-                ) {
-
-                    latest = element;
-                }
-            }
-        );
-
-
-        return latest;
-    }
-
-
-    // ========================================================
-    // INSERT / SHOW MEMORY UPDATED IMMEDIATELY
-    //
-    // This is the important timing fix.
-    //
-    // The row is created immediately after the user message.
-    // ========================================================
-
-    function showMemoryUpdatedImmediately(
-        memory,
-        userMessage
-    ) {
-
-        if (!memory) {
-            return null;
-        }
-
-
-        // ----------------------------------------------------
-        // If an existing pending row already belongs to this
-        // memory, don't create another one.
-        // ----------------------------------------------------
-
-        if (
-            pendingMemoryIndicator &&
-            pendingMemoryIndicator.memory &&
-            pendingMemoryIndicator.memory.id ===
-                memory.id
-        ) {
-
-            return (
-                pendingMemoryIndicator.row ||
-                null
-            );
-        }
-
-
-        // ----------------------------------------------------
-        // Create row NOW.
-        // ----------------------------------------------------
-
-        const row =
-            createMemoryUpdatedSystemRow(
-                memory
-            );
-
-
-        // ----------------------------------------------------
-        // Put immediately after user message.
-        // This means the user sees it without waiting for AI.
-        // ----------------------------------------------------
-
-        if (
-            userMessage &&
-            userMessage.parentNode
-        ) {
-
-            userMessage.parentNode.insertBefore(
-                row,
-                userMessage.nextSibling
-            );
-
-        } else {
-
-            // Safe fallback.
-            const chatArea =
-                document.getElementById(
-                    "chatArea"
-                );
-
-            if (chatArea) {
-
-                chatArea.appendChild(
-                    row
-                );
-
-            } else {
-
-                document.body.appendChild(
-                    row
-                );
-            }
-        }
-
-
-        pendingMemoryIndicator = {
-
-            memory:
-                memory,
-
-            row:
-                row,
-
-            userMessage:
-                userMessage || null
-        };
-
-
-        return row;
-    }
-
-
-    // ========================================================
-    // MOVE INDICATOR DIRECTLY ABOVE REAL AI RESPONSE
-    // ========================================================
-
-    function placePendingIndicatorAboveAssistant(
-        assistantMessage
-    ) {
-
-        if (
-            !pendingMemoryIndicator ||
-            !pendingMemoryIndicator.memory ||
-            !pendingMemoryIndicator.row
-        ) {
-
-            return false;
-        }
-
-
-        if (
-            !assistantMessage ||
-            !assistantMessage.parentNode
-        ) {
-
-            return false;
-        }
-
-
-        const row =
-            pendingMemoryIndicator.row;
-
-
-        // ----------------------------------------------------
-        // If the row has already been placed directly before
-        // the AI message, nothing else is needed.
-        // ----------------------------------------------------
-
-        if (
-            row.parentNode ===
-                assistantMessage.parentNode &&
-            row.nextSibling ===
-                assistantMessage
-        ) {
-
-            pendingMemoryIndicator = null;
-
-            return true;
-        }
-
-
-        // ----------------------------------------------------
-        // Move the SAME row.
-        // No duplicate row is created.
-        // ----------------------------------------------------
-
-        assistantMessage.parentNode.insertBefore(
-            row,
-            assistantMessage
-        );
-
-
-        pendingMemoryIndicator = null;
-
-        return true;
-    }
-
-
-    // ========================================================
-    // EMIT MEMORY UPDATED
-    // ========================================================
-
-    function emitMemoryUpdated(
-        memory,
-        updated
-    ) {
-
-        try {
-
-            window.dispatchEvent(
-                new CustomEvent(
-                    MEMORY_EVENT,
-                    {
-                        detail: {
-                            memory: memory,
-                            updated:
-                                Boolean(
-                                    updated
-                                )
-                        }
-                    }
-                )
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "PingMe AI — Memory event error:",
-                error
-            );
-        }
-
-
-        // ----------------------------------------------------
-        // IMPORTANT:
-        // Memory is already saved here.
-        // The indicator must appear immediately.
-        //
-        // The actual user message is detected by the observer.
-        // If it is not available yet, the observer will place
-        // the row as soon as the message enters the DOM.
-        // ----------------------------------------------------
-
-        pendingMemoryIndicator = {
-
-            memory:
-                memory,
-
-            row:
-                null,
-
-            userMessage:
-                null
-        };
-
-
-        // ----------------------------------------------------
-        // Try immediately in case the user message is already
-        // available in the DOM.
-        // ----------------------------------------------------
-
-        const userMessages =
-            getUserMessageElements();
-
-
-        if (userMessages.length) {
-
-            const latestUser =
-                userMessages[
-                    userMessages.length - 1
-                ];
-
-            showMemoryUpdatedImmediately(
-                memory,
-                latestUser
-            );
-        }
-    }
-
-
-    // ========================================================
     // USER MESSAGE SELECTORS
     // ========================================================
 
@@ -1178,7 +807,6 @@
         );
 
 
-        // DOM order.
         found.sort(
             function (a, b) {
 
@@ -1199,6 +827,167 @@
 
 
         return found;
+    }
+
+
+    // ========================================================
+    // SHOW MEMORY UPDATED IMMEDIATELY
+    //
+    // IMPORTANT:
+    // There is NO pending/move system anymore.
+    //
+    // The indicator is inserted directly after the user
+    // message and remains there.
+    //
+    // Therefore:
+    //
+    // User
+    // Memory updated
+    // Thinking
+    // AI response
+    //
+    // The AI response never needs to be waited for.
+    // ========================================================
+
+    function showMemoryUpdatedImmediately(
+        memory,
+        userMessage
+    ) {
+
+        if (!memory) {
+            return null;
+        }
+
+
+        // ----------------------------------------------------
+        // Prevent duplicate indicator for the same memory.
+        // ----------------------------------------------------
+
+        const existingRows =
+            document.querySelectorAll(
+                ".pingme-memory-updated-row"
+            );
+
+
+        for (
+            let i = 0;
+            i < existingRows.length;
+            i++
+        ) {
+
+            if (
+                existingRows[i].dataset.memoryId ===
+                String(memory.id)
+            ) {
+
+                return existingRows[i];
+            }
+        }
+
+
+        const row =
+            createMemoryUpdatedSystemRow(
+                memory
+            );
+
+
+        // ----------------------------------------------------
+        // Insert immediately after the actual user message.
+        // ----------------------------------------------------
+
+        if (
+            userMessage &&
+            userMessage.parentNode
+        ) {
+
+            userMessage.parentNode.insertBefore(
+                row,
+                userMessage.nextSibling
+            );
+
+            return row;
+        }
+
+
+        // ----------------------------------------------------
+        // Fallback.
+        // ----------------------------------------------------
+
+        const chatArea =
+            document.getElementById(
+                "chatArea"
+            );
+
+        if (chatArea) {
+
+            chatArea.appendChild(
+                row
+            );
+
+            return row;
+        }
+
+
+        return null;
+    }
+
+
+    // ========================================================
+    // EMIT MEMORY UPDATED
+    // ========================================================
+
+    function emitMemoryUpdated(
+        memory,
+        updated
+    ) {
+
+        try {
+
+            window.dispatchEvent(
+                new CustomEvent(
+                    MEMORY_EVENT,
+                    {
+                        detail: {
+                            memory: memory,
+                            updated:
+                                Boolean(
+                                    updated
+                                )
+                        }
+                    }
+                )
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "PingMe AI — Memory event error:",
+                error
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // Memory has already been persisted BEFORE this point.
+        // Now immediately locate the current user message.
+        // ----------------------------------------------------
+
+        const userMessages =
+            getUserMessageElements();
+
+
+        if (userMessages.length) {
+
+            const latestUser =
+                userMessages[
+                    userMessages.length - 1
+                ];
+
+            showMemoryUpdatedImmediately(
+                memory,
+                latestUser
+            );
+        }
     }
 
 
@@ -2395,8 +2184,11 @@
 
 
         // ----------------------------------------------------
-        // Guarantee immediate placement beside the current
-        // user message when available.
+        // If the current user message was available, make sure
+        // the indicator appears immediately.
+        //
+        // Duplicate protection inside
+        // showMemoryUpdatedImmediately() prevents duplicates.
         // ----------------------------------------------------
 
         if (
@@ -2506,30 +2298,23 @@
     window.savePingMeMemory =
         pingMeRemember;
 
-
     window.rememberPingMe =
         pingMeRemember;
-
 
     window.getPingMeMemories =
         getMemories;
 
-
     window.deletePingMeMemory =
         pingMeForget;
-
 
     window.openPingMeMemory =
         openMemorySummary;
 
-
     window.closePingMeMemory =
         closeMemorySummary;
 
-
     window.isPingMeMemoryEnabled =
         isMemoryEnabled;
-
 
     window.setPingMeMemoryEnabled =
         setMemoryEnabled;
@@ -2714,7 +2499,6 @@
 
         if (role === "user") {
 
-            // Avoid processing the exact same user message twice.
             if (
                 node.dataset &&
                 node.dataset
@@ -2761,26 +2545,20 @@
         // ----------------------------------------------------
         // ASSISTANT MESSAGE
         // ----------------------------------------------------
+        //
+        // IMPORTANT:
+        // We deliberately DO NOT move the Memory Updated row
+        // here anymore.
+        //
+        // It was already inserted immediately after the user
+        // message.
+        //
+        // This removes the timing/race problem.
+        // ----------------------------------------------------
 
         if (
             role === "assistant"
         ) {
-
-            // Never treat the thinking/loading row as the
-            // real assistant response.
-            if (
-                isThinkingMessage(
-                    node
-                )
-            ) {
-
-                return;
-            }
-
-
-            placePendingIndicatorAboveAssistant(
-                node
-            );
 
             return;
         }
@@ -2848,44 +2626,6 @@
                             element
                         );
                     }
-                }
-            );
-
-
-            // ------------------------------------------------
-            // Nested assistant messages.
-            // ------------------------------------------------
-
-            const assistantCandidates =
-                node.querySelectorAll(
-                    [
-                        "[data-role='assistant']",
-                        "[data-message-role='assistant']",
-                        ".assistant-message",
-                        ".ai-message",
-                        ".message-assistant",
-                        ".message-row.ai",
-                        ".message-row.assistant"
-                    ].join(",")
-                );
-
-
-            assistantCandidates.forEach(
-                function (element) {
-
-                    if (
-                        isThinkingMessage(
-                            element
-                        )
-                    ) {
-
-                        return;
-                    }
-
-
-                    placePendingIndicatorAboveAssistant(
-                        element
-                    );
                 }
             );
         }
@@ -2968,10 +2708,6 @@
 
 
         style.textContent = `
-
-            /* ==================================================
-               MEMORY UPDATED SYSTEM ROW
-               ================================================== */
 
             .pingme-memory-updated-row {
 
@@ -3076,10 +2812,6 @@
             }
 
 
-            /* ==================================================
-               MEMORY OVERLAY
-               ================================================== */
-
             .pingme-memory-overlay {
 
                 position:
@@ -3136,10 +2868,6 @@
             }
 
 
-            /* ==================================================
-               MEMORY PANEL
-               ================================================== */
-
             .pingme-memory-panel {
 
                 position:
@@ -3177,10 +2905,6 @@
                     sans-serif;
             }
 
-
-            /* ==================================================
-               HEADER
-               ================================================== */
 
             .pingme-memory-header {
 
@@ -3335,10 +3059,6 @@
             }
 
 
-            /* ==================================================
-               CONTENT
-               ================================================== */
-
             .pingme-memory-content {
 
                 flex:
@@ -3378,10 +3098,6 @@
                     );
             }
 
-
-            /* ==================================================
-               OVERVIEW
-               ================================================== */
 
             .pingme-memory-overview {
 
@@ -3426,10 +3142,6 @@
                     1.7;
             }
 
-
-            /* ==================================================
-               STATUS
-               ================================================== */
 
             .pingme-memory-status {
 
@@ -3523,10 +3235,6 @@
                     1.45;
             }
 
-
-            /* ==================================================
-               MEMORY LIST
-               ================================================== */
 
             .pingme-memory-list-section {
 
@@ -3778,10 +3486,6 @@
             }
 
 
-            /* ==================================================
-               EMPTY
-               ================================================== */
-
             .pingme-memory-empty {
 
                 display:
@@ -3875,10 +3579,6 @@
                     1.5;
             }
 
-
-            /* ==================================================
-               ABOUT MEMORY MENU
-               ================================================== */
 
             .pingme-about-memory-menu {
 
@@ -4112,10 +3812,6 @@
             }
 
 
-            /* ==================================================
-               MOBILE
-               ================================================== */
-
             @media (
                 max-width: 600px
             ) {
@@ -4173,10 +3869,6 @@
 
             }
 
-
-            /* ==================================================
-               BODY LOCK
-               ================================================== */
 
             body.pingme-memory-open {
 
