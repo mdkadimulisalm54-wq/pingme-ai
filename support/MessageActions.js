@@ -451,7 +451,3 @@
   }
 
 })();
-
-এখন শুধু: Save → PingMe পুরো Reload → নতুন AI message পাঠা → Three-dot চাপ।
-
-তারপর দেখবি popup ছোট ও সুন্দরভাবে আসে কিনা।
