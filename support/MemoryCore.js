@@ -1,5 +1,5 @@
 // PingMe AI — Memory Core
-// Memory UI + Storage + Explicit Save Command Only
+// Explicit Memory Save + Memory Updated Row
 
 (() => {
   "use strict";
@@ -86,16 +86,8 @@
     );
   }
 
-  function getLatestUserMessage() {
-    const messages = getUserMessageElements();
-
-    return messages.length
-      ? messages[messages.length - 1]
-      : null;
-  }
-
   /* =========================
-     COMMAND DETECTION
+     EXPLICIT COMMAND DETECTION
   ========================= */
 
   function looksLikeMemoryCommand(text) {
@@ -104,27 +96,26 @@
     if (!value) return false;
 
     const patterns = [
-      /\u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
-      /\u09ae\u09a8\u09c7 \u09b0\u09c7\u0996/,
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad/,
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996/,
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad/,
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996/,
-      /\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996/,
-      /\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996\u09cb/,
-      /\u09b8\u09c7\u09ad \u0995\u09b0\u09cb/,
-      /\u09b8\u09c7\u09ad \u09b0\u09be\u0996\u09cb/,
-      /\u098f\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
-      /\u098f\u0987 \u0995\u09a5\u09be\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
-      /\u098f\u0987 \u09a4\u09a5\u09cd\u09af\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb/,
+      /\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb/,
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996/,
+      /\u098f\u099f\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u098f\u0987\s*\u0995\u09a5\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u098f\u0987\s*\u09a4\u09a5\u09cd\u09af\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
 
-      /remember this/,
-      /remember that/,
-      /save this to memory/,
-      /save this/,
-      /keep this in memory/,
-      /store this in memory/,
-      /add this to memory/
+      /remember\s+this/,
+      /remember\s+that/,
+      /save\s+this\s+to\s+memory/,
+      /save\s+this/,
+      /keep\s+this\s+in\s+memory/,
+      /store\s+this\s+in\s+memory/,
+      /add\s+this\s+to\s+memory/
     ];
 
     return patterns.some(pattern => pattern.test(value));
@@ -136,25 +127,27 @@
     if (!value) return "";
 
     const commandPatterns = [
-      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
-      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09bf\u09b8[\s:,-]*/i,
-      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09ac\u09c7[\s:,-]*/i,
-      /^\u09ae\u09a8\u09c7 \u09b0\u09c7\u0996\u09cb[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
-      /^\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
-      /^\u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
-      /^\u09b8\u09c7\u09ad \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09bf\u09b8[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09ac\u09c7[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996\u09cb[\s:,-]*/i,
 
-      /^remember this[\s:,-]*/i,
-      /^remember that[\s:,-]*/i,
-      /^save this to memory[\s:,-]*/i,
-      /^save this[\s:,-]*/i,
-      /^keep this in memory[\s:,-]*/i,
-      /^store this in memory[\s:,-]*/i,
-      /^add this to memory[\s:,-]*/i
+      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ম\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996[\s:,-]*/i,
+
+      /^\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+
+      /^remember\s+this[\s:,-]*/i,
+      /^remember\s+that[\s:,-]*/i,
+      /^save\s+this\s+to\s+memory[\s:,-]*/i,
+      /^save\s+this[\s:,-]*/i,
+      /^keep\s+this\s+in\s+memory[\s:,-]*/i,
+      /^store\s+this\s+in\s+memory[\s:,-]*/i,
+      /^add\s+this\s+to\s+memory[\s:,-]*/i
     ];
 
     for (const pattern of commandPatterns) {
@@ -166,6 +159,8 @@
 
   /* =========================
      MEMORY UPDATED ROW
+     IMPORTANT:
+     ROW APPEARS ABOVE USER MESSAGE
   ========================= */
 
   function createMemoryUpdatedSystemRow() {
@@ -191,61 +186,28 @@
   function showMemoryUpdatedImmediately(userMessageElement) {
     if (!userMessageElement) return;
 
-    const existing =
-      userMessageElement.parentElement?.querySelector(
+    const parent = userMessageElement.parentElement;
+
+    if (parent) {
+      const existing = parent.querySelector(
         ".pingme-memory-updated-row"
       );
 
-    if (existing) return;
+      if (existing) return;
+    }
 
     const row = createMemoryUpdatedSystemRow();
 
     if (userMessageElement.parentNode) {
       userMessageElement.parentNode.insertBefore(
         row,
-        userMessageElement.nextSibling
-      );
-    } else {
-      const chatArea = document.getElementById("chatArea");
-
-      if (chatArea) {
-        chatArea.appendChild(row);
-      }
-    }
-  }
-
-  function emitMemoryUpdated(
-    memory,
-    updated,
-    userMessageElement
-  ) {
-    memoryState.updatedAt = Date.now();
-
-    persistMemoryState();
-
-    try {
-      window.dispatchEvent(
-        new CustomEvent(EVENTS.UPDATED, {
-          detail: {
-            memory,
-            updated: !!updated
-          }
-        })
-      );
-    } catch (error) {
-      console.warn(
-        "PingMe Memory event failed:",
-        error
+        userMessageElement
       );
     }
-
-    showMemoryUpdatedImmediately(
-      userMessageElement || getLatestUserMessage()
-    );
   }
 
   /* =========================
-     INTERNAL SAVE
+     SAVE MEMORY
   ========================= */
 
   function saveMemory(text, options = {}) {
@@ -309,9 +271,23 @@
 
     persistMemoryState();
 
-    emitMemoryUpdated(
-      memory,
-      updated,
+    try {
+      window.dispatchEvent(
+        new CustomEvent(EVENTS.UPDATED, {
+          detail: {
+            memory,
+            updated
+          }
+        })
+      );
+    } catch (error) {
+      console.warn(
+        "PingMe Memory event failed:",
+        error
+      );
+    }
+
+    showMemoryUpdatedImmediately(
       options.userMessageElement
     );
 
@@ -319,7 +295,7 @@
   }
 
   /* =========================
-     EXPLICIT COMMAND PROCESSOR
+     COMMAND PROCESSOR
   ========================= */
 
   function processPossibleMemoryCommand(
@@ -328,7 +304,10 @@
   ) {
     const value = normalizeText(text);
 
-    // Ordinary messages NEVER enter Memory.
+    if (!value) return null;
+
+    // IMPORTANT:
+    // Ordinary messages NEVER save.
     if (!looksLikeMemoryCommand(value)) {
       return null;
     }
@@ -336,7 +315,7 @@
     const memoryText =
       extractMemoryFromCommand(value);
 
-    // Do not save command-only messages.
+    // Command only = do not save.
     if (!memoryText) {
       return null;
     }
@@ -348,37 +327,14 @@
   }
 
   /* =========================
-     PUBLIC MEMORY API
+     PUBLIC API
   ========================= */
 
-  function pingMeRemember(
-    text,
-    options = {}
-  ) {
-    const value = normalizeText(text);
-
-    /*
-      Public save API is also command-protected.
-      Ordinary text cannot be saved directly.
-    */
-
-    if (!looksLikeMemoryCommand(value)) {
-      return null;
-    }
-
-    const memoryText =
-      extractMemoryFromCommand(value);
-
-    if (!memoryText) {
-      return null;
-    }
-
-    return saveMemory(memoryText, {
-      ...options,
-      source:
-        options.source ||
-        "user-command"
-    });
+  function pingMeRemember(text, options = {}) {
+    return processPossibleMemoryCommand(
+      text,
+      options.userMessageElement
+    );
   }
 
   function getMemories() {
@@ -405,14 +361,10 @@
 
     if (!value) return null;
 
-    memoryState.memories[index].text =
-      value;
+    memoryState.memories[index].text = value;
+    memoryState.memories[index].updatedAt = Date.now();
 
-    memoryState.memories[index].updatedAt =
-      Date.now();
-
-    memoryState.updatedAt =
-      Date.now();
+    memoryState.updatedAt = Date.now();
 
     persistMemoryState();
 
@@ -427,13 +379,9 @@
 
     if (index === -1) return false;
 
-    memoryState.memories.splice(
-      index,
-      1
-    );
+    memoryState.memories.splice(index, 1);
 
-    memoryState.updatedAt =
-      Date.now();
+    memoryState.updatedAt = Date.now();
 
     persistMemoryState();
 
@@ -442,9 +390,7 @@
 
   function clearMemories() {
     memoryState.memories = [];
-
-    memoryState.updatedAt =
-      Date.now();
+    memoryState.updatedAt = Date.now();
 
     persistMemoryState();
 
@@ -464,7 +410,8 @@
   }
 
   /* =========================
-     MEMORY SUMMARY UI
+     MEMORY SUMMARY CONNECTION
+     শুধু connection থাকবে
   ========================= */
 
   function openMemorySummary() {
@@ -484,16 +431,6 @@
       "function"
     ) {
       window.openPingMeMemorySummary();
-      return;
-    }
-
-    if (
-      typeof window.openMemorySummary ===
-        "function" &&
-      window.openMemorySummary !==
-        openMemorySummary
-    ) {
-      window.openMemorySummary();
     }
   }
 
@@ -518,52 +455,28 @@
   }
 
   /* =========================
-     DOM OBSERVER
+     USER MESSAGE PROCESSOR
   ========================= */
-
-  function isThinkingMessage(element) {
-    if (!element) return false;
-
-    const text = normalizeText(
-      element.innerText ||
-      element.textContent ||
-      ""
-    ).toLowerCase();
-
-    return (
-      element.classList.contains("thinking") ||
-      element.classList.contains("loading") ||
-      text === "thinking..." ||
-      text === "thinking"
-    );
-  }
 
   function processUserMessageElement(element) {
     if (!element) return;
 
     if (
-      element.dataset
-        .pingmeMemoryProcessed ===
+      element.dataset.pingmeMemoryProcessed ===
       "true"
     ) {
       return;
     }
 
-    element.dataset
-      .pingmeMemoryProcessed =
-      "true";
+    element.dataset.pingmeMemoryProcessed = "true";
 
     const text =
       getMessageTextFromElement(element);
 
     if (!text) return;
 
-    if (isThinkingMessage(element)) {
-      return;
-    }
-
     /*
-      Normal messages are ignored.
+      IMPORTANT:
       Only explicit memory commands continue.
     */
 
@@ -577,50 +490,56 @@
     );
   }
 
+  /* =========================
+     DOM OBSERVER
+  ========================= */
+
   function startMemoryObserver() {
     if (!document.body) return;
 
+    if (window.__pingmeMemoryObserver) {
+      try {
+        window.__pingmeMemoryObserver.disconnect();
+      } catch (error) {}
+    }
+
     const observer =
-      new MutationObserver(
-        mutations => {
-          for (const mutation of mutations) {
-            for (
-              const node of mutation.addedNodes
+      new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (
+              node.nodeType !==
+              Node.ELEMENT_NODE
             ) {
-              if (
-                node.nodeType !==
-                Node.ELEMENT_NODE
-              ) {
-                continue;
-              }
+              continue;
+            }
 
-              const element = node;
+            const element = node;
 
-              if (
-                element.matches &&
-                element.matches(
+            if (
+              element.matches &&
+              element.matches(
+                "[data-role='user'], " +
+                "[data-message-role='user'], " +
+                ".user-message, " +
+                ".message-user, " +
+                ".message-row.user"
+              )
+            ) {
+              processUserMessageElement(
+                element
+              );
+            }
+
+            if (element.querySelectorAll) {
+              const nestedUsers =
+                element.querySelectorAll(
                   "[data-role='user'], " +
                   "[data-message-role='user'], " +
                   ".user-message, " +
                   ".message-user, " +
                   ".message-row.user"
-                )
-              ) {
-                processUserMessageElement(
-                  element
                 );
-              }
-
-              const nestedUsers =
-                element.querySelectorAll
-                  ? element.querySelectorAll(
-                      "[data-role='user'], " +
-                      "[data-message-role='user'], " +
-                      ".user-message, " +
-                      ".message-user, " +
-                      ".message-row.user"
-                    )
-                  : [];
 
               nestedUsers.forEach(
                 processUserMessageElement
@@ -628,7 +547,7 @@
             }
           }
         }
-      );
+      });
 
     observer.observe(document.body, {
       childList: true,
@@ -696,10 +615,7 @@
 
   loadMemoryState();
 
-  if (
-    document.readyState ===
-    "loading"
-  ) {
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       startMemoryObserver,
