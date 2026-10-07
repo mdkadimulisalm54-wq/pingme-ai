@@ -12,7 +12,7 @@
   let menu = null;
 
   /* =========================================================
-     ICONS — CLEAN VECTOR STYLE
+     PROFESSIONAL VECTOR ICONS
   ========================================================= */
 
   const ICONS = {
@@ -25,9 +25,9 @@
 
     more: `
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"></circle>
-        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"></circle>
-        <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"></circle>
+        <circle cx="12" cy="5" r="1.5"></circle>
+        <circle cx="12" cy="12" r="1.5"></circle>
+        <circle cx="12" cy="19" r="1.5"></circle>
       </svg>
     `,
 
@@ -62,13 +62,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="8.5"></circle>
         <path d="M12 7v5l3 2"></path>
-      </svg>
-    `,
-
-    close: `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 6l12 12"></path>
-        <path d="M18 6L6 18"></path>
       </svg>
     `
   };
@@ -170,6 +163,11 @@
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
+      }
+
+      .pingme-memory-summary-icon-btn[data-memory-action="menu"] svg circle {
+        fill: currentColor;
+        stroke: none;
       }
 
       .pingme-memory-summary-body {
@@ -328,10 +326,6 @@
           0 2px 8px rgba(0,0,0,.06);
       }
 
-      .pingme-memory-menu[hidden] {
-        display: none;
-      }
-
       .pingme-memory-menu-item {
         width: 100%;
         min-height: 45px;
@@ -451,6 +445,7 @@
         STORAGE_KEY,
         JSON.stringify(state)
       );
+
       return true;
     } catch (error) {
       console.warn("PingMe Memory Summary save failed:", error);
@@ -580,7 +575,9 @@
       </header>
 
       <main class="pingme-memory-summary-body">
+
         <section class="pingme-memory-summary-intro">
+
           <h1 class="pingme-memory-summary-section-title">
             Saved memories
           </h1>
@@ -589,16 +586,23 @@
             These are the memories PingMe has saved from your explicit
             memory requests.
           </p>
+
         </section>
 
         <section
           class="pingme-memory-summary-list"
           data-memory-list
         ></section>
+
       </main>
     `;
 
     document.body.appendChild(overlay);
+
+    overlay.addEventListener(
+      "click",
+      handleOverlayClick
+    );
 
     renderMemories();
   }
@@ -655,7 +659,9 @@
       const text =
         typeof memory === "string"
           ? memory
-          : memory?.text || memory?.content || "";
+          : memory?.text ||
+            memory?.content ||
+            "";
 
       const time =
         typeof memory === "string"
@@ -751,7 +757,10 @@
 
     document.body.appendChild(menu);
 
-    menu.addEventListener("click", handleMenuClick);
+    menu.addEventListener(
+      "click",
+      handleMenuClick
+    );
   }
 
   /* =========================================================
@@ -866,7 +875,6 @@
 
   /* =========================================================
      MEMORY UPDATED ROW
-     Clicking the existing Memory Updated row opens summary.
   ========================================================= */
 
   function handleMemoryRowClick(event) {
@@ -914,7 +922,7 @@
   }
 
   /* =========================================================
-     INITIALIZE
+     DOCUMENT EVENTS
   ========================================================= */
 
   function initialize() {
