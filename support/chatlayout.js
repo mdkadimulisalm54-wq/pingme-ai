@@ -1,3 +1,4 @@
+console.log("CHAT LAYOUT LOADED");
 /* PingMe AI — Chat Layout */
 
 (function () {
