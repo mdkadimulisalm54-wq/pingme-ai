@@ -1,4 +1,3 @@
-console.log("CHAT LAYOUT LOADED");
 /* PingMe AI — Chat Layout */
 
 (function () {
@@ -8,56 +7,73 @@ console.log("CHAT LAYOUT LOADED");
 
     if (!input) return;
 
-    const minHeight = 38;
-    const maxHeight = 120;
+    const MIN_HEIGHT = 38;
+    const MAX_HEIGHT = 120;
 
     function resizeInput() {
 
-        input.style.height = "auto";
+        input.style.height = "0px";
 
-        const height = Math.max(
-            minHeight,
-            Math.min(input.scrollHeight, maxHeight)
+        const newHeight = Math.max(
+            MIN_HEIGHT,
+            Math.min(input.scrollHeight, MAX_HEIGHT)
         );
 
-        input.style.height = height + "px";
+        input.style.height = newHeight + "px";
 
         input.style.overflowY =
-            input.scrollHeight > maxHeight
+            input.scrollHeight > MAX_HEIGHT
                 ? "auto"
                 : "hidden";
     }
 
+    function resetInput() {
+
+        input.value = "";
+        input.style.height = MIN_HEIGHT + "px";
+        input.style.overflowY = "hidden";
+
+    }
+
     input.style.resize = "none";
-    input.style.minHeight = minHeight + "px";
-    input.style.maxHeight = maxHeight + "px";
+    input.style.minHeight = MIN_HEIGHT + "px";
+    input.style.maxHeight = MAX_HEIGHT + "px";
+    input.style.height = MIN_HEIGHT + "px";
     input.style.overflowY = "hidden";
 
     input.style.background =
         "linear-gradient(135deg, #ffffff, #f4f8ff)";
 
     input.addEventListener("input", resizeInput);
+
     input.addEventListener("focus", resizeInput);
 
     input.addEventListener("keydown", function () {
         setTimeout(resizeInput, 0);
     });
 
-    const observer = new MutationObserver(function () {
-
-        if (chatArea) {
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        resizeInput();
-
-    });
-
     if (chatArea) {
+
+        const observer = new MutationObserver(function () {
+
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            if (input.value.trim() === "") {
+                resetInput();
+            } else {
+                resizeInput();
+            }
+
+        });
+
         observer.observe(chatArea, {
-            childList: true
+            childList: true,
+            subtree: true
         });
     }
+
+    window.resizePingMeInput = resizeInput;
+    window.resetPingMeInput = resetInput;
 
     resizeInput();
 
