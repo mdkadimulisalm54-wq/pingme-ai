@@ -2,11 +2,9 @@
 (() => {
   "use strict";
 
-  const ROOT = ".message,.chat-message,[data-message]";
   const BAR = "pingme-message-actions";
-  const READY = "pingme-actions-ready";
 
-  const svg = {
+  const icons = {
     copy:`<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`,
     like:`<svg viewBox="0 0 24 24"><path d="M7 10v10H4V10h3Zm0 10h9.2a2 2 0 0 0 1.9-1.4l2-6A2 2 0 0 0 18.2 10H14l.6-3.1A2.4 2.4 0 0 0 12.3 4L7 10"/></svg>`,
     dislike:`<svg viewBox="0 0 24 24"><path d="M7 14V4H4v10h3Zm0-10h9.2a2 2 0 0 1 1.9 1.4l2 6A2 2 0 0 1 18.2 14H14l.6 3.1a2.4 2.4 0 0 1-2.3 2.9L7 14"/></svg>`,
@@ -17,22 +15,21 @@
     retry:`<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9"/><path d="M4 4v5h5M4 13a8 8 0 0 0 14 4l2-2"/></svg>`
   };
 
-  const style = document.createElement("style");
-  style.textContent = `
+  const css = document.createElement("style");
+  css.textContent = `
     .${BAR}{
       display:flex;
       align-items:center;
-      gap:4px;
+      gap:3px;
       margin-top:7px;
-      padding:0;
     }
     .${BAR} button{
       width:29px;
       height:29px;
       padding:5px;
       border:0;
-      background:transparent;
       border-radius:8px;
+      background:transparent;
       color:inherit;
       opacity:.72;
       cursor:pointer;
@@ -57,29 +54,28 @@
       z-index:99999;
       min-width:185px;
       padding:6px;
-      border:1px solid rgba(127,127,127,.18);
       border-radius:12px;
+      border:1px solid rgba(127,127,127,.18);
       background:var(--background-primary,#fff);
       box-shadow:0 8px 28px rgba(0,0,0,.18);
     }
     .pingme-actions-time{
       padding:7px 9px 8px;
+      margin-bottom:4px;
+      border-bottom:1px solid rgba(127,127,127,.14);
       font-size:11px;
       opacity:.55;
-      border-bottom:1px solid rgba(127,127,127,.14);
-      margin-bottom:4px;
     }
     .pingme-actions-menu button{
       width:100%;
       display:flex;
       align-items:center;
       gap:9px;
-      border:0;
-      background:transparent;
       padding:8px 9px;
+      border:0;
       border-radius:8px;
+      background:transparent;
       color:inherit;
-      font-size:13px;
       text-align:left;
       cursor:pointer;
     }
@@ -96,44 +92,15 @@
       stroke-linejoin:round;
     }
   `;
-  document.head.appendChild(style);
+  document.head.appendChild(css);
 
-  const textOf = el =>
-    el?.querySelector?.(
-      ".message-content,.chat-content,.markdown,.prose,[data-message-content]"
-    )?.innerText?.trim() ||
-    el?.innerText?.trim() ||
-    "";
+  const textOf = el => el?.innerText?.trim() || "";
 
-  const assistant = el => {
-    if (!el) return false;
-
-    if (
-      el.matches?.(
-        ".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user"
-      )
-    ) return false;
-
-    const role = (
-      el.getAttribute?.("data-role") ||
-      el.getAttribute?.("data-author") ||
-      el.getAttribute?.("role") ||
-      ""
-    ).toLowerCase();
-
-    if (role === "user" || role === "human") return false;
-    if (role === "assistant" || role === "ai" || role === "bot") return true;
-
-    return !!el.querySelector?.(
-      ".assistant,.ai-message,[data-role='assistant'],[data-role='ai']"
-    ) || el.matches?.(".assistant,.ai-message");
-  };
-
-  const button = (icon, title, fn) => {
+  const makeButton = (icon,title,fn) => {
     const b = document.createElement("button");
     b.type = "button";
     b.title = title;
-    b.setAttribute("aria-label", title);
+    b.setAttribute("aria-label",title);
     b.innerHTML = icon;
     b.onclick = e => {
       e.stopPropagation();
@@ -158,29 +125,30 @@
     }
   };
 
-  const feedback = (el, type) => {
+  const feedback = (el,type) => {
     el.dispatchEvent(
-      new CustomEvent("pingme:message-feedback", {
+      new CustomEvent("pingme:message-feedback",{
         bubbles:true,
         detail:{type,message:el,text:textOf(el)}
       })
     );
 
-    if (type === "like" && typeof window.pingmeLikeMessage === "function")
-      window.pingmeLikeMessage(el);
+    const fn =
+      type === "like"
+        ? window.pingmeLikeMessage
+        : window.pingmeDislikeMessage;
 
-    if (type === "dislike" && typeof window.pingmeDislikeMessage === "function")
-      window.pingmeDislikeMessage(el);
+    if (typeof fn === "function") fn(el);
   };
 
   const speak = el => {
     const text = textOf(el);
-    if (!text || !("speechSynthesis" in window)) return;
+    if (!text || !window.speechSynthesis) return;
 
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = .95;
-    speechSynthesis.speak(u);
+    speechSynthesis.speak(
+      new SpeechSynthesisUtterance(text)
+    );
   };
 
   const share = async el => {
@@ -188,55 +156,23 @@
     if (!text) return;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title:"PingMe AI",
-          text
-        });
-      } else {
+      if (navigator.share)
+        await navigator.share({title:"PingMe AI",text});
+      else
         await navigator.clipboard.writeText(text);
-      }
     } catch {}
   };
 
-  const timeOf = el => {
-    const x = el?.querySelector?.(
-      "time,.message-time,.chat-time,[data-time],[datetime]"
-    );
-
-    if (x) {
-      const value =
-        x.getAttribute("datetime") ||
-        x.getAttribute("data-time") ||
-        x.textContent.trim();
-
-      if (value) {
-        const d = new Date(value);
-        if (!isNaN(d)) {
-          return d.toLocaleTimeString([], {
-            hour:"numeric",
-            minute:"2-digit"
-          });
-        }
-        return value;
-      }
-    }
-
-    return "Sent time unavailable";
-  };
-
-  let opened = null;
+  let menu = null;
 
   const closeMenu = () => {
-    if (opened) {
-      opened.remove();
-      opened = null;
-    }
+    menu?.remove();
+    menu = null;
   };
 
-  const menuButton = (icon, text, fn) => {
+  const menuItem = (icon,label,fn) => {
     const b = document.createElement("button");
-    b.innerHTML = icon + `<span>${text}</span>`;
+    b.innerHTML = icon + `<span>${label}</span>`;
     b.onclick = e => {
       e.stopPropagation();
       closeMenu();
@@ -245,41 +181,54 @@
     return b;
   };
 
-  const openMenu = (el, anchor) => {
+  const openMenu = (el,anchor) => {
     closeMenu();
 
-    const menu = document.createElement("div");
+    menu = document.createElement("div");
     menu.className = "pingme-actions-menu";
 
     const time = document.createElement("div");
     time.className = "pingme-actions-time";
-    time.textContent = timeOf(el);
+    time.textContent = "Sent";
     menu.appendChild(time);
 
     menu.appendChild(
-      menuButton(svg.branch,"Branch in new chat",() => {
-        el.dispatchEvent(
-          new CustomEvent("pingme:branch",{bubbles:true,detail:{message:el,text:textOf(el)}})
-        );
+      menuItem(
+        icons.branch,
+        "Branch in new chat",
+        () => {
+          el.dispatchEvent(
+            new CustomEvent("pingme:branch",{
+              bubbles:true,
+              detail:{message:el,text:textOf(el)}
+            })
+          );
 
-        if (typeof window.pingmeBranchMessage === "function")
-          window.pingmeBranchMessage(el);
-      })
+          if (typeof window.pingmeBranchMessage === "function")
+            window.pingmeBranchMessage(el);
+        }
+      )
     );
 
     menu.appendChild(
-      menuButton(svg.retry,"Retry",() => {
-        el.dispatchEvent(
-          new CustomEvent("pingme:retry",{bubbles:true,detail:{message:el,text:textOf(el)}})
-        );
+      menuItem(
+        icons.retry,
+        "Retry",
+        () => {
+          el.dispatchEvent(
+            new CustomEvent("pingme:retry",{
+              bubbles:true,
+              detail:{message:el,text:textOf(el)}
+            })
+          );
 
-        if (typeof window.pingmeRetryMessage === "function")
-          window.pingmeRetryMessage(el);
-      })
+          if (typeof window.pingmeRetryMessage === "function")
+            window.pingmeRetryMessage(el);
+        }
+      )
     );
 
     document.body.appendChild(menu);
-    opened = menu;
 
     const r = anchor.getBoundingClientRect();
     const w = menu.offsetWidth;
@@ -289,32 +238,38 @@
     let top = r.bottom + 6;
 
     if (left < 6) left = 6;
-    if (left + w > innerWidth - 6) left = innerWidth - w - 6;
-    if (top + h > innerHeight - 6) top = r.top - h - 6;
+    if (left + w > innerWidth - 6)
+      left = innerWidth - w - 6;
+
+    if (top + h > innerHeight - 6)
+      top = r.top - h - 6;
 
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
   };
 
   const attach = el => {
-    if (!el || el.dataset[READY] === "1") return;
-    if (!assistant(el)) return;
+    if (!el || el.dataset.pingmeActions === "1")
+      return;
 
-    const text = textOf(el);
-    if (!text) return;
+    if (!el.matches(".ai-message"))
+      return;
 
-    el.dataset[READY] = "1";
+    if (!textOf(el))
+      return;
+
+    el.dataset.pingmeActions = "1";
 
     const bar = document.createElement("div");
     bar.className = BAR;
 
     bar.append(
-      button(svg.copy,"Copy",() => copy(el)),
-      button(svg.like,"Like",() => feedback(el,"like")),
-      button(svg.dislike,"Dislike",() => feedback(el,"dislike")),
-      button(svg.voice,"Read aloud",() => speak(el)),
-      button(svg.share,"Share",() => share(el)),
-      button(svg.more,"More",e => openMenu(el,e.currentTarget))
+      makeButton(icons.copy,"Copy",() => copy(el)),
+      makeButton(icons.like,"Like",() => feedback(el,"like")),
+      makeButton(icons.dislike,"Dislike",() => feedback(el,"dislike")),
+      makeButton(icons.voice,"Read aloud",() => speak(el)),
+      makeButton(icons.share,"Share",() => share(el)),
+      makeButton(icons.more,"More",e => openMenu(el,e.currentTarget))
     );
 
     el.appendChild(bar);
@@ -323,30 +278,38 @@
   const scan = root => {
     if (!root?.querySelectorAll) return;
 
-    if (root.matches?.(ROOT)) attach(root);
+    if (root.matches?.(".ai-message"))
+      attach(root);
 
-    root.querySelectorAll(ROOT).forEach(attach);
+    root.querySelectorAll(".ai-message")
+      .forEach(attach);
   };
-
-  const observer = new MutationObserver(mutations => {
-    mutations.forEach(m => {
-      m.addedNodes.forEach(n => {
-        if (n.nodeType === 1) scan(n);
-      });
-    });
-  });
 
   const start = () => {
     scan(document);
-    observer.observe(document.body,{childList:true,subtree:true});
+
+    if (!document.body) return;
+
+    new MutationObserver(mutations => {
+      mutations.forEach(m =>
+        m.addedNodes.forEach(n => {
+          if (n.nodeType === 1)
+            scan(n);
+        })
+      );
+    }).observe(document.body,{
+      childList:true,
+      subtree:true
+    });
   };
 
   document.addEventListener("click",e => {
     if (
-      opened &&
-      !opened.contains(e.target) &&
-      !e.target.closest?.(`.${BAR}`)
-    ) closeMenu();
+      menu &&
+      !menu.contains(e.target) &&
+      !e.target.closest(`.${BAR}`)
+    )
+      closeMenu();
   });
 
   document.addEventListener("keydown",e => {
@@ -365,3 +328,9 @@
     start();
 
 })();
+
+এখন Save → PingMe পুরো Reload → নতুন একটা AI message পাঠা।
+
+এইবার মূল পরিবর্তনটা হলো: "MessageActions" সরাসরি তোর আসল ".ai-message" ধরছে। তাই আগের selector-এর কারণে আটকে থাকার কথা না।
+
+প্রথমে শুধু দেখবি ৬টা icon আসে কিনা। এলে পরের ধাপে popup-এর sent time-টা তোর actual message time থেকে নিখুঁত করব।
