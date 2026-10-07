@@ -1,61 +1,140 @@
- /* PingMe AI — Message Actions */
+/* PingMe AI — Message Actions */
 (() => {
   "use strict";
 
   const ROOT = ".message,.chat-message,[data-message]";
   const BAR = "pingme-message-actions";
+  const READY = "pingme-actions-ready";
 
-  const icons = {
+  const svg = {
     copy:`<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`,
-    like:`<svg viewBox="0 0 24 24"><path d="M7 10v10H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Zm0 10h9.2a2 2 0 0 0 1.9-1.4l2-6A2 2 0 0 0 18.2 10H14l.7-4.1A2.4 2.4 0 0 0 12.3 3L7 10"/></svg>`,
-    dislike:`<svg viewBox="0 0 24 24"><path d="M7 14V4H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3Zm0-10h9.2a2 2 0 0 1 1.9 1.4l2 6A2 2 0 0 1 18.2 14H14l.7 4.1a2.4 2.4 0 0 1-2.4 2.9L7 14"/></svg>`,
-    voice:`<svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8 21h8"/></svg>`,
-    share:`<svg viewBox="0 0 24 24"><path d="M12 16V3m0 0L7 8m5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`,
+    like:`<svg viewBox="0 0 24 24"><path d="M7 10v10H4V10h3Zm0 10h9.2a2 2 0 0 0 1.9-1.4l2-6A2 2 0 0 0 18.2 10H14l.6-3.1A2.4 2.4 0 0 0 12.3 4L7 10"/></svg>`,
+    dislike:`<svg viewBox="0 0 24 24"><path d="M7 14V4H4v10h3Zm0-10h9.2a2 2 0 0 1 1.9 1.4l2 6A2 2 0 0 1 18.2 14H14l.6 3.1a2.4 2.4 0 0 1-2.3 2.9L7 14"/></svg>`,
+    voice:`<svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v3M8 21h8"/></svg>`,
+    share:`<svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7 8m5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`,
     more:`<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>`,
-    branch:`<svg viewBox="0 0 24 24"><path d="M6 3v13a4 4 0 0 0 4 4h8"/><path d="m15 17 3 3-3 3"/><path d="M6 8h8a4 4 0 0 1 4 4v1"/></svg>`,
-    retry:`<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14 4l2-2"/><path d="M20 20v-5h-5"/></svg>`
+    branch:`<svg viewBox="0 0 24 24"><path d="M6 3v10a5 5 0 0 0 5 5h7"/><path d="m15 15 3 3-3 3"/></svg>`,
+    retry:`<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9"/><path d="M4 4v5h5M4 13a8 8 0 0 0 14 4l2-2"/></svg>`
   };
 
-  const css = `
-  .${BAR}{display:flex;align-items:center;gap:5px;margin-top:7px}
-  .${BAR} button{width:31px;height:31px;border:0;background:transparent;border-radius:8px;
-  display:grid;place-items:center;cursor:pointer;color:inherit;padding:6px}
-  .${BAR} button:hover{background:rgba(128,128,128,.12)}
-  .${BAR} svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;
-  stroke-linecap:round;stroke-linejoin:round}
-
-  .pingme-action-menu{position:fixed;z-index:99999;min-width:180px;padding:7px;
-  background:var(--background-primary,#fff);color:inherit;border:1px solid rgba(128,128,128,.18);
-  border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.16)}
-
-  .pingme-menu-time{font-size:11px;opacity:.55;padding:3px 9px 7px}
-
-  .pingme-menu-item{display:flex;align-items:center;gap:9px;width:100%;min-height:35px;
-  padding:7px 9px;border:0;background:transparent;color:inherit;border-radius:8px;
-  text-align:left;cursor:pointer}
-
-  .pingme-menu-item+.pingme-menu-item{margin-top:3px}
-  .pingme-menu-item:hover{background:rgba(128,128,128,.12)}
-  .pingme-menu-item svg{width:16px;height:16px;fill:none;stroke:currentColor;
-  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  const style = document.createElement("style");
+  style.textContent = `
+    .${BAR}{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      margin-top:7px;
+      padding:0;
+    }
+    .${BAR} button{
+      width:29px;
+      height:29px;
+      padding:5px;
+      border:0;
+      background:transparent;
+      border-radius:8px;
+      color:inherit;
+      opacity:.72;
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+    }
+    .${BAR} button:hover{
+      background:rgba(127,127,127,.12);
+      opacity:1;
+    }
+    .${BAR} svg{
+      width:17px;
+      height:17px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:1.8;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .pingme-actions-menu{
+      position:fixed;
+      z-index:99999;
+      min-width:185px;
+      padding:6px;
+      border:1px solid rgba(127,127,127,.18);
+      border-radius:12px;
+      background:var(--background-primary,#fff);
+      box-shadow:0 8px 28px rgba(0,0,0,.18);
+    }
+    .pingme-actions-time{
+      padding:7px 9px 8px;
+      font-size:11px;
+      opacity:.55;
+      border-bottom:1px solid rgba(127,127,127,.14);
+      margin-bottom:4px;
+    }
+    .pingme-actions-menu button{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:9px;
+      border:0;
+      background:transparent;
+      padding:8px 9px;
+      border-radius:8px;
+      color:inherit;
+      font-size:13px;
+      text-align:left;
+      cursor:pointer;
+    }
+    .pingme-actions-menu button:hover{
+      background:rgba(127,127,127,.12);
+    }
+    .pingme-actions-menu svg{
+      width:16px;
+      height:16px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:1.8;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
   `;
-
-  if (!document.getElementById("pingme-message-actions-css")) {
-    const s = document.createElement("style");
-    s.id = "pingme-message-actions-css";
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
+  document.head.appendChild(style);
 
   const textOf = el =>
-    el?.querySelector?.(".message-text,.content,.text,[data-message-text]")?.innerText ||
-    el?.innerText || "";
+    el?.querySelector?.(
+      ".message-content,.chat-content,.markdown,.prose,[data-message-content]"
+    )?.innerText?.trim() ||
+    el?.innerText?.trim() ||
+    "";
 
-  const make = (icon,label,fn) => {
+  const assistant = el => {
+    if (!el) return false;
+
+    if (
+      el.matches?.(
+        ".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user"
+      )
+    ) return false;
+
+    const role = (
+      el.getAttribute?.("data-role") ||
+      el.getAttribute?.("data-author") ||
+      el.getAttribute?.("role") ||
+      ""
+    ).toLowerCase();
+
+    if (role === "user" || role === "human") return false;
+    if (role === "assistant" || role === "ai" || role === "bot") return true;
+
+    return !!el.querySelector?.(
+      ".assistant,.ai-message,[data-role='assistant'],[data-role='ai']"
+    ) || el.matches?.(".assistant,.ai-message");
+  };
+
+  const button = (icon, title, fn) => {
     const b = document.createElement("button");
+    b.type = "button";
+    b.title = title;
+    b.setAttribute("aria-label", title);
     b.innerHTML = icon;
-    b.setAttribute("aria-label",label);
-    b.title = label;
     b.onclick = e => {
       e.stopPropagation();
       fn(e);
@@ -63,184 +142,226 @@
     return b;
   };
 
-  const fallbackCopy = t => {
-    const x = document.createElement("textarea");
-    x.value = t;
-    document.body.appendChild(x);
-    x.select();
-    document.execCommand("copy");
-    x.remove();
+  const copy = async el => {
+    const text = textOf(el);
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = text;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      t.remove();
+    }
   };
 
-  const copy = el => {
-    const t = textOf(el);
-    if (navigator.clipboard?.writeText)
-      navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
-    else fallbackCopy(t);
-  };
+  const feedback = (el, type) => {
+    el.dispatchEvent(
+      new CustomEvent("pingme:message-feedback", {
+        bubbles:true,
+        detail:{type,message:el,text:textOf(el)}
+      })
+    );
 
-  const feedback = (el,type) => {
-    el.dispatchEvent(new CustomEvent("pingme:message-feedback",{
-      bubbles:true,detail:{message:el,text:textOf(el),type}
-    }));
+    if (type === "like" && typeof window.pingmeLikeMessage === "function")
+      window.pingmeLikeMessage(el);
+
+    if (type === "dislike" && typeof window.pingmeDislikeMessage === "function")
+      window.pingmeDislikeMessage(el);
   };
 
   const speak = el => {
-    if (!("speechSynthesis" in window)) return;
+    const text = textOf(el);
+    if (!text || !("speechSynthesis" in window)) return;
+
     speechSynthesis.cancel();
-    speechSynthesis.speak(new SpeechSynthesisUtterance(textOf(el)));
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = .95;
+    speechSynthesis.speak(u);
   };
 
   const share = async el => {
-    const t = textOf(el);
-    if (navigator.share) {
-      try { await navigator.share({text:t}); } catch (_) {}
-    } else fallbackCopy(t);
+    const text = textOf(el);
+    if (!text) return;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title:"PingMe AI",
+          text
+        });
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch {}
   };
 
-  const getTime = el => {
-    const t = el?.querySelector?.(
-      "time,[data-message-time],[data-time],.message-time,.timestamp,.time"
+  const timeOf = el => {
+    const x = el?.querySelector?.(
+      "time,.message-time,.chat-time,[data-time],[datetime]"
     );
 
-    const v = t?.getAttribute("datetime") ||
-      t?.getAttribute("data-message-time") ||
-      t?.getAttribute("data-time") ||
-      t?.textContent?.trim();
+    if (x) {
+      const value =
+        x.getAttribute("datetime") ||
+        x.getAttribute("data-time") ||
+        x.textContent.trim();
 
-    if (!v) return "Time unavailable";
+      if (value) {
+        const d = new Date(value);
+        if (!isNaN(d)) {
+          return d.toLocaleTimeString([], {
+            hour:"numeric",
+            minute:"2-digit"
+          });
+        }
+        return value;
+      }
+    }
 
-    const d = new Date(v);
-    if (!isNaN(d.getTime()) && /[-/:T]/.test(v))
-      return new Intl.DateTimeFormat([],{
-        hour:"numeric",minute:"2-digit"
-      }).format(d);
-
-    return v;
+    return "Sent time unavailable";
   };
 
-  const closeMenus = () =>
-    document.querySelectorAll(".pingme-action-menu").forEach(x => x.remove());
+  let opened = null;
 
-  const openMenu = (el,button) => {
-    closeMenus();
+  const closeMenu = () => {
+    if (opened) {
+      opened.remove();
+      opened = null;
+    }
+  };
+
+  const menuButton = (icon, text, fn) => {
+    const b = document.createElement("button");
+    b.innerHTML = icon + `<span>${text}</span>`;
+    b.onclick = e => {
+      e.stopPropagation();
+      closeMenu();
+      fn();
+    };
+    return b;
+  };
+
+  const openMenu = (el, anchor) => {
+    closeMenu();
 
     const menu = document.createElement("div");
-    menu.className = "pingme-action-menu";
+    menu.className = "pingme-actions-menu";
 
     const time = document.createElement("div");
-    time.className = "pingme-menu-time";
-    time.textContent = getTime(el);
+    time.className = "pingme-actions-time";
+    time.textContent = timeOf(el);
+    menu.appendChild(time);
 
-    const branch = document.createElement("button");
-    branch.className = "pingme-menu-item";
-    branch.innerHTML = icons.branch + "<span>Branch in new chat</span>";
+    menu.appendChild(
+      menuButton(svg.branch,"Branch in new chat",() => {
+        el.dispatchEvent(
+          new CustomEvent("pingme:branch",{bubbles:true,detail:{message:el,text:textOf(el)}})
+        );
 
-    branch.onclick = () => {
-      el.dispatchEvent(new CustomEvent("pingme:branch-message",{
-        bubbles:true,detail:{message:el,text:textOf(el)}
-      }));
+        if (typeof window.pingmeBranchMessage === "function")
+          window.pingmeBranchMessage(el);
+      })
+    );
 
-      if (typeof window.branchInNewChat === "function")
-        window.branchInNewChat(el);
-      else if (typeof window.createNewChatFromMessage === "function")
-        window.createNewChatFromMessage(el);
+    menu.appendChild(
+      menuButton(svg.retry,"Retry",() => {
+        el.dispatchEvent(
+          new CustomEvent("pingme:retry",{bubbles:true,detail:{message:el,text:textOf(el)}})
+        );
 
-      closeMenus();
-    };
+        if (typeof window.pingmeRetryMessage === "function")
+          window.pingmeRetryMessage(el);
+      })
+    );
 
-    const retry = document.createElement("button");
-    retry.className = "pingme-menu-item";
-    retry.innerHTML = icons.retry + "<span>Retry</span>";
-
-    retry.onclick = () => {
-      el.dispatchEvent(new CustomEvent("pingme:retry-message",{
-        bubbles:true,detail:{message:el,text:textOf(el)}
-      }));
-
-      if (typeof window.retryMessage === "function")
-        window.retryMessage(el);
-      else if (typeof window.retryLastMessage === "function")
-        window.retryLastMessage(el);
-      else if (typeof window.regenerateResponse === "function")
-        window.regenerateResponse(el);
-
-      closeMenus();
-    };
-
-    menu.append(time,branch,retry);
     document.body.appendChild(menu);
+    opened = menu;
 
-    const r = button.getBoundingClientRect();
-    const mw = menu.offsetWidth;
+    const r = anchor.getBoundingClientRect();
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
 
-    let left = r.right - mw;
+    let left = r.right - w;
     let top = r.bottom + 6;
 
-    if (left < 8) left = 8;
-    if (left + mw > innerWidth - 8) left = innerWidth - mw - 8;
-    if (top + menu.offsetHeight > innerHeight - 8)
-      top = r.top - menu.offsetHeight - 6;
+    if (left < 6) left = 6;
+    if (left + w > innerWidth - 6) left = innerWidth - w - 6;
+    if (top + h > innerHeight - 6) top = r.top - h - 6;
 
-    menu.style.left = left + "px";
-    menu.style.top = top + "px";
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
   };
 
   const attach = el => {
-    if (!el || el.dataset.pingmeActions === "1") return;
+    if (!el || el.dataset[READY] === "1") return;
+    if (!assistant(el)) return;
 
-    const user = el.matches?.(
-      ".user,.user-message,.human,[data-role='user'],.message.user,.chat-message.user"
-    );
+    const text = textOf(el);
+    if (!text) return;
 
-    if (user) return;
-
-    el.dataset.pingmeActions = "1";
+    el.dataset[READY] = "1";
 
     const bar = document.createElement("div");
     bar.className = BAR;
 
     bar.append(
-      make(icons.copy,"Copy",() => copy(el)),
-      make(icons.like,"Like",() => feedback(el,"like")),
-      make(icons.dislike,"Dislike",() => feedback(el,"dislike")),
-      make(icons.voice,"Read aloud",() => speak(el)),
-      make(icons.share,"Share",() => share(el)),
-      make(icons.more,"More",e => openMenu(el,e.currentTarget))
+      button(svg.copy,"Copy",() => copy(el)),
+      button(svg.like,"Like",() => feedback(el,"like")),
+      button(svg.dislike,"Dislike",() => feedback(el,"dislike")),
+      button(svg.voice,"Read aloud",() => speak(el)),
+      button(svg.share,"Share",() => share(el)),
+      button(svg.more,"More",e => openMenu(el,e.currentTarget))
     );
 
     el.appendChild(bar);
   };
 
-  const scan = () => {
-    document.querySelectorAll(ROOT).forEach(attach);
+  const scan = root => {
+    if (!root?.querySelectorAll) return;
+
+    if (root.matches?.(ROOT)) attach(root);
+
+    root.querySelectorAll(ROOT).forEach(attach);
   };
 
-  const observer = new MutationObserver(scan);
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(n => {
+        if (n.nodeType === 1) scan(n);
+      });
+    });
+  });
 
   const start = () => {
-    scan();
+    scan(document);
     observer.observe(document.body,{childList:true,subtree:true});
   };
 
   document.addEventListener("click",e => {
-    if (!e.target.closest(".pingme-action-menu") &&
-        !e.target.closest(`.${BAR} button:last-child`))
-      closeMenus();
+    if (
+      opened &&
+      !opened.contains(e.target) &&
+      !e.target.closest?.(`.${BAR}`)
+    ) closeMenu();
   });
 
   document.addEventListener("keydown",e => {
-    if (e.key === "Escape") closeMenus();
+    if (e.key === "Escape") closeMenu();
   });
 
   window.PingMeMessageActions = {
     scan,
     attach,
-    closeMenus
+    closeMenu
   };
 
   if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded",start,{once:true});
-  else start();
+    document.addEventListener("DOMContentLoaded",start);
+  else
+    start();
 
 })();
