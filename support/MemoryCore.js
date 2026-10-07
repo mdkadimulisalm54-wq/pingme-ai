@@ -64,18 +64,6 @@
       .trim();
   }
 
-  function getUserMessageElements() {
-    return Array.from(
-      document.querySelectorAll(
-        "[data-role='user'], " +
-        "[data-message-role='user'], " +
-        ".user-message, " +
-        ".message-user, " +
-        ".message-row.user"
-      )
-    );
-  }
-
   function getMessageTextFromElement(element) {
     if (!element) return "";
 
@@ -97,18 +85,18 @@
 
     const patterns = [
       // বাংলা
-      /\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,              // মনে রাখ
-      /\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996/,              // মনে রেখ
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/, // মেমোরিতে সেভ
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/, // মেমোরিতে রাখ
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,      // মেমরিতে সেভ
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,      // মেমরিতে রাখ
-      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb/,                  // সেভ করো
-      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996/,       // সেভ করে রাখ
-      /\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb/,             // সেভ রাখো
-      /\u098f\u099f\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,       // এটা মনে রাখ
-      /\u098f\u0987\s*\u0995\u09a5\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/, // এই কথাটা মনে রাখ
-      /\u098f\u0987\s*\u09a4\u09a5\u09cd\u09af\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/, // এই তথ্য মনে রাখ
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb/,
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996/,
+      /\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb/,
+      /\u098f\u099f\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u098f\u0987\s*\u0995\u09a5\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      /\u098f\u0987\s*\u09a4\u09a5\u09cd\u09af\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
 
       // English
       /remember\s+this/,
@@ -137,7 +125,7 @@
 
       /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
       /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad[\s:,-]*/i,
       /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996[\s:,-]*/i,
 
       /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
@@ -166,8 +154,7 @@
 
   /* =========================
      MEMORY UPDATED ROW
-     APPEARS ABOVE USER MESSAGE
-  ========================= */
+     ========================= */
 
   function createMemoryUpdatedSystemRow() {
     const row = document.createElement("button");
@@ -176,7 +163,40 @@
     row.className = "pingme-memory-updated-row";
 
     row.innerHTML = `
-      <span class="pingme-memory-updated-icon">📖</span>
+      <span
+        class="pingme-memory-updated-icon"
+        aria-hidden="true"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M3.5 5.5C5.8 4.4 8.3 4.5 11.2 6.1V19.2C8.4 17.7 5.9 17.6 3.5 18.7V5.5Z"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M20.5 5.5C18.2 4.4 15.7 4.5 12.8 6.1V19.2C15.6 17.7 18.1 17.6 20.5 18.7V5.5Z"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 6.3V19.1"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      </span>
+
       <span class="pingme-memory-updated-text">
         Memory updated
       </span>
@@ -293,7 +313,6 @@
       );
     }
 
-    // 📖 Memory updated user message-এর উপরে দেখাবে
     showMemoryUpdatedImmediately(
       options.userMessageElement
     );
@@ -416,7 +435,7 @@
 
   /* =========================
      MEMORY SUMMARY CONNECTION
-     ========================= */
+  ========================= */
 
   function openMemorySummary() {
     try {
