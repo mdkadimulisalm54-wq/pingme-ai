@@ -1,6 +1,6 @@
 /* =========================================================
    PingMe AI — Voice to Text
-   Mic → Speech Recognition → Chat Input
+   Replaces old Mic Action
    ========================================================= */
 
 (() => {
@@ -15,10 +15,23 @@
         window.SpeechRecognition ||
         window.webkitSpeechRecognition;
 
-    if (!Recognition) {
-        console.warn("Speech Recognition is not supported.");
-        return;
-    }
+    if (!Recognition) return;
+
+    /* =====================================================
+       BLOCK OLD MIC ACTION
+       ===================================================== */
+
+    mic.addEventListener(
+        "click",
+        event => {
+            event.stopImmediatePropagation();
+        },
+        true
+    );
+
+    /* =====================================================
+       SPEECH RECOGNITION
+       ===================================================== */
 
     const recognition = new Recognition();
 
@@ -27,9 +40,10 @@
     recognition.lang = navigator.language || "en-US";
 
     let listening = false;
+    let finalText = "";
 
     /* =====================================================
-       STYLE
+       VOICE BAR STYLE
        ===================================================== */
 
     const style = document.createElement("style");
@@ -47,10 +61,10 @@
         #micButton .voice-bars span {
             display: block;
             width: 2.5px;
-            height: 8px;
+            height: 7px;
             border-radius: 4px;
             background: currentColor;
-            animation: pingmeVoiceBar .75s ease-in-out infinite;
+            animation: pingmeVoiceBar .7s ease-in-out infinite;
         }
 
         #micButton .voice-bars span:nth-child(1) {
@@ -94,9 +108,6 @@
 
     document.head.appendChild(style);
 
-    const bars = mic.querySelector(".voice-bars");
-    const icon = mic.querySelector("svg");
-
     /* =====================================================
        START
        ===================================================== */
@@ -105,14 +116,13 @@
         if (listening) return;
 
         listening = true;
+        finalText = input.value.trim();
 
         mic.classList.add("voice-listening");
 
         try {
             recognition.start();
-        } catch (error) {
-            console.warn("Voice start:", error);
-        }
+        } catch (e) {}
     }
 
     /* =====================================================
@@ -120,24 +130,23 @@
        ===================================================== */
 
     function stopVoice() {
-        if (!listening) return;
-
         listening = false;
 
         mic.classList.remove("voice-listening");
 
         try {
             recognition.stop();
-        } catch (error) {
-            console.warn("Voice stop:", error);
-        }
+        } catch (e) {}
     }
 
     /* =====================================================
-       MIC BUTTON
+       NEW MIC ACTION
        ===================================================== */
 
-    mic.addEventListener("click", () => {
+    mic.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+
         if (listening) {
             stopVoice();
         } else {
@@ -150,23 +159,37 @@
        ===================================================== */
 
     recognition.onresult = event => {
-        let text = "";
+        let interim = "";
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            text += event.results[i][0].transcript;
+        for (
+            let i = event.resultIndex;
+            i < event.results.length;
+            i++
+        ) {
+            const transcript =
+                event.results[i][0].transcript;
+
+            if (event.results[i].isFinal) {
+                finalText +=
+                    (finalText ? " " : "") +
+                    transcript.trim();
+            } else {
+                interim += transcript;
+            }
         }
 
-        if (text.trim()) {
-            input.value = text.trim();
+        input.value =
+            (finalText + " " + interim).trim();
 
-            input.dispatchEvent(
-                new Event("input", { bubbles: true })
-            );
-        }
+        input.dispatchEvent(
+            new Event("input", {
+                bubbles: true
+            })
+        );
     };
 
     /* =====================================================
-       AUTO RESTART WHILE ACTIVE
+       KEEP LISTENING
        ===================================================== */
 
     recognition.onend = () => {
@@ -174,9 +197,7 @@
 
         try {
             recognition.start();
-        } catch (error) {
-            console.warn("Voice restart:", error);
-        }
+        } catch (e) {}
     };
 
     /* =====================================================
@@ -184,8 +205,6 @@
        ===================================================== */
 
     recognition.onerror = event => {
-        console.warn("Voice error:", event.error);
-
         if (
             event.error === "not-allowed" ||
             event.error === "service-not-allowed"
