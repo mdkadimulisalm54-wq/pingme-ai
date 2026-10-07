@@ -465,7 +465,13 @@
 
         document.body.appendChild(overlay);
         document.body.appendChild(drawer);
+        const oldModelBox =
+    document.getElementById("modelBox");
 
+if (oldModelBox) {
+    oldModelBox.style.display = "none";
+}
+       
         createModelPopup();
 
         addStyles();
