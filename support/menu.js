@@ -7,7 +7,6 @@
 
     "use strict";
 
-
     /* =========================================================
        1. BASIC SETUP
        ========================================================= */
@@ -18,7 +17,6 @@
     const menuButtonChat =
         document.getElementById("menuButtonChat");
 
-
     if (!menuButton && !menuButtonChat) {
 
         console.warn(
@@ -26,14 +24,11 @@
         );
 
         return;
-
     }
-
 
     let drawer = null;
     let overlay = null;
     let searchInput = null;
-
 
     /* =========================================================
        2. CREATE SIDE MENU
@@ -43,11 +38,6 @@
 
         if (drawer) return;
 
-
-        /* -----------------------------------------------------
-           Overlay
-           ----------------------------------------------------- */
-
         overlay =
             document.createElement("div");
 
@@ -56,11 +46,6 @@
 
         overlay.className =
             "pingme-menu-overlay";
-
-
-        /* -----------------------------------------------------
-           Drawer
-           ----------------------------------------------------- */
 
         drawer =
             document.createElement("aside");
@@ -76,12 +61,7 @@
             "true"
         );
 
-
         drawer.innerHTML = `
-
-            <!-- =============================================
-                 HEADER
-                 ============================================= -->
 
             <div class="pingme-menu-header">
 
@@ -111,10 +91,6 @@
             </div>
 
 
-            <!-- =============================================
-                 SEARCH
-                 ============================================= -->
-
             <div class="pingme-menu-search">
 
                 <svg
@@ -142,9 +118,58 @@
             </div>
 
 
-            <!-- =============================================
+            <!-- =================================================
+                 MODELS
+                 ================================================= -->
+
+            <div class="pingme-model-section">
+
+                <button
+                    type="button"
+                    class="pingme-model-button"
+                    id="pingmeModelButton"
+                >
+
+                    <span class="pingme-model-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M12 3v18"
+                            ></path>
+
+                            <path
+                                d="M5 8h14"
+                            ></path>
+
+                            <path
+                                d="M7 8l-3 6h6L7 8Z"
+                            ></path>
+
+                            <path
+                                d="M17 8l-3 6h6l-3-6Z"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    <span class="pingme-model-label">
+                        Models
+                    </span>
+
+                    <span class="pingme-model-arrow">
+                        ›
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
                  MAIN MENU
-                 ============================================= -->
+                 ================================================= -->
 
             <nav
                 class="pingme-menu-main"
@@ -158,6 +183,7 @@
                 >
 
                     <span class="pingme-menu-item-icon">
+
                         <svg viewBox="0 0 24 24">
 
                             <rect
@@ -179,6 +205,7 @@
                             ></path>
 
                         </svg>
+
                     </span>
 
                     <span>Images</span>
@@ -314,25 +341,15 @@
 
                         <svg viewBox="0 0 24 24">
 
-                            <path
-                                d="M8 3v5"
-                            ></path>
-
-                            <path
-                                d="M16 3v5"
-                            ></path>
+                            <path d="M8 3v5"></path>
+                            <path d="M16 3v5"></path>
 
                             <path
                                 d="M5 8h14v5a7 7 0 0 1-14 0V8Z"
                             ></path>
 
-                            <path
-                                d="M8 21h8"
-                            ></path>
-
-                            <path
-                                d="M12 15v6"
-                            ></path>
+                            <path d="M8 21h8"></path>
+                            <path d="M12 15v6"></path>
 
                         </svg>
 
@@ -345,9 +362,9 @@
             </nav>
 
 
-            <!-- =============================================
-                 CHAT BUTTON
-                 ============================================= -->
+            <!-- =================================================
+                 CHAT
+                 ================================================= -->
 
             <div class="pingme-menu-chat-section">
 
@@ -365,13 +382,8 @@
                                 d="M12 20a8 8 0 1 0-8-8c0 1.4.36 2.72 1 3.9L4 20l4.1-1c1.18.64 2.5 1 3.9 1Z"
                             ></path>
 
-                            <path
-                                d="M12 8v8"
-                            ></path>
-
-                            <path
-                                d="M8 12h8"
-                            ></path>
+                            <path d="M12 8v8"></path>
+                            <path d="M8 12h8"></path>
 
                         </svg>
 
@@ -384,9 +396,9 @@
             </div>
 
 
-            <!-- =============================================
+            <!-- =================================================
                  HISTORY
-                 ============================================= -->
+                 ================================================= -->
 
             <div class="pingme-history-section">
 
@@ -402,9 +414,9 @@
             </div>
 
 
-            <!-- =============================================
+            <!-- =================================================
                  ACCOUNT
-                 ============================================= -->
+                 ================================================= -->
 
             <div class="pingme-account-area">
 
@@ -451,29 +463,289 @@
 
         `;
 
+        document.body.appendChild(overlay);
+        document.body.appendChild(drawer);
 
-        document.body.appendChild(
-            overlay
-        );
-
-        document.body.appendChild(
-            drawer
-        );
-
+        createModelPopup();
 
         addStyles();
-
         setupEvents();
-
         loadUserAccount();
-
         loadHistory();
 
     }
 
 
     /* =========================================================
-       3. OPEN MENU
+       3. MODEL POPUP
+       ========================================================= */
+
+    function createModelPopup() {
+
+        const popup =
+            document.createElement("div");
+
+        popup.id =
+            "pingmeModelPopup";
+
+        popup.className =
+            "pingme-model-popup";
+
+        popup.innerHTML = `
+
+            <div class="pingme-model-popup-box">
+
+                <div class="pingme-model-popup-header">
+                    <span>Select Model</span>
+
+                    <button
+                        type="button"
+                        id="pingmeModelClose"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="pingme-model-option"
+                    data-model="gemini-3.8-flash"
+                >
+                    <span>PingMe Plus</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="pingme-model-option"
+                    data-model="gemini-3.6-flash"
+                >
+                    <span>PingMe Turbo</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="pingme-model-option"
+                    data-model="gemini-3.5-flash-lite"
+                >
+                    <span>PingMe Pro</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="pingme-model-option"
+                    data-model="openai"
+                >
+                    <span>PingMe Ultra</span>
+                    <small>Not active yet</small>
+                </button>
+
+            </div>
+
+        `;
+
+        document.body.appendChild(popup);
+
+        setupModelPopup();
+
+    }
+
+
+    function setupModelPopup() {
+
+        const button =
+            document.getElementById(
+                "pingmeModelButton"
+            );
+
+        const popup =
+            document.getElementById(
+                "pingmeModelPopup"
+            );
+
+        const close =
+            document.getElementById(
+                "pingmeModelClose"
+            );
+
+        if (!button || !popup) return;
+
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                popup.classList.add("show");
+
+                updateSelectedModel();
+
+            }
+        );
+
+
+        if (close) {
+
+            close.addEventListener(
+                "click",
+                function () {
+
+                    popup.classList.remove("show");
+
+                }
+            );
+
+        }
+
+
+        popup.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target === popup
+                ) {
+
+                    popup.classList.remove(
+                        "show"
+                    );
+
+                }
+
+            }
+        );
+
+
+        const options =
+            popup.querySelectorAll(
+                ".pingme-model-option"
+            );
+
+
+        options.forEach(
+            function (option) {
+
+                option.addEventListener(
+                    "click",
+                    function () {
+
+                        const model =
+                            option.dataset.model;
+
+                        selectModel(model);
+
+                        popup.classList.remove(
+                            "show"
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    }
+
+
+    function getCurrentModel() {
+
+        const modelSelect =
+            document.getElementById(
+                "modelSelect"
+            );
+
+        if (
+            modelSelect &&
+            modelSelect.value
+        ) {
+
+            return modelSelect.value;
+
+        }
+
+
+        try {
+
+            const saved =
+                localStorage.getItem(
+                    "pingme_selected_model"
+                );
+
+            if (saved) return saved;
+
+        } catch (error) {}
+
+        return "gemini-3.8-flash";
+
+    }
+
+
+    function selectModel(model) {
+
+        try {
+
+            localStorage.setItem(
+                "pingme_selected_model",
+                model
+            );
+
+        } catch (error) {}
+
+
+        const modelSelect =
+            document.getElementById(
+                "modelSelect"
+            );
+
+
+        if (modelSelect) {
+
+            modelSelect.value =
+                model;
+
+            modelSelect.dispatchEvent(
+                new Event(
+                    "change",
+                    {
+                        bubbles: true
+                    }
+                )
+            );
+
+        }
+
+
+        updateSelectedModel();
+
+    }
+
+
+    function updateSelectedModel() {
+
+        const model =
+            getCurrentModel();
+
+
+        const options =
+            document.querySelectorAll(
+                ".pingme-model-option"
+            );
+
+
+        options.forEach(
+            function (option) {
+
+                option.classList.toggle(
+                    "selected",
+                    option.dataset.model === model
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       4. OPEN MENU
        ========================================================= */
 
     function openMenu() {
@@ -482,17 +754,11 @@
             createMenu();
         }
 
-
         requestAnimationFrame(
             function () {
 
-                drawer.classList.add(
-                    "open"
-                );
-
-                overlay.classList.add(
-                    "show"
-                );
+                drawer.classList.add("open");
+                overlay.classList.add("show");
 
                 drawer.setAttribute(
                     "aria-hidden",
@@ -510,21 +776,15 @@
 
 
     /* =========================================================
-       4. CLOSE MENU
+       5. CLOSE MENU
        ========================================================= */
 
     function closeMenu() {
 
         if (!drawer) return;
 
-
-        drawer.classList.remove(
-            "open"
-        );
-
-        overlay.classList.remove(
-            "show"
-        );
+        drawer.classList.remove("open");
+        overlay.classList.remove("show");
 
         drawer.setAttribute(
             "aria-hidden",
@@ -539,7 +799,7 @@
 
 
     /* =========================================================
-       5. TOGGLE MENU
+       6. TOGGLE MENU
        ========================================================= */
 
     function toggleMenu() {
@@ -552,11 +812,8 @@
 
         }
 
-
         if (
-            drawer.classList.contains(
-                "open"
-            )
+            drawer.classList.contains("open")
         ) {
 
             closeMenu();
@@ -571,7 +828,7 @@
 
 
     /* =========================================================
-       6. USER ACCOUNT
+       7. USER ACCOUNT
        ========================================================= */
 
     function loadUserAccount() {
@@ -596,7 +853,6 @@
                 "pingmeAccountInitial"
             );
 
-
         if (
             !nameElement ||
             !emailElement ||
@@ -608,9 +864,7 @@
 
         }
 
-
         let user = null;
-
 
         try {
 
@@ -679,22 +933,15 @@
 
         if (photo) {
 
-            avatarElement.innerHTML =
-                "";
-
+            avatarElement.innerHTML = "";
 
             const image =
                 document.createElement(
                     "img"
                 );
 
-
-            image.src =
-                photo;
-
-            image.alt =
-                displayName;
-
+            image.src = photo;
+            image.alt = displayName;
             image.referrerPolicy =
                 "no-referrer";
 
@@ -734,7 +981,7 @@
 
 
     /* =========================================================
-       7. GET USER INITIAL
+       8. GET USER INITIAL
        ========================================================= */
 
     function getInitial(name) {
@@ -742,7 +989,6 @@
         if (!name) {
             return "P";
         }
-
 
         return name
             .trim()
@@ -753,7 +999,7 @@
 
 
     /* =========================================================
-       8. SEARCH
+       9. SEARCH
        ========================================================= */
 
     function setupSearch() {
@@ -762,7 +1008,6 @@
             document.getElementById(
                 "pingmeMenuSearch"
             );
-
 
         if (!searchInput) return;
 
@@ -794,9 +1039,7 @@
 
                         if (
                             !query ||
-                            text.includes(
-                                query
-                            )
+                            text.includes(query)
                         ) {
 
                             item.style.display =
@@ -819,7 +1062,7 @@
 
 
     /* =========================================================
-       9. MENU ACTIONS
+       10. MENU ACTIONS
        ========================================================= */
 
     function setupMenuActions() {
@@ -840,7 +1083,6 @@
                         const action =
                             item.dataset.menuAction;
 
-
                         handleMenuAction(
                             action
                         );
@@ -855,84 +1097,77 @@
 
 
     /* =========================================================
-       10. HANDLE MENU ACTION
+       11. HANDLE MENU ACTION
        ========================================================= */
-  function handleMenuAction(action) {
 
-    switch (action) {
+    function handleMenuAction(action) {
+
+        switch (action) {
 
             case "images":
 
-    closeMenu();
+                closeMenu();
 
-    if (
-        typeof window.PingMeImages !==
-        "undefined" &&
-        typeof window.PingMeImages.open ===
-        "function"
-    ) {
-        window.PingMeImages.open();
-    }
+                if (
+                    typeof window.PingMeImages !==
+                    "undefined" &&
+                    typeof window.PingMeImages.open ===
+                    "function"
+                ) {
 
-    break;
+                    window.PingMeImages.open();
 
+                }
 
-        case "library":
-
-            showMenuNotice(
-                "Library"
-            );
-
-            break;
+                break;
 
 
-        case "projects":
+            case "library":
 
-            showMenuNotice(
-                "Projects"
-            );
+                showMenuNotice("Library");
 
-            break;
+                break;
 
 
-        case "remote":
+            case "projects":
 
-            showMenuNotice(
-                "Remote"
-            );
+                showMenuNotice("Projects");
 
-            break;
+                break;
 
 
-        case "scheduled":
+            case "remote":
 
-            showMenuNotice(
-                "Scheduled"
-            );
+                showMenuNotice("Remote");
 
-            break;
+                break;
 
 
-        case "plugins":
+            case "scheduled":
 
-            showMenuNotice(
-                "Plugins"
-            );
+                showMenuNotice("Scheduled");
 
-            break;
+                break;
 
 
-        default:
+            case "plugins":
 
-            break;
+                showMenuNotice("Plugins");
+
+                break;
+
+
+            default:
+
+                break;
+
+        }
 
     }
 
-}
-          
 
     /* =========================================================
-       11. MENU NOTICE
+       12. MENU NOTICE
        ========================================================= */
 
     function showMenuNotice(title) {
@@ -947,7 +1182,7 @@
 
 
     /* =========================================================
-       12. NEW CHAT
+       13. NEW CHAT
        ========================================================= */
 
     function setupNewChat() {
@@ -956,7 +1191,6 @@
             document.getElementById(
                 "pingmeNewChatButton"
             );
-
 
         if (!button) return;
 
@@ -976,8 +1210,7 @@
 
                 if (input) {
 
-                    input.value =
-                        "";
+                    input.value = "";
 
                     input.dispatchEvent(
                         new Event(
@@ -999,8 +1232,7 @@
 
                 if (chatArea) {
 
-                    chatArea.innerHTML =
-                        "";
+                    chatArea.innerHTML = "";
 
                 }
 
@@ -1013,8 +1245,7 @@
 
                 if (welcome) {
 
-                    welcome.style.display =
-                        "";
+                    welcome.style.display = "";
 
                 }
 
@@ -1025,17 +1256,12 @@
 
 
     /* =========================================================
-       13. HISTORY
-       Complete History Engine
+       14. HISTORY
        ========================================================= */
 
     const PINGME_HISTORY_KEY =
         "pingme_chat_history";
 
-
-    /* ---------------------------------------------------------
-       GET HISTORY
-       --------------------------------------------------------- */
 
     function getChatHistory() {
 
@@ -1055,14 +1281,10 @@
 
 
             const history =
-                JSON.parse(
-                    saved
-                );
+                JSON.parse(saved);
 
 
-            return Array.isArray(
-                history
-            )
+            return Array.isArray(history)
                 ? history
                 : [];
 
@@ -1081,23 +1303,14 @@
     }
 
 
-    /* ---------------------------------------------------------
-       SAVE HISTORY
-       --------------------------------------------------------- */
-
-    function saveChatHistory(
-        history
-    ) {
+    function saveChatHistory(history) {
 
         try {
 
             localStorage.setItem(
                 PINGME_HISTORY_KEY,
-                JSON.stringify(
-                    history
-                )
+                JSON.stringify(history)
             );
-
 
             return true;
 
@@ -1116,13 +1329,7 @@
     }
 
 
-    /* ---------------------------------------------------------
-       ADD CHAT TO HISTORY
-       --------------------------------------------------------- */
-
-    function addChatToHistory(
-        chat
-    ) {
+    function addChatToHistory(chat) {
 
         if (!chat) {
 
@@ -1146,17 +1353,18 @@
 
 
         const saved =
-            saveChatHistory(
-                history
-            );
-          loadHistory();
+            saveChatHistory(history);
+
+
+        loadHistory();
+
 
         if (
             typeof window.PingMeMenu !==
             "undefined" &&
             typeof window.PingMeMenu
                 .refreshHistory ===
-                "function"
+            "function"
         ) {
 
             window.PingMeMenu.refreshHistory();
@@ -1169,10 +1377,6 @@
     }
 
 
-    /* ---------------------------------------------------------
-       CLEAR HISTORY
-       --------------------------------------------------------- */
-
     function clearChatHistory() {
 
         try {
@@ -1181,9 +1385,7 @@
                 PINGME_HISTORY_KEY
             );
 
-
             loadHistory();
-
 
             return true;
 
@@ -1201,10 +1403,6 @@
 
     }
 
-
-    /* ---------------------------------------------------------
-       GET LATEST CHAT
-       --------------------------------------------------------- */
 
     function getLatestChat() {
 
@@ -1226,13 +1424,7 @@
     }
 
 
-    /* ---------------------------------------------------------
-       OPEN HISTORY ITEM
-       --------------------------------------------------------- */
-
-    function openHistoryItem(
-        item
-    ) {
+    function openHistoryItem(item) {
 
         if (!item) {
 
@@ -1286,10 +1478,6 @@
     }
 
 
-    /* ---------------------------------------------------------
-       HISTORY RENDER
-       --------------------------------------------------------- */
-
     function loadHistory() {
 
         const list =
@@ -1305,8 +1493,7 @@
         }
 
 
-        list.innerHTML =
-            "";
+        list.innerHTML = "";
 
 
         const history =
@@ -1332,10 +1519,7 @@
                 "Your recent chats will appear here.";
 
 
-            list.appendChild(
-                empty
-            );
-
+            list.appendChild(empty);
 
             return;
 
@@ -1345,10 +1529,7 @@
         history
             .slice()
             .reverse()
-            .slice(
-                0,
-                20
-            )
+            .slice(0, 20)
             .forEach(
                 function (item) {
 
@@ -1408,27 +1589,19 @@
     }
 
 
-    /* ---------------------------------------------------------
-       HISTORY STORAGE API
-       --------------------------------------------------------- */
-
     function setupHistoryAPI() {
 
         window.addChatToHistory =
             addChatToHistory;
 
-
         window.getChatHistory =
             getChatHistory;
-
 
         window.saveChatHistory =
             saveChatHistory;
 
-
         window.clearChatHistory =
             clearChatHistory;
-
 
         window.getLatestChat =
             getLatestChat;
@@ -1437,7 +1610,7 @@
 
 
     /* =========================================================
-       14. ACCOUNT BUTTON
+       15. ACCOUNT BUTTON
        ========================================================= */
 
     function setupAccountButton() {
@@ -1466,7 +1639,7 @@
 
 
     /* =========================================================
-       15. KEYBOARD
+       16. KEYBOARD
        ========================================================= */
 
     function setupKeyboard() {
@@ -1478,9 +1651,7 @@
                 if (
                     event.key === "Escape" &&
                     drawer &&
-                    drawer.classList.contains(
-                        "open"
-                    )
+                    drawer.classList.contains("open")
                 ) {
 
                     closeMenu();
@@ -1494,7 +1665,7 @@
 
 
     /* =========================================================
-       16. EVENTS
+       17. EVENTS
        ========================================================= */
 
     function setupEvents() {
@@ -1554,20 +1725,16 @@
 
 
         setupSearch();
-
         setupMenuActions();
-
         setupNewChat();
-
         setupAccountButton();
-
         setupKeyboard();
 
     }
 
 
     /* =========================================================
-       17. COMPLETE CSS
+       18. COMPLETE CSS
        ========================================================= */
 
     function addStyles() {
@@ -1598,21 +1765,18 @@
             .pingme-menu-overlay {
 
                 position: fixed;
-
                 inset: 0;
 
                 background:
-                    rgba(0, 0, 0, 0.28);
+                    rgba(0,0,0,.28);
 
                 opacity: 0;
-
                 visibility: hidden;
-
                 pointer-events: none;
 
                 transition:
-                    opacity 0.22s ease,
-                    visibility 0.22s ease;
+                    opacity .22s ease,
+                    visibility .22s ease;
 
                 z-index: 9998;
 
@@ -1622,9 +1786,7 @@
             .pingme-menu-overlay.show {
 
                 opacity: 1;
-
                 visibility: visible;
-
                 pointer-events: auto;
 
             }
@@ -1635,46 +1797,36 @@
                 position: fixed;
 
                 top: 0;
-
                 left: 0;
 
-                width: min(
-                    340px,
-                    86vw
-                );
+                width:
+                    min(340px,86vw);
 
                 height: 100dvh;
 
-                background:
-                    #ffffff;
-
-                color:
-                    #171717;
+                background: #fff;
+                color: #171717;
 
                 border-right:
                     1px solid
-                    rgba(0,0,0,0.08);
+                    rgba(0,0,0,.08);
 
                 box-shadow:
                     12px 0 35px
-                    rgba(0,0,0,0.12);
+                    rgba(0,0,0,.12);
 
                 transform:
                     translateX(-105%);
 
                 transition:
-                    transform 0.28s
+                    transform .28s
                     cubic-bezier(
-                        .22,
-                        .61,
-                        .36,
-                        1
+                        .22,.61,.36,1
                     );
 
                 z-index: 9999;
 
                 display: flex;
-
                 flex-direction: column;
 
                 overflow: hidden;
@@ -1700,13 +1852,11 @@
 
             .pingme-menu-header {
 
-                min-height:
-                    64px;
+                min-height: 64px;
 
                 display: flex;
 
                 align-items: center;
-
                 justify-content: space-between;
 
                 padding:
@@ -1720,9 +1870,7 @@
             .pingme-brand {
 
                 display: flex;
-
                 align-items: center;
-
                 gap: 10px;
 
                 min-width: 0;
@@ -1733,21 +1881,17 @@
             .pingme-brand-icon {
 
                 width: 32px;
-
                 height: 32px;
 
                 border-radius: 10px;
 
                 display: flex;
-
                 align-items: center;
-
                 justify-content: center;
 
                 gap: 2px;
 
-                background:
-                    #111111;
+                background: #111;
 
                 flex-shrink: 0;
 
@@ -1759,45 +1903,34 @@
                 display: block;
 
                 width: 3px;
-
                 height: 13px;
 
                 border-radius: 5px;
 
-                background:
-                    #ffffff;
+                background: #fff;
 
             }
 
 
             .pingme-brand-icon span:nth-child(1) {
-
                 height: 8px;
-
             }
 
 
             .pingme-brand-icon span:nth-child(3) {
-
                 height: 17px;
-
             }
 
 
             .pingme-brand-name {
 
                 font-size: 17px;
-
                 font-weight: 700;
 
-                letter-spacing:
-                    -0.25px;
+                letter-spacing: -.25px;
 
-                white-space:
-                    nowrap;
-
+                white-space: nowrap;
                 overflow: hidden;
-
                 text-overflow: ellipsis;
 
             }
@@ -1806,29 +1939,22 @@
             .pingme-menu-close {
 
                 width: 38px;
-
                 height: 38px;
 
                 border: 0;
-
-                background:
-                    transparent;
+                background: transparent;
 
                 border-radius: 12px;
 
                 font-size: 28px;
-
                 line-height: 1;
 
-                color:
-                    #555555;
+                color: #555;
 
                 cursor: pointer;
 
                 display: flex;
-
                 align-items: center;
-
                 justify-content: center;
 
                 flex-shrink: 0;
@@ -1837,33 +1963,25 @@
 
 
             .pingme-menu-close:active {
-
-                background:
-                    #f0f0f0;
-
+                background: #f0f0f0;
             }
 
 
             .pingme-menu-search {
 
                 margin:
-                    5px 14px 12px;
+                    5px 14px 8px;
 
-                height:
-                    44px;
+                height: 44px;
 
-                border-radius:
-                    13px;
+                border-radius: 13px;
 
-                background:
-                    #f3f3f3;
+                background: #f3f3f3;
 
                 display: flex;
-
                 align-items: center;
 
-                padding:
-                    0 13px;
+                padding: 0 13px;
 
                 gap: 9px;
 
@@ -1875,16 +1993,13 @@
             .pingme-menu-search svg {
 
                 width: 19px;
-
                 height: 19px;
 
                 fill: none;
 
-                stroke:
-                    #777777;
+                stroke: #777;
 
-                stroke-width:
-                    1.8;
+                stroke-width: 1.8;
 
                 flex-shrink: 0;
 
@@ -1894,36 +2009,318 @@
             .pingme-menu-search input {
 
                 border: 0;
-
                 outline: 0;
 
-                background:
-                    transparent;
+                background: transparent;
 
                 width: 100%;
-
                 height: 100%;
 
                 font-size: 15px;
 
-                color:
-                    #181818;
+                color: #181818;
 
             }
 
 
             .pingme-menu-search input::placeholder {
+                color: #888;
+            }
 
-                color:
-                    #888888;
+
+            /* =================================================
+               MODELS BUTTON
+               ================================================= */
+
+            .pingme-model-section {
+
+                padding:
+                    0 9px 4px;
+
+                flex-shrink: 0;
 
             }
 
 
-            .pingme-menu-main {
+            .pingme-model-button {
+
+                width: 100%;
+
+                min-height: 46px;
+
+                border: 0;
+
+                background: transparent;
+
+                border-radius: 12px;
+
+                display: flex;
+
+                align-items: center;
+
+                gap: 13px;
+
+                padding: 0 11px;
+
+                color: #202020;
+
+                font-size: 15px;
+
+                font-weight: 500;
+
+                text-align: left;
+
+                cursor: pointer;
+
+            }
+
+
+            .pingme-model-button:hover {
+                background: #f2f2f2;
+            }
+
+
+            .pingme-model-button:active {
+                background: #e9e9e9;
+            }
+
+
+            .pingme-model-icon {
+
+                width: 24px;
+                height: 24px;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                flex-shrink: 0;
+
+            }
+
+
+            .pingme-model-icon svg {
+
+                width: 20px;
+                height: 20px;
+
+                fill: none;
+
+                stroke: currentColor;
+
+                stroke-width: 1.8;
+
+                stroke-linecap: round;
+                stroke-linejoin: round;
+
+            }
+
+
+            .pingme-model-label {
+                flex: 1;
+            }
+
+
+            .pingme-model-arrow {
+
+                font-size: 24px;
+
+                color: #999;
+
+                line-height: 1;
+
+            }
+
+
+            /* =================================================
+               MODEL POPUP
+               ================================================= */
+
+            .pingme-model-popup {
+
+                position: fixed;
+
+                inset: 0;
+
+                z-index: 10001;
+
+                display: flex;
+
+                align-items: center;
+                justify-content: center;
+
+                padding: 20px;
+
+                background:
+                    rgba(0,0,0,.22);
+
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+
+                transition:
+                    opacity .2s ease,
+                    visibility .2s ease;
+
+            }
+
+
+            .pingme-model-popup.show {
+
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+
+            }
+
+
+            .pingme-model-popup-box {
+
+                width:
+                    min(330px,90vw);
+
+                background: #fff;
+
+                border-radius: 20px;
+
+                padding: 8px;
+
+                box-shadow:
+                    0 18px 55px
+                    rgba(0,0,0,.18);
+
+                transform:
+                    translateY(8px)
+                    scale(.97);
+
+                transition:
+                    transform .2s ease;
+
+            }
+
+
+            .pingme-model-popup.show
+            .pingme-model-popup-box {
+
+                transform:
+                    translateY(0)
+                    scale(1);
+
+            }
+
+
+            .pingme-model-popup-header {
+
+                min-height: 48px;
 
                 padding:
-                    0 9px;
+                    0 10px 0 13px;
+
+                display: flex;
+
+                align-items: center;
+                justify-content: space-between;
+
+                font-size: 16px;
+
+                font-weight: 700;
+
+            }
+
+
+            .pingme-model-popup-header button {
+
+                width: 34px;
+                height: 34px;
+
+                border: 0;
+
+                border-radius: 10px;
+
+                background: transparent;
+
+                font-size: 23px;
+
+                color: #777;
+
+                cursor: pointer;
+
+            }
+
+
+            .pingme-model-option {
+
+                width: 100%;
+
+                min-height: 52px;
+
+                border: 0;
+
+                border-radius: 13px;
+
+                background: transparent;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: space-between;
+
+                padding:
+                    0 13px;
+
+                font-size: 15px;
+
+                font-weight: 500;
+
+                color: #202020;
+
+                text-align: left;
+
+                cursor: pointer;
+
+            }
+
+
+            .pingme-model-option:hover {
+                background: #f3f3f3;
+            }
+
+
+            .pingme-model-option.selected {
+
+                background:
+                    linear-gradient(
+                        135deg,
+                        #f1f7ff,
+                        #eaf3ff
+                    );
+
+                color: #1769d2;
+
+                font-weight: 600;
+
+            }
+
+
+            .pingme-model-option small {
+
+                font-size: 10px;
+
+                color: #999;
+
+                font-weight: 500;
+
+            }
+
+
+            /* =================================================
+               MAIN MENU
+               ================================================= */
+
+            .pingme-menu-main {
+
+                padding: 0 9px;
 
                 flex-shrink: 0;
 
@@ -1934,16 +2331,13 @@
 
                 width: 100%;
 
-                min-height:
-                    46px;
+                min-height: 46px;
 
                 border: 0;
 
-                background:
-                    transparent;
+                background: transparent;
 
-                border-radius:
-                    12px;
+                border-radius: 12px;
 
                 display: flex;
 
@@ -1951,55 +2345,42 @@
 
                 gap: 13px;
 
-                padding:
-                    0 11px;
+                padding: 0 11px;
 
-                color:
-                    #202020;
+                color: #202020;
 
-                font-size:
-                    15px;
+                font-size: 15px;
 
-                font-weight:
-                    500;
+                font-weight: 500;
 
-                text-align:
-                    left;
+                text-align: left;
 
                 cursor: pointer;
 
                 transition:
-                    background 0.15s ease;
+                    background .15s ease;
 
             }
 
 
             .pingme-menu-item:hover {
-
-                background:
-                    #f2f2f2;
-
+                background: #f2f2f2;
             }
 
 
             .pingme-menu-item:active {
-
-                background:
-                    #e9e9e9;
-
+                background: #e9e9e9;
             }
 
 
             .pingme-menu-item-icon {
 
                 width: 24px;
-
                 height: 24px;
 
                 display: flex;
 
                 align-items: center;
-
                 justify-content: center;
 
                 flex-shrink: 0;
@@ -2010,25 +2391,23 @@
             .pingme-menu-item-icon svg {
 
                 width: 20px;
-
                 height: 20px;
 
                 fill: none;
 
-                stroke:
-                    currentColor;
+                stroke: currentColor;
 
-                stroke-width:
-                    1.8;
+                stroke-width: 1.8;
 
-                stroke-linecap:
-                    round;
-
-                stroke-linejoin:
-                    round;
+                stroke-linecap: round;
+                stroke-linejoin: round;
 
             }
 
+
+            /* =================================================
+               CHAT
+               ================================================= */
 
             .pingme-menu-chat-section {
 
@@ -2042,19 +2421,15 @@
 
                 width: 100%;
 
-                height:
-                    46px;
+                height: 46px;
 
                 border: 0;
 
-                border-radius:
-                    12px;
+                border-radius: 12px;
 
-                background:
-                    #f1f1f1;
+                background: #f1f1f1;
 
-                color:
-                    #181818;
+                color: #181818;
 
                 display: flex;
 
@@ -2062,14 +2437,11 @@
 
                 gap: 13px;
 
-                padding:
-                    0 12px;
+                padding: 0 12px;
 
-                font-size:
-                    15px;
+                font-size: 15px;
 
-                font-weight:
-                    600;
+                font-weight: 600;
 
                 cursor: pointer;
 
@@ -2077,23 +2449,18 @@
 
 
             .pingme-chat-button:active {
-
-                background:
-                    #e5e5e5;
-
+                background: #e5e5e5;
             }
 
 
             .pingme-chat-button-icon {
 
                 width: 24px;
-
                 height: 24px;
 
                 display: flex;
 
                 align-items: center;
-
                 justify-content: center;
 
             }
@@ -2102,25 +2469,23 @@
             .pingme-chat-button-icon svg {
 
                 width: 20px;
-
                 height: 20px;
 
                 fill: none;
 
-                stroke:
-                    currentColor;
+                stroke: currentColor;
 
-                stroke-width:
-                    1.8;
+                stroke-width: 1.8;
 
-                stroke-linecap:
-                    round;
-
-                stroke-linejoin:
-                    round;
+                stroke-linecap: round;
+                stroke-linejoin: round;
 
             }
 
+
+            /* =================================================
+               HISTORY
+               ================================================= */
 
             .pingme-history-section {
 
@@ -2137,19 +2502,16 @@
 
 
             .pingme-history-section::-webkit-scrollbar {
-
                 width: 4px;
-
             }
 
 
             .pingme-history-section::-webkit-scrollbar-thumb {
 
                 background:
-                    rgba(0,0,0,0.16);
+                    rgba(0,0,0,.16);
 
-                border-radius:
-                    10px;
+                border-radius: 10px;
 
             }
 
@@ -2159,14 +2521,11 @@
                 padding:
                     5px 11px 8px;
 
-                font-size:
-                    12px;
+                font-size: 12px;
 
-                font-weight:
-                    600;
+                font-weight: 600;
 
-                color:
-                    #858585;
+                color: #858585;
 
             }
 
@@ -2176,14 +2535,11 @@
                 padding:
                     13px 11px;
 
-                color:
-                    #999999;
+                color: #999;
 
-                font-size:
-                    13px;
+                font-size: 13px;
 
-                line-height:
-                    1.45;
+                line-height: 1.45;
 
             }
 
@@ -2192,37 +2548,28 @@
 
                 width: 100%;
 
-                min-height:
-                    42px;
+                min-height: 42px;
 
                 border: 0;
 
-                background:
-                    transparent;
+                background: transparent;
 
-                border-radius:
-                    10px;
+                border-radius: 10px;
 
                 padding:
                     8px 11px;
 
-                text-align:
-                    left;
+                text-align: left;
 
-                font-size:
-                    13px;
+                font-size: 13px;
 
-                color:
-                    #454545;
+                color: #454545;
 
-                white-space:
-                    nowrap;
+                white-space: nowrap;
 
-                overflow:
-                    hidden;
+                overflow: hidden;
 
-                text-overflow:
-                    ellipsis;
+                text-overflow: ellipsis;
 
                 cursor: pointer;
 
@@ -2230,26 +2577,25 @@
 
 
             .pingme-history-item:hover {
-
-                background:
-                    #f3f3f3;
-
+                background: #f3f3f3;
             }
 
+
+            /* =================================================
+               ACCOUNT
+               ================================================= */
 
             .pingme-account-area {
 
                 border-top:
                     1px solid
-                    rgba(0,0,0,0.07);
+                    rgba(0,0,0,.07);
 
-                padding:
-                    10px;
+                padding: 10px;
 
                 flex-shrink: 0;
 
-                background:
-                    #ffffff;
+                background: #fff;
 
             }
 
@@ -2260,11 +2606,9 @@
 
                 border: 0;
 
-                background:
-                    transparent;
+                background: transparent;
 
-                border-radius:
-                    13px;
+                border-radius: 13px;
 
                 display: flex;
 
@@ -2272,11 +2616,9 @@
 
                 gap: 10px;
 
-                padding:
-                    8px;
+                padding: 8px;
 
-                text-align:
-                    left;
+                text-align: left;
 
                 cursor: pointer;
 
@@ -2284,42 +2626,31 @@
 
 
             .pingme-account-button:hover {
-
-                background:
-                    #f3f3f3;
-
+                background: #f3f3f3;
             }
 
 
             .pingme-account-avatar {
 
                 width: 38px;
-
                 height: 38px;
 
-                border-radius:
-                    50%;
+                border-radius: 50%;
 
-                overflow:
-                    hidden;
+                overflow: hidden;
 
-                background:
-                    #171717;
+                background: #171717;
 
-                color:
-                    #ffffff;
+                color: #fff;
 
                 display: flex;
 
                 align-items: center;
-
                 justify-content: center;
 
-                font-size:
-                    15px;
+                font-size: 15px;
 
-                font-weight:
-                    700;
+                font-weight: 700;
 
                 flex-shrink: 0;
 
@@ -2329,7 +2660,6 @@
             .pingme-account-avatar img {
 
                 width: 100%;
-
                 height: 100%;
 
                 object-fit: cover;
@@ -2350,60 +2680,45 @@
 
             .pingme-account-name {
 
-                font-size:
-                    14px;
+                font-size: 14px;
 
-                font-weight:
-                    600;
+                font-weight: 600;
 
-                color:
-                    #202020;
+                color: #202020;
 
-                white-space:
-                    nowrap;
+                white-space: nowrap;
 
-                overflow:
-                    hidden;
+                overflow: hidden;
 
-                text-overflow:
-                    ellipsis;
+                text-overflow: ellipsis;
 
             }
 
 
             .pingme-account-email {
 
-                margin-top:
-                    2px;
+                margin-top: 2px;
 
-                font-size:
-                    11px;
+                font-size: 11px;
 
-                color:
-                    #858585;
+                color: #858585;
 
-                white-space:
-                    nowrap;
+                white-space: nowrap;
 
-                overflow:
-                    hidden;
+                overflow: hidden;
 
-                text-overflow:
-                    ellipsis;
+                text-overflow: ellipsis;
 
             }
 
 
             .pingme-account-arrow {
 
-                font-size:
-                    25px;
+                font-size: 25px;
 
-                line-height:
-                    1;
+                line-height: 1;
 
-                color:
-                    #999999;
+                color: #999;
 
                 flex-shrink: 0;
 
@@ -2411,9 +2726,7 @@
 
 
             body.pingme-menu-open {
-
                 overflow: hidden;
-
             }
 
 
@@ -2422,19 +2735,13 @@
                 .pingme-side-drawer {
 
                     width:
-                        min(
-                            330px,
-                            88vw
-                        );
+                        min(330px,88vw);
 
                 }
 
 
                 .pingme-menu-header {
-
-                    padding-left:
-                        16px;
-
+                    padding-left: 16px;
                 }
 
             }
@@ -2442,22 +2749,14 @@
         `;
 
 
-        document.head.appendChild(
-            style
-        );
+        document.head.appendChild(style);
 
     }
 
 
     /* =========================================================
-       18. INITIALIZE
+       19. INITIALIZE
        ========================================================= */
-
-    /*
-       History API is registered before createMenu().
-       This makes the Menu the active History controller
-       while keeping the existing external API names.
-    */
 
     setupHistoryAPI();
 
@@ -2465,7 +2764,7 @@
 
 
     /* =========================================================
-       19. PUBLIC API
+       20. PUBLIC API
        ========================================================= */
 
     window.PingMeMenu = {
@@ -2507,7 +2806,7 @@
 
 
     /* =========================================================
-       20. READY
+       21. READY
        ========================================================= */
 
     console.log(
