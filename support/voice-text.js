@@ -1,6 +1,5 @@
 /* =========================================================
    PingMe AI — Voice to Text
-   Replaces old Mic Action
    ========================================================= */
 
 (() => {
@@ -11,29 +10,13 @@
 
     if (!mic || !input) return;
 
-    const Recognition =
+    const Speech =
         window.SpeechRecognition ||
         window.webkitSpeechRecognition;
 
-    if (!Recognition) return;
+    if (!Speech) return;
 
-    /* =====================================================
-       BLOCK OLD MIC ACTION
-       ===================================================== */
-
-    mic.addEventListener(
-        "click",
-        event => {
-            event.stopImmediatePropagation();
-        },
-        true
-    );
-
-    /* =====================================================
-       SPEECH RECOGNITION
-       ===================================================== */
-
-    const recognition = new Recognition();
+    const recognition = new Speech();
 
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -41,68 +24,64 @@
 
     let listening = false;
     let finalText = "";
+    let ignoreOldMic = false;
 
     /* =====================================================
-       VOICE BAR STYLE
+       STYLE
        ===================================================== */
 
     const style = document.createElement("style");
 
     style.textContent = `
         #micButton .voice-bars {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            width: 21px;
-            height: 21px;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            gap:2px;
+            width:21px;
+            height:21px;
         }
 
         #micButton .voice-bars span {
-            display: block;
-            width: 2.5px;
-            height: 7px;
-            border-radius: 4px;
-            background: currentColor;
-            animation: pingmeVoiceBar .7s ease-in-out infinite;
+            display:block;
+            width:2.5px;
+            height:7px;
+            border-radius:4px;
+            background:currentColor;
+            animation:pingmeVoiceBar .7s ease-in-out infinite;
         }
 
         #micButton .voice-bars span:nth-child(1) {
-            animation-delay: 0s;
+            animation-delay:0s;
         }
 
         #micButton .voice-bars span:nth-child(2) {
-            animation-delay: .12s;
+            animation-delay:.12s;
         }
 
         #micButton .voice-bars span:nth-child(3) {
-            animation-delay: .24s;
+            animation-delay:.24s;
         }
 
         #micButton .voice-bars span:nth-child(4) {
-            animation-delay: .36s;
+            animation-delay:.36s;
         }
 
         #micButton .voice-bars span:nth-child(5) {
-            display: none;
+            display:none;
         }
 
         #micButton.voice-listening .voice-bars {
-            display: flex;
+            display:flex;
         }
 
         #micButton.voice-listening > svg {
-            display: none;
+            display:none;
         }
 
         @keyframes pingmeVoiceBar {
-            0%, 100% {
-                height: 6px;
-            }
-
-            50% {
-                height: 17px;
-            }
+            0%,100% { height:6px; }
+            50% { height:17px; }
         }
     `;
 
@@ -140,12 +119,13 @@
     }
 
     /* =====================================================
-       NEW MIC ACTION
+       MIC
        ===================================================== */
 
     mic.addEventListener("click", event => {
+        if (ignoreOldMic) return;
+
         event.preventDefault();
-        event.stopPropagation();
 
         if (listening) {
             stopVoice();
@@ -166,15 +146,16 @@
             i < event.results.length;
             i++
         ) {
-            const transcript =
-                event.results[i][0].transcript;
+            const text =
+                event.results[i][0].transcript.trim();
 
             if (event.results[i].isFinal) {
-                finalText +=
-                    (finalText ? " " : "") +
-                    transcript.trim();
+                if (text) {
+                    finalText +=
+                        (finalText ? " " : "") + text;
+                }
             } else {
-                interim += transcript;
+                interim += text;
             }
         }
 
@@ -189,15 +170,19 @@
     };
 
     /* =====================================================
-       KEEP LISTENING
+       RESTART WHILE LISTENING
        ===================================================== */
 
     recognition.onend = () => {
         if (!listening) return;
 
-        try {
-            recognition.start();
-        } catch (e) {}
+        setTimeout(() => {
+            if (!listening) return;
+
+            try {
+                recognition.start();
+            } catch (e) {}
+        }, 100);
     };
 
     /* =====================================================
