@@ -3,11 +3,13 @@
 // Complete Memory System
 //
 // DESIGN:
-// - Memory updated is a separate system row.
-// - It appears ABOVE the related AI message.
+// - Memory is saved immediately.
+// - "Memory updated" appears immediately after the user message.
+// - When the real AI response appears, the indicator moves directly
+//   above that AI response.
 // - It is NOT appended inside the AI message.
+// - Thinking/loading rows are ignored.
 // - Clicking it opens Memory Summary.
-// - Memory Summary shows exactly what was saved.
 // - All Memory logic lives in this file.
 //
 // HTML only needs to load this Support file.
@@ -43,8 +45,12 @@
     let aboutMenu = null;
     let isInitialized = false;
 
-    // Memory waiting for the next AI message.
-    let pendingMemoryForAssistant = null;
+    // --------------------------------------------------------
+    // Memory indicator waiting for the real AI response.
+    // The row is created immediately when memory is saved.
+    // --------------------------------------------------------
+
+    let pendingMemoryIndicator = null;
 
 
     // ========================================================
@@ -279,6 +285,7 @@
                 getNowISO();
 
             if (options.source) {
+
                 existing.source =
                     options.source;
             }
@@ -639,10 +646,6 @@
 
     // ========================================================
     // MEMORY UPDATED SYSTEM ROW
-    //
-    // IMPORTANT:
-    // This is NOT inside the AI message.
-    // It is a separate row ABOVE the AI message.
     // ========================================================
 
     function createMemoryUpdatedSystemRow(
@@ -699,6 +702,52 @@
 
 
     // ========================================================
+    // CHECK THINKING / LOADING MESSAGE
+    // ========================================================
+
+    function isThinkingMessage(
+        element
+    ) {
+
+        if (!element) {
+            return false;
+        }
+
+        if (
+            element.classList &&
+            (
+                element.classList.contains(
+                    "thinking"
+                ) ||
+                element.classList.contains(
+                    "thinking-message"
+                )
+            )
+        ) {
+
+            return true;
+        }
+
+        if (
+            element.querySelector &&
+            (
+                element.querySelector(
+                    ".thinking"
+                ) ||
+                element.querySelector(
+                    ".thinking-message"
+                )
+            )
+        ) {
+
+            return true;
+        }
+
+        return false;
+    }
+
+
+    // ========================================================
     // ASSISTANT MESSAGE SELECTOR
     // ========================================================
 
@@ -722,6 +771,10 @@
 
             ".message-assistant",
 
+            ".message-row.ai",
+
+            ".message-row.assistant",
+
             "[class*='assistant-message']",
 
             "[class*='ai-message']"
@@ -730,7 +783,7 @@
 
 
     // ========================================================
-    // FIND LATEST ASSISTANT MESSAGE
+    // FIND LATEST REAL ASSISTANT MESSAGE
     // ========================================================
 
     function findLatestAssistantMessage() {
@@ -738,81 +791,123 @@
         const selectors =
             getAssistantMessageSelectors();
 
-        for (
-            let i = 0;
-            i < selectors.length;
-            i++
-        ) {
+        const found = [];
 
-            const elements =
-                document.querySelectorAll(
-                    selectors[i]
+        selectors.forEach(
+            function (selector) {
+
+                let elements = [];
+
+                try {
+
+                    elements =
+                        document.querySelectorAll(
+                            selector
+                        );
+
+                } catch (error) {
+
+                    return;
+                }
+
+
+                elements.forEach(
+                    function (element) {
+
+                        if (
+                            !isThinkingMessage(
+                                element
+                            )
+                        ) {
+
+                            if (
+                                !found.includes(
+                                    element
+                                )
+                            ) {
+
+                                found.push(
+                                    element
+                                );
+                            }
+                        }
+                    }
                 );
-
-            if (
-                elements &&
-                elements.length
-            ) {
-
-                return elements[
-                    elements.length - 1
-                ];
             }
+        );
+
+
+        if (!found.length) {
+            return null;
         }
 
-        return null;
+
+        // ----------------------------------------------------
+        // Return the last one in DOM order.
+        // ----------------------------------------------------
+
+        let latest =
+            found[0];
+
+        found.forEach(
+            function (element) {
+
+                if (
+                    latest.compareDocumentPosition(
+                        element
+                    ) &
+                    Node.DOCUMENT_POSITION_FOLLOWING
+                ) {
+
+                    latest = element;
+                }
+            }
+        );
+
+
+        return latest;
     }
 
 
     // ========================================================
-    // INSERT SYSTEM ROW ABOVE AI MESSAGE
+    // INSERT / SHOW MEMORY UPDATED IMMEDIATELY
+    //
+    // This is the important timing fix.
+    //
+    // The row is created immediately after the user message.
     // ========================================================
 
-    function placeMemoryUpdatedAboveAssistant(
+    function showMemoryUpdatedImmediately(
         memory,
-        assistantMessage
+        userMessage
     ) {
 
+        if (!memory) {
+            return null;
+        }
+
+
+        // ----------------------------------------------------
+        // If an existing pending row already belongs to this
+        // memory, don't create another one.
+        // ----------------------------------------------------
+
         if (
-            !memory ||
-            !assistantMessage ||
-            !assistantMessage.parentNode
-        ) {
-
-            return false;
-        }
-
-
-        // ----------------------------------------------------
-        // Prevent duplicate row for same memory/message
-        // ----------------------------------------------------
-
-        const existingRows =
-            assistantMessage.parentNode
-                .querySelectorAll(
-                    ".pingme-memory-updated-row"
-                );
-
-
-        for (
-            let i = 0;
-            i < existingRows.length;
-            i++
-        ) {
-
-            if (
-                existingRows[i]
-                    .dataset.memoryId ===
+            pendingMemoryIndicator &&
+            pendingMemoryIndicator.memory &&
+            pendingMemoryIndicator.memory.id ===
                 memory.id
-            ) {
+        ) {
 
-                return true;
-            }
+            return (
+                pendingMemoryIndicator.row ||
+                null
+            );
         }
 
 
         // ----------------------------------------------------
-        // Create separate system row
+        // Create row NOW.
         // ----------------------------------------------------
 
         const row =
@@ -822,7 +917,112 @@
 
 
         // ----------------------------------------------------
-        // Put it directly ABOVE AI message
+        // Put immediately after user message.
+        // This means the user sees it without waiting for AI.
+        // ----------------------------------------------------
+
+        if (
+            userMessage &&
+            userMessage.parentNode
+        ) {
+
+            userMessage.parentNode.insertBefore(
+                row,
+                userMessage.nextSibling
+            );
+
+        } else {
+
+            // Safe fallback.
+            const chatArea =
+                document.getElementById(
+                    "chatArea"
+                );
+
+            if (chatArea) {
+
+                chatArea.appendChild(
+                    row
+                );
+
+            } else {
+
+                document.body.appendChild(
+                    row
+                );
+            }
+        }
+
+
+        pendingMemoryIndicator = {
+
+            memory:
+                memory,
+
+            row:
+                row,
+
+            userMessage:
+                userMessage || null
+        };
+
+
+        return row;
+    }
+
+
+    // ========================================================
+    // MOVE INDICATOR DIRECTLY ABOVE REAL AI RESPONSE
+    // ========================================================
+
+    function placePendingIndicatorAboveAssistant(
+        assistantMessage
+    ) {
+
+        if (
+            !pendingMemoryIndicator ||
+            !pendingMemoryIndicator.memory ||
+            !pendingMemoryIndicator.row
+        ) {
+
+            return false;
+        }
+
+
+        if (
+            !assistantMessage ||
+            !assistantMessage.parentNode
+        ) {
+
+            return false;
+        }
+
+
+        const row =
+            pendingMemoryIndicator.row;
+
+
+        // ----------------------------------------------------
+        // If the row has already been placed directly before
+        // the AI message, nothing else is needed.
+        // ----------------------------------------------------
+
+        if (
+            row.parentNode ===
+                assistantMessage.parentNode &&
+            row.nextSibling ===
+                assistantMessage
+        ) {
+
+            pendingMemoryIndicator = null;
+
+            return true;
+        }
+
+
+        // ----------------------------------------------------
+        // Move the SAME row.
+        // No duplicate row is created.
         // ----------------------------------------------------
 
         assistantMessage.parentNode.insertBefore(
@@ -831,42 +1031,9 @@
         );
 
 
+        pendingMemoryIndicator = null;
+
         return true;
-    }
-
-
-    // ========================================================
-    // PLACE PENDING INDICATOR
-    // ========================================================
-
-    function attachPendingMemoryIndicator() {
-
-        if (
-            !pendingMemoryForAssistant
-        ) {
-
-            return;
-        }
-
-        const assistantMessage =
-            findLatestAssistantMessage();
-
-        if (!assistantMessage) {
-
-            return;
-        }
-
-        const placed =
-            placeMemoryUpdatedAboveAssistant(
-                pendingMemoryForAssistant,
-                assistantMessage
-            );
-
-        if (placed) {
-
-            pendingMemoryForAssistant =
-                null;
-        }
     }
 
 
@@ -906,16 +1073,132 @@
 
 
         // ----------------------------------------------------
-        // Do NOT append to AI message.
-        // Wait for the assistant response and place the row
-        // above it.
+        // IMPORTANT:
+        // Memory is already saved here.
+        // The indicator must appear immediately.
+        //
+        // The actual user message is detected by the observer.
+        // If it is not available yet, the observer will place
+        // the row as soon as the message enters the DOM.
         // ----------------------------------------------------
 
-        pendingMemoryForAssistant =
-            memory;
+        pendingMemoryIndicator = {
+
+            memory:
+                memory,
+
+            row:
+                null,
+
+            userMessage:
+                null
+        };
 
 
-        attachPendingMemoryIndicator();
+        // ----------------------------------------------------
+        // Try immediately in case the user message is already
+        // available in the DOM.
+        // ----------------------------------------------------
+
+        const userMessages =
+            getUserMessageElements();
+
+
+        if (userMessages.length) {
+
+            const latestUser =
+                userMessages[
+                    userMessages.length - 1
+                ];
+
+            showMemoryUpdatedImmediately(
+                memory,
+                latestUser
+            );
+        }
+    }
+
+
+    // ========================================================
+    // USER MESSAGE SELECTORS
+    // ========================================================
+
+    function getUserMessageElements() {
+
+        const selectors = [
+
+            "[data-role='user']",
+
+            "[data-message-role='user']",
+
+            ".user-message",
+
+            ".message-user",
+
+            ".message-row.user"
+        ];
+
+        const found = [];
+
+
+        selectors.forEach(
+            function (selector) {
+
+                let elements = [];
+
+                try {
+
+                    elements =
+                        document.querySelectorAll(
+                            selector
+                        );
+
+                } catch (error) {
+
+                    return;
+                }
+
+
+                elements.forEach(
+                    function (element) {
+
+                        if (
+                            !found.includes(
+                                element
+                            )
+                        ) {
+
+                            found.push(
+                                element
+                            );
+                        }
+                    }
+                );
+            }
+        );
+
+
+        // DOM order.
+        found.sort(
+            function (a, b) {
+
+                if (a === b) {
+                    return 0;
+                }
+
+                return (
+                    a.compareDocumentPosition(
+                        b
+                    ) &
+                    Node.DOCUMENT_POSITION_FOLLOWING
+                )
+                    ? -1
+                    : 1;
+            }
+        );
+
+
+        return found;
     }
 
 
@@ -2068,7 +2351,8 @@
     // ========================================================
 
     function processPossibleMemoryCommand(
-        text
+        text,
+        userMessageElement
     ) {
 
         if (
@@ -2100,13 +2384,36 @@
         }
 
 
-        return saveMemory(
-            memoryText,
-            {
-                source:
-                    "user-command"
-            }
-        );
+        const result =
+            saveMemory(
+                memoryText,
+                {
+                    source:
+                        "user-command"
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // Guarantee immediate placement beside the current
+        // user message when available.
+        // ----------------------------------------------------
+
+        if (
+            result &&
+            result.success &&
+            result.memory &&
+            userMessageElement
+        ) {
+
+            showMemoryUpdatedImmediately(
+                result.memory,
+                userMessageElement
+            );
+        }
+
+
+        return result;
     }
 
 
@@ -2301,6 +2608,16 @@
             ) ||
             className.includes(
                 "message-user"
+            ) ||
+            (
+                className.includes(
+                    "message-row"
+                ) &&
+                className
+                    .split(/\s+/)
+                    .includes(
+                        "user"
+                    )
             )
         ) {
 
@@ -2317,6 +2634,23 @@
             ) ||
             className.includes(
                 "message-assistant"
+            ) ||
+            (
+                className.includes(
+                    "message-row"
+                ) &&
+                (
+                    className
+                        .split(/\s+/)
+                        .includes(
+                            "ai"
+                        ) ||
+                    className
+                        .split(/\s+/)
+                        .includes(
+                            "assistant"
+                        )
+                )
             )
         ) {
 
@@ -2345,6 +2679,29 @@
         }
 
 
+        // ----------------------------------------------------
+        // Ignore our own memory UI.
+        // ----------------------------------------------------
+
+        if (
+            node.classList &&
+            (
+                node.classList.contains(
+                    "pingme-memory-updated-row"
+                ) ||
+                node.closest(
+                    ".pingme-memory-overlay"
+                ) ||
+                node.closest(
+                    ".pingme-about-memory-menu"
+                )
+            )
+        ) {
+
+            return;
+        }
+
+
         const role =
             detectMessageRole(
                 node
@@ -2356,6 +2713,26 @@
         // ----------------------------------------------------
 
         if (role === "user") {
+
+            // Avoid processing the exact same user message twice.
+            if (
+                node.dataset &&
+                node.dataset
+                    .pingmeMemoryProcessed ===
+                    "true"
+            ) {
+
+                return;
+            }
+
+
+            if (node.dataset) {
+
+                node.dataset
+                    .pingmeMemoryProcessed =
+                    "true";
+            }
+
 
             const text =
                 getMessageTextFromElement(
@@ -2371,7 +2748,8 @@
             ) {
 
                 processPossibleMemoryCommand(
-                    text
+                    text,
+                    node
                 );
             }
 
@@ -2388,7 +2766,21 @@
             role === "assistant"
         ) {
 
-            attachPendingMemoryIndicator();
+            // Never treat the thinking/loading row as the
+            // real assistant response.
+            if (
+                isThinkingMessage(
+                    node
+                )
+            ) {
+
+                return;
+            }
+
+
+            placePendingIndicatorAboveAssistant(
+                node
+            );
 
             return;
         }
@@ -2408,7 +2800,8 @@
                         "[data-role='user']",
                         "[data-message-role='user']",
                         ".user-message",
-                        ".message-user"
+                        ".message-user",
+                        ".message-row.user"
                     ].join(",")
                 );
 
@@ -2416,10 +2809,31 @@
             userCandidates.forEach(
                 function (element) {
 
+                    if (
+                        element.dataset &&
+                        element.dataset
+                            .pingmeMemoryProcessed ===
+                            "true"
+                    ) {
+
+                        return;
+                    }
+
+
                     const text =
                         getMessageTextFromElement(
                             element
                         );
+
+
+                    if (
+                        element.dataset
+                    ) {
+
+                        element.dataset
+                            .pingmeMemoryProcessed =
+                            "true";
+                    }
 
 
                     if (
@@ -2430,7 +2844,8 @@
                     ) {
 
                         processPossibleMemoryCommand(
-                            text
+                            text,
+                            element
                         );
                     }
                 }
@@ -2438,7 +2853,7 @@
 
 
             // ------------------------------------------------
-            // Nested assistant messages
+            // Nested assistant messages.
             // ------------------------------------------------
 
             const assistantCandidates =
@@ -2448,17 +2863,31 @@
                         "[data-message-role='assistant']",
                         ".assistant-message",
                         ".ai-message",
-                        ".message-assistant"
+                        ".message-assistant",
+                        ".message-row.ai",
+                        ".message-row.assistant"
                     ].join(",")
                 );
 
 
-            if (
-                assistantCandidates.length
-            ) {
+            assistantCandidates.forEach(
+                function (element) {
 
-                attachPendingMemoryIndicator();
-            }
+                    if (
+                        isThinkingMessage(
+                            element
+                        )
+                    ) {
+
+                        return;
+                    }
+
+
+                    placePendingIndicatorAboveAssistant(
+                        element
+                    );
+                }
+            );
         }
     }
 
@@ -2498,12 +2927,6 @@
                                 );
                         }
                     );
-
-
-                    // Assistant message can be added
-                    // after memory was saved.
-                    attachPendingMemoryIndicator();
-
                 }
             );
 
@@ -3793,16 +4216,6 @@
         createAboutMemoryMenu();
 
         startMessageObserver();
-
-
-        setTimeout(
-            function () {
-
-                attachPendingMemoryIndicator();
-
-            },
-            300
-        );
 
 
         console.log(
