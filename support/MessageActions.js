@@ -16,19 +16,21 @@
   };
 
   const css = document.createElement("style");
+
   css.textContent = `
     .${BAR}{
       display:flex;
       align-items:center;
-      gap:3px;
-      margin-top:7px;
+      gap:2px;
+      margin-top:6px;
     }
+
     .${BAR} button{
-      width:29px;
-      height:29px;
+      width:28px;
+      height:28px;
       padding:5px;
       border:0;
-      border-radius:8px;
+      border-radius:7px;
       background:transparent;
       color:inherit;
       opacity:.72;
@@ -36,53 +38,13 @@
       display:grid;
       place-items:center;
     }
+
     .${BAR} button:hover{
       background:rgba(127,127,127,.12);
       opacity:1;
     }
+
     .${BAR} svg{
-      width:17px;
-      height:17px;
-      fill:none;
-      stroke:currentColor;
-      stroke-width:1.8;
-      stroke-linecap:round;
-      stroke-linejoin:round;
-    }
-    .pingme-actions-menu{
-      position:fixed;
-      z-index:99999;
-      min-width:185px;
-      padding:6px;
-      border-radius:12px;
-      border:1px solid rgba(127,127,127,.18);
-      background:var(--background-primary,#fff);
-      box-shadow:0 8px 28px rgba(0,0,0,.18);
-    }
-    .pingme-actions-time{
-      padding:7px 9px 8px;
-      margin-bottom:4px;
-      border-bottom:1px solid rgba(127,127,127,.14);
-      font-size:11px;
-      opacity:.55;
-    }
-    .pingme-actions-menu button{
-      width:100%;
-      display:flex;
-      align-items:center;
-      gap:9px;
-      padding:8px 9px;
-      border:0;
-      border-radius:8px;
-      background:transparent;
-      color:inherit;
-      text-align:left;
-      cursor:pointer;
-    }
-    .pingme-actions-menu button:hover{
-      background:rgba(127,127,127,.12);
-    }
-    .pingme-actions-menu svg{
       width:16px;
       height:16px;
       fill:none;
@@ -91,21 +53,76 @@
       stroke-linecap:round;
       stroke-linejoin:round;
     }
+
+    .pingme-actions-menu{
+      position:fixed;
+      z-index:99999;
+      width:178px;
+      padding:5px;
+      border-radius:11px;
+      border:1px solid rgba(127,127,127,.18);
+      background:var(--background-primary,#fff);
+      box-shadow:0 7px 24px rgba(0,0,0,.16);
+    }
+
+    .pingme-actions-time{
+      padding:5px 8px 6px;
+      margin-bottom:3px;
+      border-bottom:1px solid rgba(127,127,127,.14);
+      font-size:10px;
+      opacity:.5;
+    }
+
+    .pingme-actions-menu button{
+      width:100%;
+      height:34px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      border:0;
+      border-radius:7px;
+      background:transparent;
+      color:inherit;
+      font-size:13px;
+      text-align:left;
+      cursor:pointer;
+    }
+
+    .pingme-actions-menu button:hover{
+      background:rgba(127,127,127,.12);
+    }
+
+    .pingme-actions-menu svg{
+      width:15px;
+      height:15px;
+      flex:none;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:1.8;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
   `;
+
   document.head.appendChild(css);
 
-  const textOf = el => el?.innerText?.trim() || "";
+  const textOf = el =>
+    el?.innerText?.trim() || "";
 
   const makeButton = (icon,title,fn) => {
     const b = document.createElement("button");
+
     b.type = "button";
     b.title = title;
     b.setAttribute("aria-label",title);
     b.innerHTML = icon;
+
     b.onclick = e => {
       e.stopPropagation();
       fn(e);
     };
+
     return b;
   };
 
@@ -129,7 +146,11 @@
     el.dispatchEvent(
       new CustomEvent("pingme:message-feedback",{
         bubbles:true,
-        detail:{type,message:el,text:textOf(el)}
+        detail:{
+          type,
+          message:el,
+          text:textOf(el)
+        }
       })
     );
 
@@ -143,9 +164,12 @@
 
   const speak = el => {
     const text = textOf(el);
-    if (!text || !window.speechSynthesis) return;
+
+    if (!text || !window.speechSynthesis)
+      return;
 
     speechSynthesis.cancel();
+
     speechSynthesis.speak(
       new SpeechSynthesisUtterance(text)
     );
@@ -153,31 +177,43 @@
 
   const share = async el => {
     const text = textOf(el);
+
     if (!text) return;
 
     try {
-      if (navigator.share)
-        await navigator.share({title:"PingMe AI",text});
-      else
+      if (navigator.share) {
+        await navigator.share({
+          title:"PingMe AI",
+          text
+        });
+      } else {
         await navigator.clipboard.writeText(text);
+      }
     } catch {}
   };
 
   let menu = null;
 
   const closeMenu = () => {
-    menu?.remove();
-    menu = null;
+    if (menu) {
+      menu.remove();
+      menu = null;
+    }
   };
 
   const menuItem = (icon,label,fn) => {
     const b = document.createElement("button");
-    b.innerHTML = icon + `<span>${label}</span>`;
+
+    b.type = "button";
+    b.innerHTML =
+      icon + `<span>${label}</span>`;
+
     b.onclick = e => {
       e.stopPropagation();
       closeMenu();
       fn();
     };
+
     return b;
   };
 
@@ -190,6 +226,7 @@
     const time = document.createElement("div");
     time.className = "pingme-actions-time";
     time.textContent = "Sent";
+
     menu.appendChild(time);
 
     menu.appendChild(
@@ -200,12 +237,19 @@
           el.dispatchEvent(
             new CustomEvent("pingme:branch",{
               bubbles:true,
-              detail:{message:el,text:textOf(el)}
+              detail:{
+                message:el,
+                text:textOf(el)
+              }
             })
           );
 
-          if (typeof window.pingmeBranchMessage === "function")
+          if (
+            typeof window.pingmeBranchMessage ===
+            "function"
+          ) {
             window.pingmeBranchMessage(el);
+          }
         }
       )
     );
@@ -218,38 +262,61 @@
           el.dispatchEvent(
             new CustomEvent("pingme:retry",{
               bubbles:true,
-              detail:{message:el,text:textOf(el)}
+              detail:{
+                message:el,
+                text:textOf(el)
+              }
             })
           );
 
-          if (typeof window.pingmeRetryMessage === "function")
+          if (
+            typeof window.pingmeRetryMessage ===
+            "function"
+          ) {
             window.pingmeRetryMessage(el);
+          }
         }
       )
     );
 
     document.body.appendChild(menu);
 
-    const r = anchor.getBoundingClientRect();
+    const r =
+      anchor.getBoundingClientRect();
+
     const w = menu.offsetWidth;
     const h = menu.offsetHeight;
 
-    let left = r.right - w;
-    let top = r.bottom + 6;
+    let left =
+      r.right - w;
 
-    if (left < 6) left = 6;
+    let top =
+      r.bottom + 5;
+
+    if (left < 6)
+      left = 6;
+
     if (left + w > innerWidth - 6)
       left = innerWidth - w - 6;
 
     if (top + h > innerHeight - 6)
-      top = r.top - h - 6;
+      top = r.top - h - 5;
 
-    menu.style.left = `${left}px`;
-    menu.style.top = `${top}px`;
+    if (top < 6)
+      top = 6;
+
+    menu.style.left =
+      `${left}px`;
+
+    menu.style.top =
+      `${top}px`;
   };
 
   const attach = el => {
-    if (!el || el.dataset.pingmeActions === "1")
+    if (
+      !el ||
+      el.dataset.pingmeActions === "1"
+    )
       return;
 
     if (!el.matches(".ai-message"))
@@ -260,61 +327,111 @@
 
     el.dataset.pingmeActions = "1";
 
-    const bar = document.createElement("div");
+    const bar =
+      document.createElement("div");
+
     bar.className = BAR;
 
     bar.append(
-      makeButton(icons.copy,"Copy",() => copy(el)),
-      makeButton(icons.like,"Like",() => feedback(el,"like")),
-      makeButton(icons.dislike,"Dislike",() => feedback(el,"dislike")),
-      makeButton(icons.voice,"Read aloud",() => speak(el)),
-      makeButton(icons.share,"Share",() => share(el)),
-      makeButton(icons.more,"More",e => openMenu(el,e.currentTarget))
+      makeButton(
+        icons.copy,
+        "Copy",
+        () => copy(el)
+      ),
+
+      makeButton(
+        icons.like,
+        "Like",
+        () => feedback(el,"like")
+      ),
+
+      makeButton(
+        icons.dislike,
+        "Dislike",
+        () => feedback(el,"dislike")
+      ),
+
+      makeButton(
+        icons.voice,
+        "Read aloud",
+        () => speak(el)
+      ),
+
+      makeButton(
+        icons.share,
+        "Share",
+        () => share(el)
+      ),
+
+      makeButton(
+        icons.more,
+        "More",
+        e => openMenu(
+          el,
+          e.currentTarget
+        )
+      )
     );
 
     el.appendChild(bar);
   };
 
   const scan = root => {
-    if (!root?.querySelectorAll) return;
+    if (!root?.querySelectorAll)
+      return;
 
     if (root.matches?.(".ai-message"))
       attach(root);
 
-    root.querySelectorAll(".ai-message")
+    root
+      .querySelectorAll(".ai-message")
       .forEach(attach);
   };
 
   const start = () => {
     scan(document);
 
-    if (!document.body) return;
+    if (!document.body)
+      return;
 
-    new MutationObserver(mutations => {
-      mutations.forEach(m =>
-        m.addedNodes.forEach(n => {
-          if (n.nodeType === 1)
-            scan(n);
-        })
-      );
-    }).observe(document.body,{
-      childList:true,
-      subtree:true
-    });
+    new MutationObserver(
+      mutations => {
+        mutations.forEach(m =>
+          m.addedNodes.forEach(n => {
+            if (n.nodeType === 1)
+              scan(n);
+          })
+        );
+      }
+    ).observe(
+      document.body,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
   };
 
-  document.addEventListener("click",e => {
-    if (
-      menu &&
-      !menu.contains(e.target) &&
-      !e.target.closest(`.${BAR}`)
-    )
-      closeMenu();
-  });
+  document.addEventListener(
+    "click",
+    e => {
+      if (
+        menu &&
+        !menu.contains(e.target) &&
+        !e.target.closest(`.${BAR}`)
+      ) {
+        closeMenu();
+      }
+    }
+  );
 
-  document.addEventListener("keydown",e => {
-    if (e.key === "Escape") closeMenu();
-  });
+  document.addEventListener(
+    "keydown",
+    e => {
+      if (e.key === "Escape")
+        closeMenu();
+    }
+  );
 
   window.PingMeMessageActions = {
     scan,
@@ -322,15 +439,19 @@
     closeMenu
   };
 
-  if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded",start);
-  else
+  if (
+    document.readyState === "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      start
+    );
+  } else {
     start();
+  }
 
 })();
 
-এখন Save → PingMe পুরো Reload → নতুন একটা AI message পাঠা।
+এখন শুধু: Save → PingMe পুরো Reload → নতুন AI message পাঠা → Three-dot চাপ।
 
-এইবার মূল পরিবর্তনটা হলো: "MessageActions" সরাসরি তোর আসল ".ai-message" ধরছে। তাই আগের selector-এর কারণে আটকে থাকার কথা না।
-
-প্রথমে শুধু দেখবি ৬টা icon আসে কিনা। এলে পরের ধাপে popup-এর sent time-টা তোর actual message time থেকে নিখুঁত করব।
+তারপর দেখবি popup ছোট ও সুন্দরভাবে আসে কিনা।
