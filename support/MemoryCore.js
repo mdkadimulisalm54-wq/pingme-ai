@@ -104,19 +104,19 @@
     if (!value) return false;
 
     const patterns = [
-      /মনে রাখ/,
-      /মনে রেখ/,
-      /মেমোরিতে সেভ/,
-      /মেমোরিতে রাখ/,
-      /মেমরিতে সেভ/,
-      /মেমরিতে রাখ/,
-      /সেভ করে রাখ/,
-      /সেভ করে রাখো/,
-      /সেভ করো/,
-      /সেভ রাখো/,
-      /এটা মনে রাখ/,
-      /এই কথাটা মনে রাখ/,
-      /এই তথ্যটা মনে রাখ/,
+      /\u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
+      /\u09ae\u09a8\u09c7 \u09b0\u09c7\u0996/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad/,
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996/,
+      /\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996/,
+      /\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996\u09cb/,
+      /\u09b8\u09c7\u09ad \u0995\u09b0\u09cb/,
+      /\u09b8\u09c7\u09ad \u09b0\u09be\u0996\u09cb/,
+      /\u098f\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
+      /\u098f\u0987 \u0995\u09a5\u09be\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
+      /\u098f\u0987 \u09a4\u09a5\u09cd\u09af\u099f\u09be \u09ae\u09a8\u09c7 \u09b0\u09be\u0996/,
 
       /remember this/,
       /remember that/,
@@ -136,17 +136,17 @@
     if (!value) return "";
 
     const commandPatterns = [
-      /^মনে রাখো[\s:,-]*/i,
-      /^মনে রাখিস[\s:,-]*/i,
-      /^মনে রাখবে[\s:,-]*/i,
-      /^মনে রেখো[\s:,-]*/i,
-      /^মেমোরিতে সেভ করো[\s:,-]*/i,
-      /^মেমোরিতে রাখো[\s:,-]*/i,
-      /^মেমরিতে সেভ করো[\s:,-]*/i,
-      /^মেমরিতে রাখো[\s:,-]*/i,
-      /^সেভ করে রাখো[\s:,-]*/i,
-      /^সেভ করো[\s:,-]*/i,
-      /^সেভ রাখো[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09bf\u09b8[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7 \u09b0\u09be\u0996\u09ac\u09c7[\s:,-]*/i,
+      /^\u09ae\u09a8\u09c7 \u09b0\u09c7\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09b8\u09c7\u09ad \u0995\u09b0\u09c7 \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
+      /^\u09b8\u09c7\u09ad \u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09b8\u09c7\u09ad \u09b0\u09be\u0996\u09cb[\s:,-]*/i,
 
       /^remember this[\s:,-]*/i,
       /^remember that[\s:,-]*/i,
@@ -191,9 +191,10 @@
   function showMemoryUpdatedImmediately(userMessageElement) {
     if (!userMessageElement) return;
 
-    const existing = userMessageElement.parentElement?.querySelector(
-      ".pingme-memory-updated-row"
-    );
+    const existing =
+      userMessageElement.parentElement?.querySelector(
+        ".pingme-memory-updated-row"
+      );
 
     if (existing) return;
 
@@ -213,8 +214,13 @@
     }
   }
 
-  function emitMemoryUpdated(memory, updated, userMessageElement) {
+  function emitMemoryUpdated(
+    memory,
+    updated,
+    userMessageElement
+  ) {
     memoryState.updatedAt = Date.now();
+
     persistMemoryState();
 
     try {
@@ -240,7 +246,7 @@
 
   /* =========================
      INTERNAL SAVE
-     ========================= */
+  ========================= */
 
   function saveMemory(text, options = {}) {
     const value = normalizeText(text);
@@ -255,11 +261,12 @@
 
     const now = Date.now();
 
-    const existingIndex = memoryState.memories.findIndex(
-      item =>
-        normalizeText(item.text).toLowerCase() ===
-        value.toLowerCase()
-    );
+    const existingIndex =
+      memoryState.memories.findIndex(
+        item =>
+          normalizeText(item.text).toLowerCase() ===
+          value.toLowerCase()
+      );
 
     let memory;
     let updated = false;
@@ -268,8 +275,11 @@
       memory = memoryState.memories[existingIndex];
 
       memory.updatedAt = now;
+
       memory.source =
-        options.source || memory.source || "user-command";
+        options.source ||
+        memory.source ||
+        "user-command";
 
       updated = true;
     } else {
@@ -288,7 +298,8 @@
         updatedAt: now,
 
         source:
-          options.source || "user-command"
+          options.source ||
+          "user-command"
       };
 
       memoryState.memories.push(memory);
@@ -317,7 +328,6 @@
   ) {
     const value = normalizeText(text);
 
-    // IMPORTANT:
     // Ordinary messages NEVER enter Memory.
     if (!looksLikeMemoryCommand(value)) {
       return null;
@@ -326,8 +336,7 @@
     const memoryText =
       extractMemoryFromCommand(value);
 
-    // "সেভ করো" / "মনে রাখো" alone must not
-    // save the command itself.
+    // Do not save command-only messages.
     if (!memoryText) {
       return null;
     }
@@ -342,21 +351,15 @@
      PUBLIC MEMORY API
   ========================= */
 
-  function pingMeRemember(text, options = {}) {
+  function pingMeRemember(
+    text,
+    options = {}
+  ) {
     const value = normalizeText(text);
 
     /*
-      IMPORTANT SECURITY GUARD
-
-      External calls such as:
-
-      PingMeMemory.save("hello")
-
-      can no longer automatically save
-      ordinary text.
-
-      Only an explicit memory command
-      is allowed through the public save API.
+      Public save API is also command-protected.
+      Ordinary text cannot be saved directly.
     */
 
     if (!looksLikeMemoryCommand(value)) {
@@ -372,7 +375,9 @@
 
     return saveMemory(memoryText, {
       ...options,
-      source: options.source || "user-command"
+      source:
+        options.source ||
+        "user-command"
     });
   }
 
@@ -400,11 +405,14 @@
 
     if (!value) return null;
 
-    memoryState.memories[index].text = value;
+    memoryState.memories[index].text =
+      value;
+
     memoryState.memories[index].updatedAt =
       Date.now();
 
-    memoryState.updatedAt = Date.now();
+    memoryState.updatedAt =
+      Date.now();
 
     persistMemoryState();
 
@@ -419,9 +427,13 @@
 
     if (index === -1) return false;
 
-    memoryState.memories.splice(index, 1);
+    memoryState.memories.splice(
+      index,
+      1
+    );
 
-    memoryState.updatedAt = Date.now();
+    memoryState.updatedAt =
+      Date.now();
 
     persistMemoryState();
 
@@ -430,7 +442,9 @@
 
   function clearMemories() {
     memoryState.memories = [];
-    memoryState.updatedAt = Date.now();
+
+    memoryState.updatedAt =
+      Date.now();
 
     persistMemoryState();
 
@@ -475,7 +489,7 @@
 
     if (
       typeof window.openMemorySummary ===
-      "function" &&
+        "function" &&
       window.openMemorySummary !==
         openMemorySummary
     ) {
@@ -528,13 +542,15 @@
     if (!element) return;
 
     if (
-      element.dataset.pingmeMemoryProcessed ===
+      element.dataset
+        .pingmeMemoryProcessed ===
       "true"
     ) {
       return;
     }
 
-    element.dataset.pingmeMemoryProcessed =
+    element.dataset
+      .pingmeMemoryProcessed =
       "true";
 
     const text =
@@ -542,15 +558,15 @@
 
     if (!text) return;
 
-    // Never process thinking/loading rows.
-    if (isThinkingMessage(element)) return;
+    if (isThinkingMessage(element)) {
+      return;
+    }
 
     /*
-      This is the only automatic DOM entry point.
-
-      It first checks for an explicit memory
-      command, so normal conversation is ignored.
+      Normal messages are ignored.
+      Only explicit memory commands continue.
     */
+
     if (!looksLikeMemoryCommand(text)) {
       return;
     }
@@ -565,21 +581,23 @@
     if (!document.body) return;
 
     const observer =
-      new MutationObserver(mutations => {
-        for (const mutation of mutations) {
-          for (const node of mutation.addedNodes) {
-            if (
-              node.nodeType !==
-              Node.ELEMENT_NODE
+      new MutationObserver(
+        mutations => {
+          for (const mutation of mutations) {
+            for (
+              const node of mutation.addedNodes
             ) {
-              continue;
-            }
+              if (
+                node.nodeType !==
+                Node.ELEMENT_NODE
+              ) {
+                continue;
+              }
 
-            const element = node;
+              const element = node;
 
-            if (
-              element.matches &&
-              (
+              if (
+                element.matches &&
                 element.matches(
                   "[data-role='user'], " +
                   "[data-message-role='user'], " +
@@ -587,30 +605,30 @@
                   ".message-user, " +
                   ".message-row.user"
                 )
-              )
-            ) {
-              processUserMessageElement(
-                element
+              ) {
+                processUserMessageElement(
+                  element
+                );
+              }
+
+              const nestedUsers =
+                element.querySelectorAll
+                  ? element.querySelectorAll(
+                      "[data-role='user'], " +
+                      "[data-message-role='user'], " +
+                      ".user-message, " +
+                      ".message-user, " +
+                      ".message-row.user"
+                    )
+                  : [];
+
+              nestedUsers.forEach(
+                processUserMessageElement
               );
             }
-
-            const nestedUsers =
-              element.querySelectorAll
-                ? element.querySelectorAll(
-                    "[data-role='user'], " +
-                    "[data-message-role='user'], " +
-                    ".user-message, " +
-                    ".message-user, " +
-                    ".message-row.user"
-                  )
-                : [];
-
-            nestedUsers.forEach(
-              processUserMessageElement
-            );
           }
         }
-      });
+      );
 
     observer.observe(document.body, {
       childList: true,
@@ -678,7 +696,10 @@
 
   loadMemoryState();
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState ===
+    "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       startMemoryObserver,
