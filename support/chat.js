@@ -26,12 +26,12 @@
             border-radius: 18px 18px 6px 18px !important;
 
             background:
-                linear-gradient(
-                    135deg,
-                    #ffffff 0%,
-                    #f7faff 45%,
-                    #eaf3ff 100%
-                ) !important;
+    linear-gradient(
+        135deg,
+        #eef5ff 0%,
+        #e4efff 45%,
+        #d8e9ff 100%
+    ) !important;
 
             color: #202124 !important;
 
