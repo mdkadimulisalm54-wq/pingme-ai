@@ -1,1306 +1,276 @@
 /*
  * PingMe AI — Message Actions
  * File: support/MessageActions.js
- *
- * Includes:
- * - Copy
- * - Like
- * - Dislike
- * - Read Aloud
- * - Three-dot menu
- * - Branch in new chat
- * - Retry
- * - Search the web
- *
- * Architecture:
- * All functionality lives in this Support JS file.
  */
 
-(function () {
-    "use strict";
-
-    /* =========================================================
-       CONFIG
-    ========================================================= */
-
-    const CONFIG = {
-        rootClass: "pingme-message-actions-root",
-        actionBarClass: "pingme-message-actions",
-        menuClass: "pingme-message-actions-menu",
-        processedClass: "pingme-message-actions-ready",
-
-        assistantSelectors: [
-            "[data-role='assistant']",
-            "[data-message-role='assistant']",
-            ".assistant-message",
-            ".ai-message",
-            ".message-assistant",
-            "[data-author='assistant']",
-            "[data-sender='assistant']",
-            ".bot-message"
-        ],
-
-        textSelectors: [
-            "[data-message-content]",
-            ".message-content",
-            ".assistant-content",
-            ".ai-content",
-            ".message-text",
-            ".response-content"
-        ]
-    };
-
-
-    /* =========================================================
-       SVG ICONS
-    ========================================================= */
-
-    const ICONS = {
-
-        copy: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="8" y="8" width="11" height="11"
-                    rx="2" fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"/>
-                <path d="M16 8V6a2 2 0 0 0-2-2H6
-                    a2 2 0 0 0-2 2v8
-                    a2 2 0 0 0 2 2h2"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-            </svg>
-        `,
-
-        like: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 10v10H4
-                    a2 2 0 0 1-2-2v-6
-                    a2 2 0 0 1 2-2h3Z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"/>
-                <path d="M7 20h9
-                    a3 3 0 0 0 2.9-2.25l1.2-5
-                    A2.2 2.2 0 0 0 18.96 10H15
-                    l.55-3.15
-                    A2.35 2.35 0 0 0 13.24 4
-                    L7 10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"/>
-            </svg>
-        `,
-
-        dislike: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 14V4H4
-                    a2 2 0 0 0-2 2v6
-                    a2 2 0 0 0 2 2h3Z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"/>
-                <path d="M7 4h9
-                    a3 3 0 0 1 2.9 2.25l1.2 5
-                    A2.2 2.2 0 0 1 18.96 14H15
-                    l.55 3.15
-                    A2.35 2.35 0 0 1 13.24 20
-                    L7 14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"/>
-            </svg>
-        `,
-
-        volume: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 9v6h4l5 4V5l-5 4H4Z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"/>
-                <path d="M16 9a5 5 0 0 1 0 6"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-                <path d="M18.5 6.5a9 9 0 0 1 0 11"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-            </svg>
-        `,
-
-        more: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="5" r="1.7" fill="currentColor"/>
-                <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
-                <circle cx="12" cy="19" r="1.7" fill="currentColor"/>
-            </svg>
-        `,
-
-        branch: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 17V7
-                    a3 3 0 0 1 3-3h7"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-                <path d="M14 7h3V4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"/>
-                <path d="M7 17h4
-                    a3 3 0 0 0 3-3v-2"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-            </svg>
-        `,
-
-        retry: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 11a8 8 0 0 0-14.9-3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-                <path d="M4 4v5h5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"/>
-                <path d="M4 13a8 8 0 0 0 14.9 3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"/>
-                <path d="M20 20v-5h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"/>
-            </svg>
-        `,
-
-        web: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="9"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"/>
-                <path d="M3 12h18M12 3
-                    c3 3 3 15 0 18M12 3
-                    c-3 3-3 15 0 18"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.7"/>
-            </svg>
-        `
-    };
-
-
-    /* =========================================================
-       CSS
-    ========================================================= */
-
-    function injectStyles() {
-
-        if (document.getElementById("pingme-message-actions-style")) {
-            return;
-        }
-
-        const style = document.createElement("style");
-
-        style.id = "pingme-message-actions-style";
-
-        style.textContent = `
-
-            .${CONFIG.rootClass} {
-                position: relative;
-                display: flex;
-                align-items: center;
-                width: 100%;
-                margin-top: 8px;
-                padding: 0 4px;
-                box-sizing: border-box;
-                z-index: 5;
-            }
-
-            .${CONFIG.actionBarClass} {
-                display: flex;
-                align-items: center;
-                gap: 7px;
-                min-height: 34px;
-            }
-
-            .pingme-message-action-button {
-                width: 34px;
-                height: 34px;
-                padding: 0;
-                margin: 0;
-                border: 0;
-                background: transparent;
-                color: #8a8a8a;
-                border-radius: 9px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                -webkit-tap-highlight-color: transparent;
-                transition:
-                    background-color .16s ease,
-                    color .16s ease,
-                    transform .12s ease;
-            }
-
-            .pingme-message-action-button:hover {
-                background: rgba(0, 0, 0, .055);
-                color: #222;
-            }
-
-            .pingme-message-action-button:active {
-                transform: scale(.92);
-            }
-
-            .pingme-message-action-button svg {
-                width: 21px;
-                height: 21px;
-                display: block;
-            }
-
-            .pingme-message-action-button.pingme-liked {
-                color: #1683ff;
-                background: rgba(22, 131, 255, .09);
-            }
-
-            .pingme-message-action-button.pingme-disliked {
-                color: #d64545;
-                background: rgba(214, 69, 69, .09);
-            }
-
-            .pingme-message-action-button.pingme-speaking {
-                color: #1683ff;
-            }
-
-            /* =================================================
-               COMPACT THREE-DOT POPUP
-               ================================================= */
-
-            .${CONFIG.menuClass} {
-                position: absolute;
-                left: 0;
-                bottom: 41px;
-                width: min(235px, calc(100vw - 32px));
-                padding: 7px;
-                background: #fff;
-                border: 1px solid rgba(0,0,0,.07);
-                border-radius: 16px;
-                box-shadow:
-                    0 10px 28px rgba(0,0,0,.12),
-                    0 2px 8px rgba(0,0,0,.06);
-                display: none;
-                z-index: 99999;
-                box-sizing: border-box;
-            }
-
-            .${CONFIG.menuClass}.pingme-open {
-                display: block;
-                animation: pingmeMessageMenuIn .15s ease-out;
-            }
-
-            @keyframes pingmeMessageMenuIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(4px) scale(.98);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0) scale(1);
-                }
-            }
-
-            .pingme-message-menu-row {
-                width: 100%;
-                min-height: 46px;
-                border: 0;
-                background: transparent;
-                border-radius: 11px;
-                padding: 7px 10px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                color: #151515;
-                font-size: 15px;
-                text-align: left;
-                cursor: pointer;
-                box-sizing: border-box;
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            .pingme-message-menu-row:hover {
-                background: rgba(0,0,0,.055);
-            }
-
-            .pingme-message-menu-row:active {
-                background: rgba(0,0,0,.09);
-            }
-
-            .pingme-message-menu-row svg {
-                width: 22px;
-                height: 22px;
-                flex: 0 0 22px;
-            }
-
-            .pingme-message-menu-divider {
-                height: 1px;
-                width: calc(100% - 14px);
-                margin: 1px auto;
-                background: rgba(0,0,0,.08);
-            }
-
-            .pingme-message-menu-label {
-                flex: 1;
-                line-height: 1.2;
-            }
-
-            @media (max-width: 600px) {
-
-                .${CONFIG.actionBarClass} {
-                    gap: 5px;
-                }
-
-                .pingme-message-action-button {
-                    width: 33px;
-                    height: 33px;
-                }
-
-                .pingme-message-action-button svg {
-                    width: 20px;
-                    height: 20px;
-                }
-
-                .${CONFIG.menuClass} {
-                    width: min(225px, calc(100vw - 28px));
-                    padding: 6px;
-                    border-radius: 15px;
-                }
-
-                .pingme-message-menu-row {
-                    min-height: 44px;
-                    padding: 6px 9px;
-                    gap: 11px;
-                    font-size: 15px;
-                }
-
-                .pingme-message-menu-row svg {
-                    width: 21px;
-                    height: 21px;
-                    flex-basis: 21px;
-                }
-            }
-
-        `;
-
-        document.head.appendChild(style);
-    }
-
-
-    /* =========================================================
-       HELPERS
-    ========================================================= */
-
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-
-    function getMessageText(messageElement) {
-
-        if (!messageElement) {
-            return "";
-        }
-
-        for (const selector of CONFIG.textSelectors) {
-
-            const content = messageElement.querySelector(selector);
-
-            if (content) {
-
-                const text = content.innerText ||
-                    content.textContent ||
-                    "";
-
-                if (text.trim()) {
-                    return text.trim();
-                }
-            }
-        }
-
-        const clone = messageElement.cloneNode(true);
-
-        clone.querySelectorAll(
-            `.${CONFIG.rootClass}, script, style`
-        ).forEach(function (element) {
-            element.remove();
-        });
-
-        return (
-            clone.innerText ||
-            clone.textContent ||
-            ""
-        ).trim();
-    }
-
-
-    function findAssistantMessages() {
-
-        const found = new Set();
-
-        CONFIG.assistantSelectors.forEach(function (selector) {
-
-            document.querySelectorAll(selector)
-                .forEach(function (element) {
-                    found.add(element);
-                });
-
-        });
-
-        return Array.from(found);
-    }
-
-
-    function createButton(icon, label, className) {
-
-        const button = document.createElement("button");
-
-        button.type = "button";
-
-        button.className =
-            "pingme-message-action-button " +
-            (className || "");
-
-        button.setAttribute("aria-label", label);
-        button.setAttribute("title", label);
-
-        button.innerHTML = icon;
-
-        return button;
-    }
-
-
-    /* =========================================================
-       COPY
-    ========================================================= */
-
-    async function copyMessage(messageElement, button) {
-
-        const text = getMessageText(messageElement);
-
-        if (!text) {
-            return;
-        }
-
-        try {
-
-            await navigator.clipboard.writeText(text);
-
-            button.classList.add("pingme-copied");
-
-            const oldTitle = button.title;
-
-            button.title = "Copied";
-
-            setTimeout(function () {
-                button.classList.remove("pingme-copied");
-                button.title = oldTitle;
-            }, 1200);
-
-        } catch (error) {
-
-            const textarea =
-                document.createElement("textarea");
-
-            textarea.value = text;
-
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
-
-            document.body.appendChild(textarea);
-
-            textarea.select();
-
-            try {
-                document.execCommand("copy");
-            } catch (copyError) {
-                console.warn(
-                    "PingMe MessageActions: Copy failed",
-                    copyError
-                );
-            }
-
-            textarea.remove();
-        }
-    }
-
-
-    /* =========================================================
-       LIKE / DISLIKE
-    ========================================================= */
-
-    function handleLike(button, dislikeButton, messageElement) {
-
-        const active = button.classList.contains(
-            "pingme-liked"
-        );
-
-        button.classList.toggle(
-            "pingme-liked",
-            !active
-        );
-
-        if (!active) {
-
-            dislikeButton.classList.remove(
-                "pingme-disliked"
-            );
-        }
-
-        messageElement.dispatchEvent(
-            new CustomEvent(
-                "pingme:message-feedback",
-                {
-                    bubbles: true,
-                    detail: {
-                        type: !active ? "like" : "none",
-                        message: getMessageText(messageElement)
-                    }
-                }
-            )
-        );
-    }
-
-
-    function handleDislike(button, likeButton, messageElement) {
-
-        const active = button.classList.contains(
-            "pingme-disliked"
-        );
-
-        button.classList.toggle(
-            "pingme-disliked",
-            !active
-        );
-
-        if (!active) {
-
-            likeButton.classList.remove(
-                "pingme-liked"
-            );
-        }
-
-        messageElement.dispatchEvent(
-            new CustomEvent(
-                "pingme:message-feedback",
-                {
-                    bubbles: true,
-                    detail: {
-                        type: !active ? "dislike" : "none",
-                        message: getMessageText(messageElement)
-                    }
-                }
-            )
-        );
-    }
-
-
-    /* =========================================================
-       READ ALOUD
-    ========================================================= */
-
-    function stopSpeaking(button) {
-
-        if (
-            "speechSynthesis" in window
-        ) {
-            window.speechSynthesis.cancel();
-        }
-
-        button.classList.remove(
-            "pingme-speaking"
-        );
-
-        button.title = "Read aloud";
-    }
-
-
-    function readMessage(button, messageElement) {
-
-        if (!("speechSynthesis" in window)) {
-            return;
-        }
-
-        if (
-            window.speechSynthesis.speaking
-        ) {
-
-            stopSpeaking(button);
-
-            return;
-        }
-
-        const text = getMessageText(messageElement);
-
-        if (!text) {
-            return;
-        }
-
-        const utterance =
-            new SpeechSynthesisUtterance(text);
-
-        utterance.lang =
-            document.documentElement.lang ||
-            "bn-BD";
-
-        utterance.rate = 1;
-        utterance.pitch = 1;
-
-        button.classList.add(
-            "pingme-speaking"
-        );
-
-        button.title = "Stop reading";
-
-        utterance.onend = function () {
-            stopSpeaking(button);
-        };
-
-        utterance.onerror = function () {
-            stopSpeaking(button);
-        };
-
-        window.speechSynthesis.cancel();
-
-        window.speechSynthesis.speak(
-            utterance
-        );
-    }
-
-
-    /* =========================================================
-       THREE DOT MENU
-    ========================================================= */
-
-    function closeAllMenus() {
-
-        document.querySelectorAll(
-            "." + CONFIG.menuClass
-        ).forEach(function (menu) {
-
-            menu.classList.remove(
-                "pingme-open"
-            );
-
-        });
-    }
-
-
-    function createMenu(messageElement) {
-
-        const menu =
-            document.createElement("div");
-
-        menu.className =
-            CONFIG.menuClass;
-
-        menu.innerHTML = `
-
-            <button
-                type="button"
-                class="pingme-message-menu-row"
-                data-action="branch"
-            >
-                ${ICONS.branch}
-                <span class="pingme-message-menu-label">
-                    Branch in new chat
-                </span>
-            </button>
-
-            <div class="pingme-message-menu-divider"></div>
-
-            <button
-                type="button"
-                class="pingme-message-menu-row"
-                data-action="retry"
-            >
-                ${ICONS.retry}
-                <span class="pingme-message-menu-label">
-                    Retry
-                </span>
-            </button>
-
-            <div class="pingme-message-menu-divider"></div>
-
-            <button
-                type="button"
-                class="pingme-message-menu-row"
-                data-action="web"
-            >
-                ${ICONS.web}
-                <span class="pingme-message-menu-label">
-                    Search the web
-                </span>
-            </button>
-
-        `;
-
-
-        menu.addEventListener(
-            "click",
-            function (event) {
-
-                const row =
-                    event.target.closest(
-                        ".pingme-message-menu-row"
-                    );
-
-                if (!row) {
-                    return;
-                }
-
-                const action =
-                    row.dataset.action;
-
-                closeAllMenus();
-
-                if (action === "branch") {
-                    branchMessage(messageElement);
-                }
-
-                if (action === "retry") {
-                    retryMessage(messageElement);
-                }
-
-                if (action === "web") {
-                    searchMessageOnWeb(messageElement);
-                }
-            }
-        );
-
-
-        return menu;
-    }
-
-
-    function toggleMenu(menu) {
-
-        const wasOpen =
-            menu.classList.contains(
-                "pingme-open"
-            );
-
-        closeAllMenus();
-
-        if (!wasOpen) {
-
-            menu.classList.add(
-                "pingme-open"
-            );
-        }
-    }
-
-
-    /* =========================================================
-       BRANCH
-    ========================================================= */
-
-    function branchMessage(messageElement) {
-
-        const text =
-            getMessageText(messageElement);
-
-        const event =
-            new CustomEvent(
-                "pingme:branch-message",
-                {
-                    bubbles: true,
-                    detail: {
-                        message: text,
-                        sourceElement: messageElement
-                    }
-                }
-            );
-
-        document.dispatchEvent(event);
-
-        if (
-            typeof window.branchInNewChat ===
-            "function"
-        ) {
-
-            window.branchInNewChat(
-                text,
-                messageElement
-            );
-
-            return;
-        }
-
-        if (
-            typeof window.createNewChatFromMessage ===
-            "function"
-        ) {
-
-            window.createNewChatFromMessage(
-                text,
-                messageElement
-            );
-
-            return;
-        }
-
-        console.info(
-            "PingMe AI — Branch requested:",
-            text
-        );
-    }
-
-
-    /* =========================================================
-       RETRY
-    ========================================================= */
-
-    function retryMessage(messageElement) {
-
-        const text =
-            getMessageText(messageElement);
-
-        const event =
-            new CustomEvent(
-                "pingme:retry-message",
-                {
-                    bubbles: true,
-                    detail: {
-                        message: text,
-                        sourceElement: messageElement
-                    }
-                }
-            );
-
-        document.dispatchEvent(event);
-
-        if (
-            typeof window.retryMessage ===
-            "function" &&
-            window.retryMessage !== retryMessage
-        ) {
-
-            window.retryMessage(
-                messageElement
-            );
-
-            return;
-        }
-
-        if (
-            typeof window.retryLastMessage ===
-            "function"
-        ) {
-
-            window.retryLastMessage();
-
-            return;
-        }
-
-        if (
-            typeof window.regenerateResponse ===
-            "function"
-        ) {
-
-            window.regenerateResponse(
-                messageElement
-            );
-
-            return;
-        }
-
-        console.info(
-            "PingMe AI — Retry requested:",
-            text
-        );
-    }
-
-
-    /* =========================================================
-       SEARCH WEB
-    ========================================================= */
-
-    function searchMessageOnWeb(messageElement) {
-
-        const text =
-            getMessageText(messageElement);
-
-        if (!text) {
-            return;
-        }
-
-        const url =
-            "https://www.google.com/search?q=" +
-            encodeURIComponent(text);
-
-        window.open(
-            url,
-            "_blank",
-            "noopener,noreferrer"
-        );
-    }
-
-
-    /* =========================================================
-       CREATE ACTION BAR
-    ========================================================= */
-
-    function attachActions(messageElement) {
-
-        if (!messageElement) {
-            return;
-        }
-
-        if (
-            messageElement.classList.contains(
-                CONFIG.processedClass
-            )
-        ) {
-            return;
-        }
-
-        if (
-            messageElement.querySelector(
-                "." + CONFIG.rootClass
-            )
-        ) {
-
-            messageElement.classList.add(
-                CONFIG.processedClass
-            );
-
-            return;
-        }
-
-        const text =
-            getMessageText(messageElement);
-
-        if (!text) {
-            return;
-        }
-
-
-        /* Root */
-
-        const root =
-            document.createElement("div");
-
-        root.className =
-            CONFIG.rootClass;
-
-
-        /* Action bar */
-
-        const bar =
-            document.createElement("div");
-
-        bar.className =
-            CONFIG.actionBarClass;
-
-
-        /* Copy */
-
-        const copyButton =
-            createButton(
-                ICONS.copy,
-                "Copy"
-            );
-
-        copyButton.addEventListener(
-            "click",
-            function () {
-                copyMessage(
-                    messageElement,
-                    copyButton
-                );
-            }
-        );
-
-
-        /* Like */
-
-        const likeButton =
-            createButton(
-                ICONS.like,
-                "Like"
-            );
-
-
-        /* Dislike */
-
-        const dislikeButton =
-            createButton(
-                ICONS.dislike,
-                "Dislike"
-            );
-
-
-        likeButton.addEventListener(
-            "click",
-            function () {
-                handleLike(
-                    likeButton,
-                    dislikeButton,
-                    messageElement
-                );
-            }
-        );
-
-
-        dislikeButton.addEventListener(
-            "click",
-            function () {
-                handleDislike(
-                    dislikeButton,
-                    likeButton,
-                    messageElement
-                );
-            }
-        );
-
-
-        /* Read aloud */
-
-        const readButton =
-            createButton(
-                ICONS.volume,
-                "Read aloud"
-            );
-
-        readButton.addEventListener(
-            "click",
-            function () {
-                readMessage(
-                    readButton,
-                    messageElement
-                );
-            }
-        );
-
-
-        /* Three dots */
-
-        const moreButton =
-            createButton(
-                ICONS.more,
-                "More"
-            );
-
-        const menu =
-            createMenu(messageElement);
-
-        moreButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.stopPropagation();
-
-                toggleMenu(menu);
-            }
-        );
-
-
-        /* Add buttons */
-
-        bar.appendChild(copyButton);
-        bar.appendChild(likeButton);
-        bar.appendChild(dislikeButton);
-        bar.appendChild(readButton);
-        bar.appendChild(moreButton);
-
-
-        root.appendChild(bar);
-        root.appendChild(menu);
-
-
-        /*
-         * Put the action bar after the assistant message.
-         */
-
-        messageElement.appendChild(root);
-
-        messageElement.classList.add(
-            CONFIG.processedClass
-        );
-    }
-
-
-    /* =========================================================
-       SCAN
-    ========================================================= */
-
-    function scanMessages() {
-
-        findAssistantMessages()
-            .forEach(function (message) {
-                attachActions(message);
-            });
-    }
-
-
-    /* =========================================================
-       OUTSIDE CLICK
-    ========================================================= */
-
-    document.addEventListener(
-        "click",
-        function (event) {
-
-            if (
-                event.target.closest(
-                    "." + CONFIG.rootClass
-                )
-            ) {
-                return;
-            }
-
-            closeAllMenus();
-        }
-    );
-
-
-    /* =========================================================
-       ESC KEY
-    ========================================================= */
-
-    document.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key === "Escape") {
-                closeAllMenus();
-            }
-        }
-    );
-
-
-    /* =========================================================
-       OBSERVER
-    ========================================================= */
-
-    function startObserver() {
-
-        if (!document.body) {
-            return;
-        }
-
-        const observer =
-            new MutationObserver(
-                function () {
-
-                    scanMessages();
-
-                }
-            );
-
-        observer.observe(
-            document.body,
-            {
-                childList: true,
-                subtree: true
-            }
-        );
-
-        window.PingMeMessageActionsObserver =
-            observer;
-    }
-
-
-    /* =========================================================
-       PUBLIC API
-    ========================================================= */
-
-    window.PingMeMessageActions = {
-
-        scan: scanMessages,
-
-        attach: attachActions,
-
-        closeMenus: closeAllMenus,
-
-        copy: copyMessage,
-
-        readAloud: readMessage,
-
-        like: handleLike,
-
-        dislike: handleDislike,
-
-        branch: branchMessage,
-
-        retry: retryMessage,
-
-        searchWeb: searchMessageOnWeb
-    };
-
-
-    /* =========================================================
-       INITIALIZE
-    ========================================================= */
-
-    function initialize() {
-
-        injectStyles();
-
-        scanMessages();
-
-        startObserver();
-
-        console.log(
-            "PingMe AI — Message Actions Connected"
-        );
-    }
-
-
-    if (
-        document.readyState ===
-        "loading"
-    ) {
-
-        document.addEventListener(
-            "DOMContentLoaded",
-            initialize,
-            {
-                once: true
-            }
-        );
-
-    } else {
-
-        initialize();
-    }
+(function(){
+"use strict";
+
+const C={
+ rootClass:"pingme-message-actions-root",
+ barClass:"pingme-message-actions",
+ menuClass:"pingme-message-actions-menu",
+ ready:"pingme-message-actions-ready",
+ assistants:[
+  "[data-role='assistant']","[data-message-role='assistant']",
+  ".assistant-message",".ai-message",".message-assistant",
+  "[data-author='assistant']","[data-sender='assistant']",".bot-message"
+ ],
+ texts:[
+  "[data-message-content]",".message-content",".assistant-content",
+  ".ai-content",".message-text",".response-content"
+ ]
+};
+
+const I={
+ copy:`<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ like:`<svg viewBox="0 0 24 24"><path d="M7 10v10H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 20h9a3 3 0 0 0 2.9-2.25l1.2-5A2.2 2.2 0 0 0 18.96 10H15l.55-3.15A2.35 2.35 0 0 0 13.24 4L7 10" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ dislike:`<svg viewBox="0 0 24 24"><path d="M7 14V4H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 4h9a3 3 0 0 1 2.9 2.25l1.2 5A2.2 2.2 0 0 1 18.96 14H15l.55 3.15A2.35 2.35 0 0 1 13.24 20L7 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ volume:`<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5l-5 4H4Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a9 9 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ more:`<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg>`,
+ branch:`<svg viewBox="0 0 24 24"><path d="M7 17V7a3 3 0 0 1 3-3h7M14 7h3V4M7 17h4a3 3 0 0 0 3-3v-2" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ retry:`<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v5h5M4 13a8 8 0 0 0 14.9 3M20 20v-5h-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`,
+ web:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>`
+};
+
+function styles(){
+ if(document.getElementById("pingme-message-actions-style"))return;
+ const s=document.createElement("style");
+ s.id="pingme-message-actions-style";
+ s.textContent=`
+.${C.rootClass}{position:relative;display:flex;align-items:center;width:100%;margin-top:5px;padding:0 2px;z-index:5}
+.${C.barClass}{display:flex;align-items:center;gap:2px;min-height:30px}
+.pingme-message-action-button{width:30px;height:30px;padding:0;border:0;background:transparent;color:#8a8a8a;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
+.pingme-message-action-button:hover{background:rgba(0,0,0,.06);color:#222}
+.pingme-message-action-button:active{transform:scale(.91)}
+.pingme-message-action-button svg{width:18px;height:18px}
+.pingme-message-action-button.pingme-liked{color:#1683ff;background:rgba(22,131,255,.09)}
+.pingme-message-action-button.pingme-disliked{color:#d64545;background:rgba(214,69,69,.09)}
+.pingme-message-action-button.pingme-speaking{color:#1683ff}
+
+.${C.menuClass}{position:absolute;left:0;bottom:36px;width:min(215px,calc(100vw - 24px));padding:4px;background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:13px;box-shadow:0 7px 22px rgba(0,0,0,.13);display:none;z-index:99999;box-sizing:border-box}
+.${C.menuClass}.pingme-open{display:block;animation:pmMenu .13s ease-out}
+@keyframes pmMenu{from{opacity:0;transform:translateY(3px) scale(.98)}to{opacity:1;transform:none}}
+.pingme-message-menu-row{width:100%;height:40px;border:0;background:transparent;border-radius:9px;padding:4px 8px;display:flex;align-items:center;gap:9px;color:#151515;font-size:14px;text-align:left;cursor:pointer}
+.pingme-message-menu-row:hover{background:rgba(0,0,0,.055)}
+.pingme-message-menu-row svg{width:19px;height:19px;flex:0 0 19px}
+.pingme-message-menu-label{flex:1}
+.pingme-message-menu-divider{height:1px;margin:0 7px;background:rgba(0,0,0,.07)}
+
+@media(max-width:600px){
+.${C.barClass}{gap:1px}
+.pingme-message-action-button{width:29px;height:29px}
+.pingme-message-action-button svg{width:18px;height:18px}
+.${C.menuClass}{width:min(210px,calc(100vw - 20px));padding:3px;border-radius:12px}
+.pingme-message-menu-row{height:38px;padding:3px 7px;gap:8px;font-size:14px}
+.pingme-message-menu-row svg{width:18px;height:18px;flex-basis:18px}
+}`;
+ document.head.appendChild(s);
+}
+
+function text(el){
+ if(!el)return"";
+ for(const q of C.texts){
+  const x=el.querySelector(q);
+  if(x){
+   const t=(x.innerText||x.textContent||"").trim();
+   if(t)return t;
+  }
+ }
+ const c=el.cloneNode(true);
+ c.querySelectorAll(`.${C.rootClass},script,style`).forEach(x=>x.remove());
+ return(c.innerText||c.textContent||"").trim();
+}
+
+function messages(){
+ const set=new Set();
+ C.assistants.forEach(q=>document.querySelectorAll(q).forEach(x=>set.add(x)));
+ return[...set];
+}
+
+function button(icon,label){
+ const b=document.createElement("button");
+ b.type="button";
+ b.className="pingme-message-action-button";
+ b.ariaLabel=label;
+ b.title=label;
+ b.innerHTML=icon;
+ return b;
+}
+
+async function copy(el,b){
+ const t=text(el);
+ if(!t)return;
+ try{
+  await navigator.clipboard.writeText(t);
+  const old=b.title;
+  b.title="Copied";
+  setTimeout(()=>b.title=old,1000);
+ }catch(e){
+  const a=document.createElement("textarea");
+  a.value=t;a.style.cssText="position:fixed;opacity:0";
+  document.body.appendChild(a);a.select();
+  try{document.execCommand("copy")}catch(x){console.warn("PingMe Copy failed",x)}
+  a.remove();
+ }
+}
+
+function feedback(b,other,el,type){
+ const active=b.classList.contains("pingme-"+type+"d");
+ b.classList.toggle("pingme-"+type+"d",!active);
+ if(!active)other.classList.remove("pingme-"+(type==="like"?"dislike":"like")+"d");
+ el.dispatchEvent(new CustomEvent("pingme:message-feedback",{
+  bubbles:true,
+  detail:{type:!active?type:"none",message:text(el)}
+ }));
+}
+
+function read(b,el){
+ if(!("speechSynthesis"in window))return;
+ if(speechSynthesis.speaking){stop(b);return}
+ const t=text(el);if(!t)return;
+ const u=new SpeechSynthesisUtterance(t);
+ u.lang=document.documentElement.lang||"bn-BD";
+ u.rate=1;u.pitch=1;
+ b.classList.add("pingme-speaking");b.title="Stop reading";
+ u.onend=u.onerror=()=>stop(b);
+ speechSynthesis.cancel();speechSynthesis.speak(u);
+}
+
+function stop(b){
+ if("speechSynthesis"in window)speechSynthesis.cancel();
+ b.classList.remove("pingme-speaking");b.title="Read aloud";
+}
+
+function closeMenus(){
+ document.querySelectorAll("."+C.menuClass)
+ .forEach(x=>x.classList.remove("pingme-open"));
+}
+
+function menu(el){
+ const m=document.createElement("div");
+ m.className=C.menuClass;
+ m.innerHTML=`
+ <button class="pingme-message-menu-row" data-action="branch">${I.branch}<span class="pingme-message-menu-label">Branch in new chat</span></button>
+ <div class="pingme-message-menu-divider"></div>
+ <button class="pingme-message-menu-row" data-action="retry">${I.retry}<span class="pingme-message-menu-label">Retry</span></button>
+ <div class="pingme-message-menu-divider"></div>
+ <button class="pingme-message-menu-row" data-action="web">${I.web}<span class="pingme-message-menu-label">Search the web</span></button>`;
+ m.onclick=e=>{
+  const r=e.target.closest(".pingme-message-menu-row");
+  if(!r)return;
+  closeMenus();
+  if(r.dataset.action==="branch")branch(el);
+  if(r.dataset.action==="retry")retry(el);
+  if(r.dataset.action==="web")web(el);
+ };
+ return m;
+}
+
+function toggle(m){
+ const open=m.classList.contains("pingme-open");
+ closeMenus();
+ if(!open)m.classList.add("pingme-open");
+}
+
+function branch(el){
+ const t=text(el);
+ document.dispatchEvent(new CustomEvent("pingme:branch-message",{
+  bubbles:true,detail:{message:t,sourceElement:el}
+ }));
+ if(typeof window.branchInNewChat==="function")
+  return window.branchInNewChat(t,el);
+ if(typeof window.createNewChatFromMessage==="function")
+  return window.createNewChatFromMessage(t,el);
+ console.info("PingMe AI — Branch requested:",t);
+}
+
+function retry(el){
+ const t=text(el);
+ document.dispatchEvent(new CustomEvent("pingme:retry-message",{
+  bubbles:true,detail:{message:t,sourceElement:el}
+ }));
+ if(typeof window.retryMessage==="function"&&window.retryMessage!==retry)
+  return window.retryMessage(el);
+ if(typeof window.retryLastMessage==="function")
+  return window.retryLastMessage();
+ if(typeof window.regenerateResponse==="function")
+  return window.regenerateResponse(el);
+ console.info("PingMe AI — Retry requested:",t);
+}
+
+function web(el){
+ const t=text(el);
+ if(t)window.open(
+  "https://www.google.com/search?q="+encodeURIComponent(t),
+  "_blank","noopener,noreferrer"
+ );
+}
+
+function attach(el){
+ if(!el||el.classList.contains(C.ready))return;
+ if(el.querySelector("."+C.rootClass)){
+  el.classList.add(C.ready);return;
+ }
+ if(!text(el))return;
+
+ const root=document.createElement("div");
+ root.className=C.rootClass;
+
+ const bar=document.createElement("div");
+ bar.className=C.barClass;
+
+ const cp=button(I.copy,"Copy");
+ const lk=button(I.like,"Like");
+ const dl=button(I.dislike,"Dislike");
+ const rd=button(I.volume,"Read aloud");
+ const mo=button(I.more,"More");
+
+ cp.onclick=()=>copy(el,cp);
+ lk.onclick=()=>feedback(lk,dl,el,"like");
+ dl.onclick=()=>feedback(dl,lk,el,"dislike");
+ rd.onclick=()=>read(rd,el);
+
+ const mn=menu(el);
+ mo.onclick=e=>{e.stopPropagation();toggle(mn)};
+
+ [cp,lk,dl,rd,mo].forEach(x=>bar.appendChild(x));
+ root.append(bar,mn);
+ el.appendChild(root);
+ el.classList.add(C.ready);
+}
+
+function scan(){messages().forEach(attach)}
+
+document.addEventListener("click",e=>{
+ if(!e.target.closest("."+C.rootClass))closeMenus();
+});
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape")closeMenus();
+});
+
+function observer(){
+ if(!document.body)return;
+ const o=new MutationObserver(scan);
+ o.observe(document.body,{childList:true,subtree:true});
+ window.PingMeMessageActionsObserver=o;
+}
+
+window.PingMeMessageActions={
+ scan,attach,closeMenus,copy,readAloud:read,
+ like:feedback,dislike:feedback,branch,retry,searchWeb:web
+};
+
+function init(){
+ styles();
+ scan();
+ observer();
+ console.log("PingMe AI — Message Actions Connected");
+}
+
+document.readyState==="loading"
+ ?document.addEventListener("DOMContentLoaded",init,{once:true})
+ :init();
 
 })();
