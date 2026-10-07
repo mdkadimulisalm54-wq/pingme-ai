@@ -87,7 +87,7 @@
   }
 
   /* =========================
-     EXPLICIT COMMAND DETECTION
+     EXPLICIT MEMORY COMMAND
   ========================= */
 
   function looksLikeMemoryCommand(text) {
@@ -96,19 +96,21 @@
     if (!value) return false;
 
     const patterns = [
-      /\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
-      /\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996/,
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
-      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,
-      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,
-      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb/,
-      /\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb/,
-      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996/,
-      /\u098f\u099f\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
-      /\u098f\u0987\s*\u0995\u09a5\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
-      /\u098f\u0987\s*\u09a4\u09a5\u09cd\u09af\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,
+      // বাংলা
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,              // মনে রাখ
+      /\u09ae\u09a8\u09c7\s*\u09b0\u09c7\u0996/,              // মনে রেখ
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/, // মেমোরিতে সেভ
+      /\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/, // মেমোরিতে রাখ
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad/,      // মেমরিতে সেভ
+      /\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996/,      // মেমরিতে রাখ
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb/,                  // সেভ করো
+      /\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996/,       // সেভ করে রাখ
+      /\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb/,             // সেভ রাখো
+      /\u098f\u099f\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/,       // এটা মনে রাখ
+      /\u098f\u0987\s*\u0995\u09a5\u09be\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/, // এই কথাটা মনে রাখ
+      /\u098f\u0987\s*\u09a4\u09a5\u09cd\u09af\s*\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996/, // এই তথ্য মনে রাখ
 
+      // English
       /remember\s+this/,
       /remember\s+that/,
       /save\s+this\s+to\s+memory/,
@@ -127,6 +129,7 @@
     if (!value) return "";
 
     const commandPatterns = [
+      // বাংলা
       /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
       /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09bf\u09b8[\s:,-]*/i,
       /^\u09ae\u09a8\u09c7\s*\u09b0\u09be\u0996\u09ac\u09c7[\s:,-]*/i,
@@ -135,12 +138,16 @@
       /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
       /^\u09ae\u09c7\u09ae\u09cb\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
       /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad[\s:,-]*/i,
-      /^\u09ae\u09c7\u09ম\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996[\s:,-]*/i,
+
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
+      /^\u09ae\u09c7\u09ae\u09b0\u09bf\u09a4\u09c7\s*\u09b0\u09be\u0996[\s:,-]*/i,
 
       /^\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09c7\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
       /^\u09b8\u09c7\u09ad\s*\u0995\u09b0\u09cb[\s:,-]*/i,
       /^\u09b8\u09c7\u09ad\s*\u09b0\u09be\u0996\u09cb[\s:,-]*/i,
 
+      // English
       /^remember\s+this[\s:,-]*/i,
       /^remember\s+that[\s:,-]*/i,
       /^save\s+this\s+to\s+memory[\s:,-]*/i,
@@ -159,8 +166,7 @@
 
   /* =========================
      MEMORY UPDATED ROW
-     IMPORTANT:
-     ROW APPEARS ABOVE USER MESSAGE
+     APPEARS ABOVE USER MESSAGE
   ========================= */
 
   function createMemoryUpdatedSystemRow() {
@@ -287,6 +293,7 @@
       );
     }
 
+    // 📖 Memory updated user message-এর উপরে দেখাবে
     showMemoryUpdatedImmediately(
       options.userMessageElement
     );
@@ -306,8 +313,7 @@
 
     if (!value) return null;
 
-    // IMPORTANT:
-    // Ordinary messages NEVER save.
+    // সাধারণ মেসেজ কখনো Memory-তে যাবে না
     if (!looksLikeMemoryCommand(value)) {
       return null;
     }
@@ -315,7 +321,7 @@
     const memoryText =
       extractMemoryFromCommand(value);
 
-    // Command only = do not save.
+    // শুধু command থাকলে save করবে না
     if (!memoryText) {
       return null;
     }
@@ -363,7 +369,6 @@
 
     memoryState.memories[index].text = value;
     memoryState.memories[index].updatedAt = Date.now();
-
     memoryState.updatedAt = Date.now();
 
     persistMemoryState();
@@ -411,8 +416,7 @@
 
   /* =========================
      MEMORY SUMMARY CONNECTION
-     শুধু connection থাকবে
-  ========================= */
+     ========================= */
 
   function openMemorySummary() {
     try {
@@ -468,21 +472,19 @@
       return;
     }
 
-    element.dataset.pingmeMemoryProcessed = "true";
-
     const text =
       getMessageTextFromElement(element);
 
     if (!text) return;
 
-    /*
-      IMPORTANT:
-      Only explicit memory commands continue.
-    */
-
+    // সাধারণ message হলে শুধু ignore করবে
     if (!looksLikeMemoryCommand(text)) {
+      element.dataset.pingmeMemoryProcessed = "true";
       return;
     }
+
+    // explicit command হলে save করবে
+    element.dataset.pingmeMemoryProcessed = "true";
 
     processPossibleMemoryCommand(
       text,
@@ -526,9 +528,7 @@
                 ".message-row.user"
               )
             ) {
-              processUserMessageElement(
-                element
-              );
+              processUserMessageElement(element);
             }
 
             if (element.querySelectorAll) {
