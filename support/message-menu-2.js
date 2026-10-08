@@ -1,31 +1,26 @@
 /* =========================================================
    PingMe AI — Message Menu 2
-   Three-Dot Popup UI
-   UI ONLY — Feature actions will be connected later
+   Existing More / Three-Dot Popup
+   UI ONLY — Actions will be connected later
    ========================================================= */
 
 (() => {
     "use strict";
 
-    const STYLE_ID = "pingme-message-menu-2-style";
     const MENU_ID = "pingme-message-menu-2";
-
-    /* =====================================================
-       ICONS — SVG ONLY
-       ===================================================== */
+    const MORE_SELECTOR = ".pingme-message-actions button[aria-label='More']";
 
     const ICONS = {
 
         share: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 16V4"/>
-                <path d="M7 9l5-5 5 5"/>
-                <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>
+            <svg viewBox="0 0 24 24">
+                <path d="M12 15V3m0 0L7 8m5-5 5 5"/>
+                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
             </svg>
         `,
 
         pin: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M9 4h6"/>
                 <path d="M8 4v6l-2 3h12l-2-3V4"/>
                 <path d="M12 13v7"/>
@@ -33,14 +28,14 @@
         `,
 
         project: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M4 7h6l2 2h8v10H4z"/>
                 <path d="M4 7V5h6l2 2"/>
             </svg>
         `,
 
         files: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M6 3h8l4 4v14H6z"/>
                 <path d="M14 3v5h5"/>
                 <path d="M9 13h6"/>
@@ -49,14 +44,14 @@
         `,
 
         search: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <circle cx="10.8" cy="10.8" r="6.8"/>
                 <path d="M16 16l5 5"/>
             </svg>
         `,
 
         home: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M3 11.5L12 4l9 7.5"/>
                 <path d="M5 10.5V20h14v-9.5"/>
                 <path d="M9 20v-5h6v5"/>
@@ -64,7 +59,7 @@
         `,
 
         archive: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M4 7h16v13H4z"/>
                 <path d="M3 4h18v3H3z"/>
                 <path d="M9 12h6"/>
@@ -72,7 +67,7 @@
         `,
 
         trash: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M4 7h16"/>
                 <path d="M9 7V4h6v3"/>
                 <path d="M6 7l1 14h10l1-14"/>
@@ -82,90 +77,57 @@
         `,
 
         chevron: `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
                 <path d="M9 5l7 7-7 7"/>
             </svg>
         `
     };
 
-    /* =====================================================
-       MENU ITEMS
-       ===================================================== */
-
     const ITEMS = [
-        {
-            id: "share",
-            label: "Share",
-            icon: ICONS.share
-        },
-        {
-            id: "pin",
-            label: "Pin",
-            icon: ICONS.pin
-        },
-        {
-            id: "project",
-            label: "Add to project",
-            icon: ICONS.project,
-            arrow: true
-        },
-        {
-            id: "files",
-            label: "Uploaded files",
-            icon: ICONS.files
-        },
-        {
-            id: "search",
-            label: "Find in chat",
-            icon: ICONS.search
-        },
-        {
-            id: "home",
-            label: "Add to home",
-            icon: ICONS.home
-        },
-        {
-            id: "archive",
-            label: "Archive",
-            icon: ICONS.archive
-        },
-        {
-            id: "delete",
-            label: "Delete",
-            icon: ICONS.trash,
-            danger: true
-        }
+        ["share", "Share", false],
+        ["pin", "Pin", false],
+        ["project", "Add to project", true],
+        ["files", "Uploaded files", false],
+        ["search", "Find in chat", false],
+        ["home", "Add to home", false],
+        ["archive", "Archive", false],
+        ["trash", "Delete", false, true]
     ];
 
     /* =====================================================
-       STYLES
+       STYLE
        ===================================================== */
 
     function addStyles() {
 
-        if (document.getElementById(STYLE_ID)) return;
+        if (document.getElementById(
+            "pingme-message-menu-2-style"
+        )) return;
 
         const style = document.createElement("style");
-        style.id = STYLE_ID;
+
+        style.id = "pingme-message-menu-2-style";
 
         style.textContent = `
-            #${MENU_ID} {
-                position: fixed !important;
-                z-index: 2147483647 !important;
 
-                width: 236px !important;
-                max-width: calc(100vw - 24px) !important;
+            #${MENU_ID}{
+                position:fixed !important;
+                z-index:2147483647 !important;
 
-                box-sizing: border-box !important;
-                padding: 6px !important;
+                width:228px !important;
+                max-width:calc(100vw - 20px) !important;
 
-                background: #ffffff !important;
-                border: 1px solid rgba(0,0,0,.08) !important;
-                border-radius: 13px !important;
+                padding:6px !important;
+
+                background:#fff !important;
+                color:#202124 !important;
+
+                border:1px solid rgba(0,0,0,.08) !important;
+                border-radius:13px !important;
 
                 box-shadow:
-                    0 10px 30px rgba(0,0,0,.14),
-                    0 2px 8px rgba(0,0,0,.08) !important;
+                    0 10px 28px rgba(0,0,0,.14),
+                    0 2px 7px rgba(0,0,0,.07) !important;
 
                 font-family:
                     -apple-system,
@@ -175,143 +137,136 @@
                     Arial,
                     sans-serif !important;
 
-                color: #202124 !important;
+                opacity:0;
+                transform:scale(.96);
+                transform-origin:top right;
 
-                opacity: 0;
-                transform: scale(.96);
-                transform-origin: top right;
-
-                pointer-events: none;
+                pointer-events:none;
 
                 transition:
                     opacity .12s ease,
                     transform .12s ease;
             }
 
-            #${MENU_ID}.show {
-                opacity: 1;
-                transform: scale(1);
-                pointer-events: auto;
+            #${MENU_ID}.show{
+                opacity:1;
+                transform:scale(1);
+                pointer-events:auto;
             }
 
-            #${MENU_ID} * {
-                box-sizing: border-box !important;
+            #${MENU_ID} *{
+                box-sizing:border-box !important;
             }
 
-            .pm-menu-2-item {
-                width: 100% !important;
-                height: 40px !important;
+            #${MENU_ID} .pm-menu-item{
+                width:100% !important;
+                height:39px !important;
 
-                display: flex !important;
-                align-items: center !important;
+                display:flex !important;
+                align-items:center !important;
 
-                border: 0 !important;
-                outline: 0 !important;
+                padding:0 9px !important;
+                margin:0 !important;
 
-                background: transparent !important;
-                border-radius: 9px !important;
+                border:0 !important;
+                border-radius:8px !important;
+                outline:0 !important;
 
-                padding: 0 10px !important;
-                margin: 0 !important;
+                background:transparent !important;
+                color:#202124 !important;
 
-                cursor: pointer !important;
+                font-size:14px !important;
+                font-weight:400 !important;
 
-                color: #202124 !important;
-                font-size: 14px !important;
-                font-weight: 400 !important;
+                text-align:left !important;
+                cursor:pointer !important;
 
-                text-align: left !important;
-
-                -webkit-tap-highlight-color: transparent !important;
+                -webkit-tap-highlight-color:transparent !important;
             }
 
-            .pm-menu-2-item:hover {
-                background: #f3f4f6 !important;
+            #${MENU_ID} .pm-menu-item:hover{
+                background:#f3f4f6 !important;
             }
 
-            .pm-menu-2-item:active {
-                background: #e9eaec !important;
+            #${MENU_ID} .pm-menu-item:active{
+                background:#e9eaec !important;
             }
 
-            .pm-menu-2-icon {
-                width: 20px !important;
-                height: 20px !important;
+            #${MENU_ID} .pm-menu-icon{
+                width:20px !important;
+                height:20px !important;
 
-                flex: 0 0 20px !important;
+                flex:0 0 20px !important;
 
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
+                display:flex !important;
+                align-items:center !important;
+                justify-content:center !important;
 
-                margin-right: 12px !important;
+                margin-right:11px !important;
             }
 
-            .pm-menu-2-icon svg {
-                width: 18px !important;
-                height: 18px !important;
+            #${MENU_ID} .pm-menu-icon svg{
+                width:18px !important;
+                height:18px !important;
 
-                display: block !important;
-
-                fill: none !important;
-                stroke: currentColor !important;
-                stroke-width: 1.8 !important;
-                stroke-linecap: round !important;
-                stroke-linejoin: round !important;
+                fill:none !important;
+                stroke:currentColor !important;
+                stroke-width:1.8 !important;
+                stroke-linecap:round !important;
+                stroke-linejoin:round !important;
             }
 
-            .pm-menu-2-label {
-                flex: 1 1 auto !important;
-                min-width: 0 !important;
+            #${MENU_ID} .pm-menu-label{
+                flex:1 !important;
+                min-width:0 !important;
 
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
+                white-space:nowrap !important;
+                overflow:hidden !important;
+                text-overflow:ellipsis !important;
             }
 
-            .pm-menu-2-arrow {
-                width: 16px !important;
-                height: 16px !important;
+            #${MENU_ID} .pm-menu-arrow{
+                width:16px !important;
+                height:16px !important;
 
-                flex: 0 0 16px !important;
+                display:flex !important;
+                align-items:center !important;
+                justify-content:center !important;
 
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-
-                margin-left: 8px !important;
-                opacity: .7 !important;
+                margin-left:8px !important;
+                opacity:.7 !important;
             }
 
-            .pm-menu-2-arrow svg {
-                width: 15px !important;
-                height: 15px !important;
+            #${MENU_ID} .pm-menu-arrow svg{
+                width:15px !important;
+                height:15px !important;
 
-                fill: none !important;
-                stroke: currentColor !important;
-                stroke-width: 1.8 !important;
-                stroke-linecap: round !important;
-                stroke-linejoin: round !important;
+                fill:none !important;
+                stroke:currentColor !important;
+                stroke-width:1.8 !important;
+                stroke-linecap:round !important;
+                stroke-linejoin:round !important;
             }
 
-            .pm-menu-2-item.danger {
-                color: #d93025 !important;
+            #${MENU_ID} .danger{
+                color:#d93025 !important;
             }
 
-            .pm-menu-2-item.danger:hover {
-                background: #fff1f0 !important;
+            #${MENU_ID} .danger:hover{
+                background:#fff1f0 !important;
             }
 
-            @media (max-width: 480px) {
+            @media(max-width:480px){
 
-                #${MENU_ID} {
-                    width: 226px !important;
-                    border-radius: 12px !important;
-                    padding: 5px !important;
+                #${MENU_ID}{
+                    width:224px !important;
+                    padding:5px !important;
+                    border-radius:12px !important;
                 }
 
-                .pm-menu-2-item {
-                    height: 39px !important;
-                    font-size: 14px !important;
+                #${MENU_ID} .pm-menu-item{
+                    height:38px !important;
+                    font-size:14px !important;
                 }
             }
         `;
@@ -330,34 +285,43 @@
         if (menu) return menu;
 
         menu = document.createElement("div");
+
         menu.id = MENU_ID;
         menu.setAttribute("role", "menu");
 
         ITEMS.forEach(item => {
 
-            const button = document.createElement("button");
+            const [
+                id,
+                label,
+                arrow,
+                danger
+            ] = item;
+
+            const button =
+                document.createElement("button");
 
             button.type = "button";
             button.className =
-                "pm-menu-2-item" +
-                (item.danger ? " danger" : "");
+                "pm-menu-item" +
+                (danger ? " danger" : "");
 
-            button.dataset.menuAction = item.id;
-            button.setAttribute("role", "menuitem");
+            button.dataset.menuAction = id;
 
             button.innerHTML = `
-                <span class="pm-menu-2-icon">
-                    ${item.icon}
+
+                <span class="pm-menu-icon">
+                    ${ICONS[id]}
                 </span>
 
-                <span class="pm-menu-2-label">
-                    ${item.label}
+                <span class="pm-menu-label">
+                    ${label}
                 </span>
 
                 ${
-                    item.arrow
+                    arrow
                         ? `
-                            <span class="pm-menu-2-arrow">
+                            <span class="pm-menu-arrow">
                                 ${ICONS.chevron}
                             </span>
                         `
@@ -365,25 +329,28 @@
                 }
             `;
 
-            button.addEventListener("click", event => {
-                event.stopPropagation();
+            button.addEventListener("click", e => {
+
+                e.stopPropagation();
 
                 /*
-                 * UI only for now.
-                 * Actual feature actions will be connected
-                 * from the future functionality support file.
+                 * UI ONLY.
+                 * Actual actions will be connected later.
                  */
 
                 document.dispatchEvent(
-                    new CustomEvent("pingme:message-menu-action", {
-                        detail: {
-                            action: item.id,
-                            label: item.label
+                    new CustomEvent(
+                        "pingme:message-menu-action",
+                        {
+                            detail:{
+                                action:id,
+                                label
+                            }
                         }
-                    })
+                    )
                 );
 
-                if (item.id !== "project") {
+                if (id !== "project") {
                     hideMenu();
                 }
             });
@@ -400,45 +367,63 @@
        POSITION
        ===================================================== */
 
+    let activeButton = null;
+
     function positionMenu(button) {
 
         const menu = createMenu();
 
+        const rect =
+            button.getBoundingClientRect();
+
         menu.classList.remove("show");
 
-        const rect = button.getBoundingClientRect();
+        const width =
+            Math.min(
+                228,
+                window.innerWidth - 20
+            );
 
-        const menuWidth = Math.min(
-            236,
-            window.innerWidth - 24
-        );
+        const height =
+            menu.offsetHeight || 330;
 
-        const menuHeight = Math.min(
-            menu.scrollHeight || 350,
-            window.innerHeight - 24
-        );
+        let left =
+            rect.right - width;
 
-        let left = rect.right - menuWidth;
-        let top = rect.bottom + 7;
+        let top =
+            rect.bottom + 6;
 
-        if (left < 12) {
-            left = 12;
+        if (left < 10)
+            left = 10;
+
+        if (
+            left + width >
+            window.innerWidth - 10
+        ) {
+            left =
+                window.innerWidth -
+                width -
+                10;
         }
 
-        if (left + menuWidth > window.innerWidth - 12) {
-            left = window.innerWidth - menuWidth - 12;
+        if (
+            top + height >
+            window.innerHeight - 10
+        ) {
+            top =
+                rect.top -
+                height -
+                6;
         }
 
-        if (top + menuHeight > window.innerHeight - 12) {
-            top = rect.top - menuHeight - 7;
-        }
+        if (top < 10)
+            top = 10;
 
-        if (top < 12) {
-            top = 12;
-        }
+        menu.style.left =
+            `${left}px`;
 
-        menu.style.left = `${left}px`;
-        menu.style.top = `${top}px`;
+        menu.style.top =
+            `${top}px`;
 
         requestAnimationFrame(() => {
             menu.classList.add("show");
@@ -449,36 +434,33 @@
        SHOW / HIDE
        ===================================================== */
 
-    let activeButton = null;
-
     function showMenu(button) {
 
         addStyles();
 
-        const menu = createMenu();
-
         activeButton = button;
 
-        positionMenu(button);
+        createMenu();
 
-        menu.setAttribute("aria-hidden", "false");
+        positionMenu(button);
     }
 
     function hideMenu() {
 
-        const menu = document.getElementById(MENU_ID);
+        const menu =
+            document.getElementById(MENU_ID);
 
         if (!menu) return;
 
         menu.classList.remove("show");
-        menu.setAttribute("aria-hidden", "true");
 
         activeButton = null;
     }
 
     function toggleMenu(button) {
 
-        const menu = document.getElementById(MENU_ID);
+        const menu =
+            document.getElementById(MENU_ID);
 
         if (
             menu &&
@@ -493,110 +475,96 @@
     }
 
     /* =====================================================
-       FIND EXISTING THREE-DOT BUTTON
-       ===================================================== */
-
-    function isThreeDotButton(element) {
-
-        if (!element || element === document.body) {
-            return false;
-        }
-
-        const text = (
-            element.getAttribute("aria-label") ||
-            element.getAttribute("title") ||
-            element.dataset?.action ||
-            element.textContent ||
-            ""
-        ).trim().toLowerCase();
-
-        if (!text) return false;
-
-        return (
-            text === "⋮" ||
-            text === "•••" ||
-            text.includes("more options") ||
-            text.includes("more") ||
-            text.includes("message menu")
-        );
-    }
-
-    /* =====================================================
-       EXISTING 3-DOT CLICK
+       EXISTING MESSAGE ACTIONS — MORE BUTTON
        ===================================================== */
 
     document.addEventListener(
         "click",
         event => {
 
-            const target = event.target.closest(
-                "button,[role='button'],[aria-label],[title]"
-            );
+            const button =
+                event.target.closest(
+                    MORE_SELECTOR
+                );
 
-            if (!target) return;
-
-            if (!isThreeDotButton(target)) return;
+            if (!button) return;
 
             /*
-             * Existing three-dot system remains untouched.
-             * We only add our popup UI beside it.
+             * Do not stop propagation.
+             * MessageActions.js remains untouched.
              */
 
             setTimeout(() => {
-                toggleMenu(target);
+                toggleMenu(button);
             }, 0);
+
         },
-        false
+        true
     );
 
     /* =====================================================
-       CLOSE OUTSIDE
+       OUTSIDE CLICK
        ===================================================== */
 
-    document.addEventListener("click", event => {
+    document.addEventListener(
+        "click",
+        event => {
 
-        const menu = document.getElementById(MENU_ID);
+            const menu =
+                document.getElementById(MENU_ID);
 
-        if (!menu || !menu.classList.contains("show")) {
-            return;
+            if (
+                !menu ||
+                !menu.classList.contains("show")
+            ) {
+                return;
+            }
+
+            if (menu.contains(event.target))
+                return;
+
+            if (
+                event.target.closest(
+                    MORE_SELECTOR
+                ) === activeButton
+            ) {
+                return;
+            }
+
+            hideMenu();
+
         }
-
-        if (
-            menu.contains(event.target) ||
-            event.target.closest(
-                "button,[role='button'],[aria-label],[title]"
-            ) === activeButton
-        ) {
-            return;
-        }
-
-        hideMenu();
-
-    });
+    );
 
     /* =====================================================
        ESCAPE
        ===================================================== */
 
-    document.addEventListener("keydown", event => {
+    document.addEventListener(
+        "keydown",
+        event => {
 
-        if (event.key === "Escape") {
-            hideMenu();
+            if (event.key === "Escape") {
+                hideMenu();
+            }
+
         }
-
-    });
+    );
 
     /* =====================================================
        RESIZE / SCROLL
        ===================================================== */
 
-    window.addEventListener("resize", () => {
+    window.addEventListener(
+        "resize",
+        () => {
 
-        if (activeButton) {
-            positionMenu(activeButton);
+            if (activeButton) {
+                positionMenu(activeButton);
+            }
+
         }
-
-    });
+    );
 
     window.addEventListener(
         "scroll",
@@ -611,12 +579,14 @@
     );
 
     /* =====================================================
-       INITIALIZE
+       INIT
        ===================================================== */
 
     addStyles();
     createMenu();
 
-    console.log("PingMe Message Menu 2 UI Connected");
+    console.log(
+        "PingMe Message Menu 2 UI Connected"
+    );
 
 })();
