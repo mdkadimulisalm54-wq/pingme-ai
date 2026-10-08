@@ -13,16 +13,6 @@
     let selectedFiles = [];
 
     /* =====================================================
-       ELEMENTS
-       ===================================================== */
-
-    const input = () =>
-        document.getElementById("chatInput");
-
-    const plusMenu = () =>
-        document.getElementById("pingme-plus-menu");
-
-    /* =====================================================
        STYLES
        ===================================================== */
 
@@ -38,112 +28,285 @@
         #${PREVIEW_ID} {
             display: none;
             width: 100%;
-            padding: 7px 9px 2px;
-            gap: 7px;
-            flex-wrap: wrap;
             box-sizing: border-box;
+            padding: 7px 8px 4px;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: flex-start;
         }
 
         #${PREVIEW_ID}.show {
             display: flex;
         }
 
-        .pingme-attachment {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            max-width: 210px;
-            min-width: 0;
-            padding: 7px 9px;
-            border-radius: 12px;
-            background: #f4f7fb;
-            border: 1px solid rgba(0,0,0,.07);
-            box-shadow: 0 2px 7px rgba(0,0,0,.04);
+
+        /* =================================================
+           PHOTO
+           ================================================= */
+
+        .pingme-photo-attachment {
+            position: relative;
+            width: 92px;
+            height: 92px;
+            flex: 0 0 92px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #eef1f4;
+            border: 1px solid rgba(0,0,0,.08);
+            box-shadow: 0 3px 10px rgba(0,0,0,.08);
         }
 
-        .pingme-attachment-icon {
-            width: 30px;
-            height: 30px;
-            min-width: 30px;
+        .pingme-photo-attachment img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #eef1f4;
+        }
+
+
+        /* =================================================
+           FILE
+           ================================================= */
+
+        .pingme-file-attachment {
+            position: relative;
+            width: 92px;
+            height: 92px;
+            flex: 0 0 92px;
+            box-sizing: border-box;
+            padding: 9px;
+            border-radius: 14px;
+            background: #f6f8fa;
+            border: 1px solid #e0e4e8;
+            box-shadow: 0 3px 10px rgba(0,0,0,.06);
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+
+        .pingme-file-icon {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 9px;
-            background: #e8eef8;
+            background: #e9eef3;
+            color: #596675;
+            margin-bottom: 5px;
         }
 
-        .pingme-attachment-icon svg {
-            width: 17px;
-            height: 17px;
+        .pingme-file-icon svg {
+            width: 18px;
+            height: 18px;
             fill: none;
             stroke: currentColor;
-            stroke-width: 1.8;
+            stroke-width: 1.7;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
 
-        .pingme-attachment-info {
+        .pingme-file-info {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .pingme-file-name {
+            display: block;
+            width: 100%;
+            font-size: 10.5px;
+            line-height: 13px;
+            font-weight: 600;
+            color: #30343a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pingme-file-size {
+            display: block;
+            margin-top: 1px;
+            font-size: 9.5px;
+            line-height: 12px;
+            color: #858b92;
+        }
+
+
+        /* =================================================
+           DOCUMENT
+           ================================================= */
+
+        .pingme-document-attachment {
+            position: relative;
+            width: 165px;
+            height: 48px;
+            flex: 0 0 165px;
+            box-sizing: border-box;
+
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            padding: 6px 7px;
+
+            border-radius: 11px;
+            background: #f7f9fb;
+            border: 1px solid #e0e4e8;
+            box-shadow: 0 2px 8px rgba(0,0,0,.05);
+
+            overflow: hidden;
+        }
+
+        .pingme-document-icon {
+            width: 30px;
+            height: 34px;
+            min-width: 30px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 7px;
+            background: #edf1f5;
+            color: #596675;
+        }
+
+        .pingme-document-icon svg {
+            width: 17px;
+            height: 19px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .pingme-document-info {
             min-width: 0;
             flex: 1;
         }
 
-        .pingme-attachment-name {
+        .pingme-document-name {
             display: block;
-            max-width: 135px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            font-size: 12px;
+            width: 100%;
+            font-size: 10.5px;
+            line-height: 13px;
             font-weight: 600;
-            color: #202124;
+            color: #30343a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .pingme-attachment-size {
+        .pingme-document-size {
             display: block;
             margin-top: 1px;
-            font-size: 10px;
-            color: #858585;
+            font-size: 9.5px;
+            line-height: 12px;
+            color: #858b92;
         }
 
+
+        /* =================================================
+           REMOVE BUTTON
+           ================================================= */
+
         .pingme-attachment-remove {
-            width: 24px;
-            height: 24px;
+            position: absolute;
+
+            top: 5px;
+            right: 5px;
+
+            width: 21px;
+            height: 21px;
+
+            padding: 0;
             border: 0;
             border-radius: 50%;
-            background: transparent;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
+            background: rgba(255,255,255,.94);
+            color: #454a50;
+
+            box-shadow: 0 2px 7px rgba(0,0,0,.16);
+
             cursor: pointer;
-            color: #777;
-            padding: 0;
+            z-index: 5;
+
+            -webkit-tap-highlight-color: transparent;
         }
 
         .pingme-attachment-remove:hover {
-            background: #e8ebef;
-            color: #222;
+            background: #ffffff;
+            color: #111;
+        }
+
+        .pingme-attachment-remove:active {
+            transform: scale(.9);
         }
 
         .pingme-attachment-remove svg {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
+
             fill: none;
             stroke: currentColor;
             stroke-width: 2;
             stroke-linecap: round;
         }
 
+
+        /* =================================================
+           COUNT
+           ================================================= */
+
         .pingme-attachment-count {
             width: 100%;
+            padding: 0 3px 2px;
+
             font-size: 10px;
+            line-height: 13px;
             color: #888;
-            padding: 0 3px 3px;
+        }
+
+
+        /* =================================================
+           MOBILE
+           ================================================= */
+
+        @media (max-width: 480px) {
+
+            #${PREVIEW_ID} {
+                padding-left: 7px;
+                padding-right: 7px;
+                gap: 7px;
+            }
+
+            .pingme-photo-attachment,
+            .pingme-file-attachment {
+                width: 88px;
+                height: 88px;
+                flex-basis: 88px;
+            }
+
+            .pingme-document-attachment {
+                width: 160px;
+                flex-basis: 160px;
+            }
         }
 
         `;
 
         document.head.appendChild(style);
     }
+
 
     /* =====================================================
        PREVIEW CONTAINER
@@ -156,74 +319,129 @@
 
         if (preview) return preview;
 
-        const chatInput = input();
+        const chatInput =
+            document.getElementById("chatInput");
 
         if (!chatInput) return null;
 
-        preview = document.createElement("div");
-        preview.id = PREVIEW_ID;
+        preview =
+            document.createElement("div");
 
-        /*
-         * Put preview immediately before textarea.
-         * This keeps everything inside the input card.
-         */
+        preview.id =
+            PREVIEW_ID;
 
         const row =
             chatInput.closest(".input-row");
 
         if (row) {
-            row.insertBefore(preview, chatInput);
+
+            row.insertBefore(
+                preview,
+                chatInput
+            );
+
         } else {
+
             chatInput.parentNode.insertBefore(
                 preview,
                 chatInput
             );
+
         }
 
         return preview;
     }
 
+
     /* =====================================================
-       ICONS
+       HELPERS
        ===================================================== */
 
-    function iconFor(file) {
+    function escapeHTML(value) {
 
-        const type =
-            String(file.type || "").toLowerCase();
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 
-        if (type.startsWith("image/")) {
 
-            return `
-                <svg viewBox="0 0 24 24">
-                    <rect x="3.5" y="4.5"
-                          width="17" height="15"
-                          rx="2.5"></rect>
-                    <circle cx="8.5" cy="9" r="1.4"></circle>
-                    <path d="M4.5 17l4.5-4.5
-                             3.2 3.1 2.2-2.2
-                             5.1 4.1"></path>
-                </svg>
-            `;
+    function formatSize(bytes) {
+
+        if (!bytes) return "0 B";
+
+        if (bytes < 1024) {
+            return bytes + " B";
         }
 
-        if (
-            type.includes("pdf") ||
-            file.name.toLowerCase().endsWith(".pdf")
-        ) {
-
-            return `
-                <svg viewBox="0 0 24 24">
-                    <path d="M6 3.5h8l4 4v13H6z"></path>
-                    <path d="M14 3.5v4h4"></path>
-                    <path d="M9 15h6"></path>
-                    <path d="M9 18h4"></path>
-                </svg>
-            `;
+        if (bytes < 1024 * 1024) {
+            return (
+                (bytes / 1024).toFixed(1) +
+                " KB"
+            );
         }
+
+        if (bytes < 1024 * 1024 * 1024) {
+            return (
+                (bytes / (1024 * 1024)).toFixed(1) +
+                " MB"
+            );
+        }
+
+        return (
+            (bytes / (1024 * 1024 * 1024)).toFixed(1) +
+            " GB"
+        );
+    }
+
+
+    function isImage(file) {
+
+        return String(file?.type || "")
+            .toLowerCase()
+            .startsWith("image/");
+    }
+
+
+    function isDocument(file) {
+
+        const name =
+            String(file?.name || "")
+                .toLowerCase();
+
+        return (
+            name.endsWith(".pdf") ||
+            name.endsWith(".doc") ||
+            name.endsWith(".docx") ||
+            name.endsWith(".txt") ||
+            name.endsWith(".rtf") ||
+            name.endsWith(".xls") ||
+            name.endsWith(".xlsx") ||
+            name.endsWith(".ppt") ||
+            name.endsWith(".pptx")
+        );
+    }
+
+
+    function closeIcon() {
 
         return `
-            <svg viewBox="0 0 24 24">
+            <svg viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M7 7l10 10"></path>
+                <path d="M17 7L7 17"></path>
+            </svg>
+        `;
+    }
+
+
+    function fileIcon() {
+
+        return `
+            <svg viewBox="0 0 24 24"
+                 aria-hidden="true">
                 <path d="M5 3.5h9l5 5v12H5z"></path>
                 <path d="M14 3.5v5h5"></path>
                 <path d="M8 13h8"></path>
@@ -232,34 +450,35 @@
         `;
     }
 
+
     /* =====================================================
-       FILE SIZE
+       IMAGE LOADER
        ===================================================== */
 
-    function formatSize(bytes) {
+    function loadImage(file, image) {
 
-        if (!bytes) return "0 B";
+        const reader =
+            new FileReader();
 
-        const units =
-            ["B", "KB", "MB", "GB"];
+        reader.onload =
+            event => {
 
-        const index =
-            Math.floor(
-                Math.log(bytes) /
-                Math.log(1024)
-            );
+                image.src =
+                    event.target.result;
+            };
 
-        return (
-            (bytes /
-                Math.pow(1024, index))
-                .toFixed(index ? 1 : 0)
-            + " "
-            + units[index]
-        );
+        reader.onerror =
+            () => {
+
+                image.removeAttribute("src");
+            };
+
+        reader.readAsDataURL(file);
     }
 
+
     /* =====================================================
-       RENDER PREVIEW
+       RENDER
        ===================================================== */
 
     function renderPreview() {
@@ -272,34 +491,183 @@
         preview.innerHTML = "";
 
         if (!selectedFiles.length) {
+
             preview.classList.remove("show");
+
             return;
         }
 
         preview.classList.add("show");
 
+
         selectedFiles.forEach(
             (file, index) => {
 
-                const item =
+                /* =========================================
+                   PHOTO
+                   ========================================= */
+
+                if (isImage(file)) {
+
+                    const card =
+                        document.createElement("div");
+
+                    card.className =
+                        "pingme-photo-attachment";
+
+                    const image =
+                        document.createElement("img");
+
+                    image.alt =
+                        "Selected photo";
+
+                    image.draggable =
+                        false;
+
+                    loadImage(
+                        file,
+                        image
+                    );
+
+
+                    const remove =
+                        document.createElement("button");
+
+                    remove.type =
+                        "button";
+
+                    remove.className =
+                        "pingme-attachment-remove";
+
+                    remove.setAttribute(
+                        "aria-label",
+                        "Remove photo"
+                    );
+
+                    remove.innerHTML =
+                        closeIcon();
+
+
+                    remove.addEventListener(
+                        "click",
+                        event => {
+
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            selectedFiles.splice(
+                                index,
+                                1
+                            );
+
+                            resetFileInputs();
+                            renderPreview();
+                        }
+                    );
+
+
+                    card.appendChild(image);
+                    card.appendChild(remove);
+
+                    preview.appendChild(card);
+
+                    return;
+                }
+
+
+                /* =========================================
+                   DOCUMENT
+                   ========================================= */
+
+                if (isDocument(file)) {
+
+                    const card =
+                        document.createElement("div");
+
+                    card.className =
+                        "pingme-document-attachment";
+
+                    card.innerHTML = `
+
+                        <span class="pingme-document-icon">
+                            ${fileIcon()}
+                        </span>
+
+                        <span class="pingme-document-info">
+
+                            <span class="pingme-document-name">
+                                ${escapeHTML(file.name)}
+                            </span>
+
+                            <span class="pingme-document-size">
+                                ${formatSize(file.size)}
+                            </span>
+
+                        </span>
+
+                        <button
+                            type="button"
+                            class="pingme-attachment-remove"
+                            aria-label="Remove document"
+                        >
+                            ${closeIcon()}
+                        </button>
+                    `;
+
+
+                    const remove =
+                        card.querySelector(
+                            ".pingme-attachment-remove"
+                        );
+
+
+                    remove.addEventListener(
+                        "click",
+                        event => {
+
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            selectedFiles.splice(
+                                index,
+                                1
+                            );
+
+                            resetFileInputs();
+                            renderPreview();
+                        }
+                    );
+
+
+                    preview.appendChild(card);
+
+                    return;
+                }
+
+
+                /* =========================================
+                   FILE
+                   ========================================= */
+
+                const card =
                     document.createElement("div");
 
-                item.className =
-                    "pingme-attachment";
+                card.className =
+                    "pingme-file-attachment";
 
-                item.innerHTML = `
+                card.innerHTML = `
 
-                    <span class="pingme-attachment-icon">
-                        ${iconFor(file)}
+                    <span class="pingme-file-icon">
+                        ${fileIcon()}
                     </span>
 
-                    <span class="pingme-attachment-info">
+                    <span class="pingme-file-info">
 
-                        <span class="pingme-attachment-name">
+                        <span class="pingme-file-name">
                             ${escapeHTML(file.name)}
                         </span>
 
-                        <span class="pingme-attachment-size">
+                        <span class="pingme-file-size">
                             ${formatSize(file.size)}
                         </span>
 
@@ -308,37 +676,41 @@
                     <button
                         type="button"
                         class="pingme-attachment-remove"
-                        aria-label="Remove attachment"
+                        aria-label="Remove file"
                     >
-
-                        <svg viewBox="0 0 24 24">
-                            <path d="M7 7l10 10"></path>
-                            <path d="M17 7L7 17"></path>
-                        </svg>
-
+                        ${closeIcon()}
                     </button>
                 `;
 
-                item
-                    .querySelector(
+
+                const remove =
+                    card.querySelector(
                         ".pingme-attachment-remove"
-                    )
-                    .addEventListener(
-                        "click",
-                        () => {
-
-                            selectedFiles.splice(
-                                index,
-                                1
-                            );
-
-                            renderPreview();
-                        }
                     );
 
-                preview.appendChild(item);
+
+                remove.addEventListener(
+                    "click",
+                    event => {
+
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        selectedFiles.splice(
+                            index,
+                            1
+                        );
+
+                        resetFileInputs();
+                        renderPreview();
+                    }
+                );
+
+
+                preview.appendChild(card);
             }
         );
+
 
         if (selectedFiles.length > 1) {
 
@@ -355,19 +727,31 @@
         }
     }
 
+
     /* =====================================================
-       ESCAPE HTML
+       RESET FILE INPUTS
        ===================================================== */
 
-    function escapeHTML(value) {
+    function resetFileInputs() {
 
-        return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        [
+            "pingme-photo-input",
+            "pingme-file-input",
+            "pingme-document-input"
+        ].forEach(id => {
+
+            const fileInput =
+                document.getElementById(id);
+
+            if (fileInput) {
+
+                try {
+                    fileInput.value = "";
+                } catch {}
+            }
+        });
     }
+
 
     /* =====================================================
        ADD FILES
@@ -375,34 +759,40 @@
 
     function addFiles(files) {
 
-        if (!files || !files.length) return;
+        if (!files || !files.length) {
+            return;
+        }
 
-        const incoming =
-            Array.from(files);
+        Array.from(files).forEach(
+            file => {
 
-        incoming.forEach(file => {
+                if (!file) return;
 
-            const exists =
-                selectedFiles.some(
-                    existing =>
-                        existing.name === file.name &&
-                        existing.size === file.size &&
-                        existing.lastModified ===
-                            file.lastModified
-                );
+                const exists =
+                    selectedFiles.some(
+                        existing =>
+                            existing.name === file.name &&
+                            existing.size === file.size &&
+                            existing.lastModified ===
+                                file.lastModified
+                    );
 
-            if (!exists) {
-                selectedFiles.push(file);
+                if (!exists) {
+                    selectedFiles.push(file);
+                }
             }
-        });
+        );
 
         renderPreview();
 
+        resetFileInputs();
+
         console.log(
-            "PingMe attachments:",
+            "PingMe Attachments:",
             selectedFiles
         );
     }
+
 
     /* =====================================================
        PLUS MENU CONNECTION
@@ -415,9 +805,12 @@
             const files =
                 event?.detail?.files;
 
+            if (!files) return;
+
             addFiles(files);
         }
     );
+
 
     /* =====================================================
        PUBLIC API
@@ -434,7 +827,11 @@
         },
 
         clear() {
+
             selectedFiles = [];
+
+            resetFileInputs();
+
             renderPreview();
         },
 
@@ -447,11 +844,17 @@
                 return;
             }
 
-            selectedFiles.splice(index, 1);
+            selectedFiles.splice(
+                index,
+                1
+            );
+
+            resetFileInputs();
             renderPreview();
         }
 
     };
+
 
     /* =====================================================
        INITIALIZE
@@ -467,6 +870,7 @@
         );
     }
 
+
     if (
         document.readyState ===
         "loading"
@@ -474,7 +878,8 @@
 
         document.addEventListener(
             "DOMContentLoaded",
-            initialize
+            initialize,
+            { once: true }
         );
 
     } else {
