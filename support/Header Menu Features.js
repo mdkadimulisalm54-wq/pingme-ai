@@ -34,8 +34,7 @@
         }
 
         activeChatId =
-            "chat_" +
-            Date.now();
+            "chat_" + Date.now();
 
         localStorage.setItem(
             "pingme_current_chat_id",
@@ -94,7 +93,7 @@
 
 
     /* =====================================================
-       GENERIC HELPERS
+       HELPERS
        ===================================================== */
 
     function readArray(key) {
@@ -135,21 +134,16 @@
             updatedAt: Date.now(),
             ...extra
         };
-
     }
 
 
     function notify(name, detail = {}) {
 
         document.dispatchEvent(
-            new CustomEvent(
-                name,
-                {
-                    detail
-                }
-            )
+            new CustomEvent(name, {
+                detail
+            })
         );
-
     }
 
 
@@ -166,46 +160,37 @@
             getHistory();
 
         const text =
-            history
-                .map(item => {
+            history.map(item => {
 
-                    const role =
-                        item.role === "model"
-                            ? "PingMe AI"
-                            : "You";
+                const role =
+                    item.role === "model"
+                        ? "PingMe AI"
+                        : "You";
 
-                    const message =
-                        item.parts?.[0]?.text || "";
+                const message =
+                    item.parts?.[0]?.text || "";
 
-                    return `${role}: ${message}`;
+                return `${role}: ${message}`;
 
-                })
-                .join("\n\n");
+            }).join("\n\n");
 
         const shareData = {
-
             title:
                 title || "PingMe AI Chat",
-
             text:
                 text || "PingMe AI conversation"
-
         };
 
 
         try {
 
-            if (
-                navigator.share
-            ) {
+            if (navigator.share) {
 
                 await navigator.share(
                     shareData
                 );
 
-            } else if (
-                navigator.clipboard
-            ) {
+            } else if (navigator.clipboard) {
 
                 await navigator.clipboard.writeText(
                     text
@@ -220,23 +205,18 @@
                 alert(
                     "Sharing is not supported on this device."
                 );
-
             }
 
         } catch (error) {
 
             if (
-                error?.name !==
-                "AbortError"
+                error?.name !== "AbortError"
             ) {
-
                 console.error(
                     "PingMe Share:",
                     error
                 );
-
             }
-
         }
 
         notify(
@@ -258,25 +238,18 @@
             getChatId();
 
         const list =
-            readArray(
-                STORAGE.pinned
-            );
+            readArray(STORAGE.pinned);
 
         const index =
             list.findIndex(
-                item =>
-                    item.id === id
+                item => item.id === id
             );
 
         let pinned;
 
         if (index >= 0) {
 
-            list.splice(
-                index,
-                1
-            );
-
+            list.splice(index, 1);
             pinned = false;
 
         } else {
@@ -321,14 +294,10 @@
             getChatId();
 
         const projects =
-            readArray(
-                STORAGE.projects
-            );
+            readArray(STORAGE.projects);
 
         const name =
-            prompt(
-                "Enter project name:"
-            );
+            prompt("Enter project name:");
 
         if (
             !name ||
@@ -349,30 +318,20 @@
         if (!project) {
 
             project = {
-
                 id:
-                    "project_" +
-                    Date.now(),
-
+                    "project_" + Date.now(),
                 name:
                     projectName,
-
-                chats:
-                    []
-
+                chats: []
             };
 
-            projects.push(
-                project
-            );
+            projects.push(project);
         }
 
         if (
             !project.chats.includes(id)
         ) {
-
             project.chats.push(id);
-
         }
 
         saveArray(
@@ -407,26 +366,19 @@
             window.selectedFiles ||
             [];
 
-        const event =
+        document.dispatchEvent(
             new CustomEvent(
                 "pingme-open-uploaded-files",
                 {
                     detail: {
-                        chatId:
-                            getChatId(),
+                        chatId: getChatId(),
                         files
                     }
                 }
-            );
-
-        document.dispatchEvent(
-            event
+            )
         );
 
-
-        if (
-            files.length
-        ) {
+        if (files.length) {
 
             alert(
                 `${files.length}টি uploaded file পাওয়া গেছে।`
@@ -435,22 +387,14 @@
             return;
         }
 
-
-        /*
-         * Existing attachment system থাকলে
-         * সেটাকে open করার সুযোগ।
-         */
-
-        const attachmentPreview =
+        const preview =
             document.getElementById(
                 "pingme-attachments-preview"
             );
 
-        if (
-            attachmentPreview
-        ) {
+        if (preview) {
 
-            attachmentPreview.scrollIntoView({
+            preview.scrollIntoView({
                 behavior: "smooth",
                 block: "center"
             });
@@ -471,9 +415,7 @@
     function findInChat() {
 
         const query =
-            prompt(
-                "Find in chat:"
-            );
+            prompt("Find in chat:");
 
         if (
             !query ||
@@ -483,8 +425,7 @@
         }
 
         const search =
-            query.trim()
-                .toLowerCase();
+            query.trim().toLowerCase();
 
         const history =
             getHistory();
@@ -501,7 +442,6 @@
 
             });
 
-
         notify(
             "pingme-find-in-chat",
             {
@@ -510,10 +450,7 @@
             }
         );
 
-
-        if (
-            !results.length
-        ) {
+        if (!results.length) {
 
             alert(
                 `"${query}" পাওয়া যায়নি।`
@@ -522,23 +459,15 @@
             return;
         }
 
-
         const chatArea =
-            document.getElementById(
-                "chatArea"
-            );
+            document.getElementById("chatArea");
 
         if (!chatArea) return;
-
-
-        const messages =
-            chatArea.children;
-
 
         let found = false;
 
         for (
-            const element of messages
+            const element of chatArea.children
         ) {
 
             if (
@@ -561,16 +490,12 @@
                 found = true;
 
                 setTimeout(() => {
-
-                    element.style.outline =
-                        "";
-
+                    element.style.outline = "";
                 }, 1800);
 
                 break;
             }
         }
-
 
         if (!found) {
 
@@ -591,14 +516,11 @@
             getChatId();
 
         const list =
-            readArray(
-                STORAGE.home
-            );
+            readArray(STORAGE.home);
 
         const exists =
             list.some(
-                item =>
-                    item.id === id
+                item => item.id === id
             );
 
         if (!exists) {
@@ -614,11 +536,6 @@
                 list
             );
         }
-
-
-        /*
-         * PWA install prompt থাকলে ব্যবহার করবে।
-         */
 
         if (
             window.pingmeDeferredInstallPrompt
@@ -643,7 +560,6 @@
                     "PingMe Home:",
                     error
                 );
-
             }
 
         } else {
@@ -652,7 +568,6 @@
                 "Chatটি Home-এর জন্য যোগ করা হয়েছে।"
             );
         }
-
 
         notify(
             "pingme-chat-added-to-home",
@@ -673,14 +588,11 @@
             getChatId();
 
         const archived =
-            readArray(
-                STORAGE.archived
-            );
+            readArray(STORAGE.archived);
 
         const already =
             archived.some(
-                item =>
-                    item.id === id
+                item => item.id === id
             );
 
         if (!already) {
@@ -697,11 +609,6 @@
             );
         }
 
-
-        /*
-         * Recent / History systems-কে notify করা।
-         */
-
         notify(
             "pingme-chat-archived",
             {
@@ -709,20 +616,17 @@
             }
         );
 
-
-        /*
-         * Existing History/Recent support
-         * function থাকলে use করার সুযোগ।
-         */
-
         if (
             typeof window.archiveChat ===
             "function"
         ) {
 
             try {
+
                 window.archiveChat(id);
+
             } catch (error) {
+
                 console.error(
                     "PingMe archiveChat:",
                     error
@@ -730,10 +634,7 @@
             }
         }
 
-
-        alert(
-            "Chat archived."
-        );
+        alert("Chat archived.");
     }
 
 
@@ -751,32 +652,17 @@
                 "এই chat delete করতে চাস?"
             );
 
-        if (!confirmed) {
-            return;
-        }
-
-
-        /*
-         * Conversation history clear
-         */
+        if (!confirmed) return;
 
         localStorage.removeItem(
             "pingme_conversation_history"
         );
 
-
-        /*
-         * Current chat clear
-         */
-
         localStorage.removeItem(
             "pingme_current_chat_id"
         );
 
-
-        /*
-         * Chat session reset করার সুযোগ।
-         */
+        activeChatId = null;
 
         if (
             typeof window.pingmeResetChat ===
@@ -784,8 +670,11 @@
         ) {
 
             try {
+
                 window.pingmeResetChat();
+
             } catch (error) {
+
                 console.error(
                     "PingMe reset:",
                     error
@@ -793,15 +682,8 @@
             }
         }
 
-
-        /*
-         * UI clear
-         */
-
         const chatArea =
-            document.getElementById(
-                "chatArea"
-            );
+            document.getElementById("chatArea");
 
         if (chatArea) {
 
@@ -815,64 +697,40 @@
                 );
         }
 
-
         const welcome =
-            document.getElementById(
-                "welcome"
-            );
+            document.getElementById("welcome");
 
         if (welcome) {
-
-            welcome.style.display =
-                "flex";
+            welcome.style.display = "flex";
         }
 
-
         const firstBar =
-            document.getElementById(
-                "firstBar"
-            );
+            document.getElementById("firstBar");
 
         const secondBar =
-            document.getElementById(
-                "secondBar"
-            );
+            document.getElementById("secondBar");
 
         if (firstBar) {
-
-            firstBar.style.display =
-                "flex";
+            firstBar.style.display = "flex";
         }
 
         if (secondBar) {
-
-            secondBar.style.display =
-                "none";
+            secondBar.style.display = "none";
         }
 
-
         const input =
-            document.getElementById(
-                "chatInput"
-            );
+            document.getElementById("chatInput");
 
         if (input) {
             input.value = "";
         }
 
-
         const sendButton =
-            document.getElementById(
-                "sendButton"
-            );
+            document.getElementById("sendButton");
 
         if (sendButton) {
-
-            sendButton.classList.remove(
-                "active"
-            );
+            sendButton.classList.remove("active");
         }
-
 
         notify(
             "pingme-chat-deleted",
@@ -881,10 +739,7 @@
             }
         );
 
-
-        alert(
-            "Chat deleted."
-        );
+        alert("Chat deleted.");
     }
 
 
@@ -927,29 +782,81 @@
             case "delete":
                 deleteChat();
                 break;
-
         }
     }
 
 
     /* =====================================================
-       CONNECT TO MESSAGE-MENU-2.JS
+       CONNECT TO HEADER MORE MENU
        ===================================================== */
 
-    document.addEventListener(
-        "pingme-menu-action",
-        function (event) {
+    function connectHeaderMenuActions() {
 
-            const action =
-                event.detail?.action;
-
-            if (!action) return;
-
-            handleAction(
-                action
+        const menu =
+            document.getElementById(
+                "pingme-header-more-menu"
             );
+
+        if (!menu) return false;
+
+        if (
+            menu.dataset
+                .pingmeFeaturesConnected === "true"
+        ) {
+            return true;
         }
-    );
+
+        menu.dataset
+            .pingmeFeaturesConnected = "true";
+
+        menu.addEventListener(
+            "pingme-menu-action",
+            function (event) {
+
+                const action =
+                    event.detail?.action;
+
+                if (!action) return;
+
+                handleAction(action);
+            }
+        );
+
+        return true;
+    }
+
+
+    /* =====================================================
+       WAIT FOR MENU CREATION
+       ===================================================== */
+
+    function watchHeaderMenu() {
+
+        if (
+            connectHeaderMenuActions()
+        ) {
+            return;
+        }
+
+        const observer =
+            new MutationObserver(() => {
+
+                if (
+                    connectHeaderMenuActions()
+                ) {
+                    observer.disconnect();
+                }
+
+            });
+
+        observer.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
 
 
     /* =====================================================
@@ -958,34 +865,37 @@
 
     window.PingMeHeaderMenu = {
 
-        share:
-            shareChat,
-
-        pin:
-            pinChat,
-
-        project:
-            addToProject,
-
-        files:
-            showUploadedFiles,
-
-        find:
-            findInChat,
-
-        home:
-            addToHome,
-
-        archive:
-            archiveChat,
-
-        delete:
-            deleteChat,
-
-        getChatId:
-            getChatId
+        share: shareChat,
+        pin: pinChat,
+        project: addToProject,
+        files: showUploadedFiles,
+        find: findInChat,
+        home: addToHome,
+        archive: archiveChat,
+        delete: deleteChat,
+        getChatId: getChatId
 
     };
+
+
+    /* =====================================================
+       START
+       ===================================================== */
+
+    if (
+        document.readyState === "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            watchHeaderMenu,
+            { once: true }
+        );
+
+    } else {
+
+        watchHeaderMenu();
+    }
 
 
     console.log(
