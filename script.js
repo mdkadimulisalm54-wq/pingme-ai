@@ -17,7 +17,6 @@ const plusBtn = document.getElementById("plusBtn");
 const micBtn = document.getElementById("micBtn");
 const menuBtn = document.getElementById("menuBtn");
 const settingsBtn = document.getElementById("settingsBtn");
-const attachmentMenu = document.getElementById("attachmentMenu");
 
 
 // ==========================================================
@@ -66,9 +65,6 @@ Use natural, modern Bangladeshi Bangla.
 
 If the user uses casual Bangla:
 Reply naturally and casually.
-
-If the user uses "তুই":
-You may naturally use "তুই".
 
 Do not force slang.
 Do not overuse regional expressions.
@@ -137,7 +133,8 @@ function saveConversation(role, text) {
     role: role,
     text: String(text).trim()
   });
-     if (
+
+  if (
     typeof window.addChatToHistory === "function"
   ) {
     window.addChatToHistory({
@@ -146,8 +143,6 @@ function saveConversation(role, text) {
     });
   }
 
-  
-  // Keep memory from becoming unnecessarily large
   while (
     pingMeConversation.length >
     MAX_MEMORY_MESSAGES
@@ -188,7 +183,6 @@ function addMessage(text, sender) {
     welcomeScreen.style.display = "none";
   }
 
-
   const row =
     document.createElement("div");
 
@@ -197,13 +191,11 @@ function addMessage(text, sender) {
       ? "message-row user"
       : "message-row ai";
 
-
   const box =
     document.createElement("div");
 
   box.className =
     "message-box";
-
 
   const message =
     document.createElement("div");
@@ -213,7 +205,6 @@ function addMessage(text, sender) {
 
   message.textContent =
     text;
-
 
   box.appendChild(message);
 
@@ -242,7 +233,6 @@ function addMessage(text, sender) {
 
     copyBtn.textContent =
       "📋 Copy";
-
 
     copyBtn.onclick =
       async function() {
@@ -285,7 +275,6 @@ function addMessage(text, sender) {
     linkBtn.textContent =
       "🔗 Copy Link";
 
-
     linkBtn.onclick =
       async function() {
 
@@ -293,7 +282,6 @@ function addMessage(text, sender) {
           text.match(
             /https?:\/\/[^\s]+/i
           );
-
 
         if (!match) {
 
@@ -309,7 +297,6 @@ function addMessage(text, sender) {
 
           return;
         }
-
 
         try {
 
@@ -352,7 +339,6 @@ function addMessage(text, sender) {
   chatArea.scrollTop =
     chatArea.scrollHeight;
 
-
   return row;
 }
 
@@ -367,13 +353,11 @@ function addThinkingMessage() {
     welcomeScreen.style.display = "none";
   }
 
-
   const row =
     document.createElement("div");
 
   row.className =
     "message-row ai";
-
 
   const message =
     document.createElement("div");
@@ -381,10 +365,8 @@ function addThinkingMessage() {
   message.className =
     "message thinking-message";
 
-
   message.innerHTML =
     `<div class="thinking-spinner"></div>`;
-
 
   row.appendChild(message);
 
@@ -392,7 +374,6 @@ function addThinkingMessage() {
 
   chatArea.scrollTop =
     chatArea.scrollHeight;
-
 
   return row;
 }
@@ -408,7 +389,6 @@ async function getModels() {
 
   const maxAttempts = 100;
 
-
   while (
     !window.pingMeAIModel1 &&
     !window.pingMeAIModel2 &&
@@ -417,15 +397,12 @@ async function getModels() {
   ) {
 
     await new Promise(resolve => {
-
       setTimeout(resolve, 100);
-
     });
 
     attempts++;
 
   }
-
 
   const models = [
 
@@ -435,7 +412,6 @@ async function getModels() {
 
   ].filter(Boolean);
 
-
   if (!models.length) {
 
     throw new Error(
@@ -443,7 +419,6 @@ async function getModels() {
     );
 
   }
-
 
   return models;
 }
@@ -458,10 +433,8 @@ async function generateAIResponse(userText) {
   const models =
     await getModels();
 
-
   const previousConversation =
     getConversationContext();
-
 
   const prompt = `
 
@@ -502,9 +475,7 @@ Do not identify yourself as Google Gemini.
 Now respond naturally.
 `;
 
-
   let lastError = null;
-
 
   for (const model of models) {
 
@@ -515,10 +486,8 @@ Now respond naturally.
           prompt
         );
 
-
       const answer =
         result?.response?.text?.();
-
 
       if (
         answer &&
@@ -542,7 +511,6 @@ Now respond naturally.
 
   }
 
-
   throw (
     lastError ||
     new Error("ALL_MODELS_FAILED")
@@ -559,40 +527,29 @@ async function sendMessage() {
   const text =
     messageInput.value.trim();
 
-
   if (!text) {
     return;
   }
 
-
   sendBtn.disabled = true;
 
-
-  // Show user message
   addMessage(
     text,
     "user"
   );
 
-
-  // Save user message
   saveConversation(
     "user",
     text
   );
 
-
-  // Clear input
   messageInput.value = "";
 
   messageInput.style.height =
     "auto";
 
-
-  // Thinking
   const thinking =
     addThinkingMessage();
-
 
   try {
 
@@ -601,25 +558,19 @@ async function sendMessage() {
         text
       );
 
-
     if (thinking) {
       thinking.remove();
     }
 
-
-    // Show AI response
     addMessage(
       answer,
       "ai"
     );
 
-
-    // Save AI response
     saveConversation(
       "ai",
       answer
     );
-
 
   } catch (error) {
 
@@ -628,11 +579,9 @@ async function sendMessage() {
       error
     );
 
-
     if (thinking) {
       thinking.remove();
     }
-
 
     const errorText =
       String(
@@ -640,7 +589,6 @@ async function sendMessage() {
         error ||
         ""
       );
-
 
     if (
       errorText.includes("429") ||
@@ -654,7 +602,6 @@ async function sendMessage() {
         "ai"
       );
 
-
     } else if (
       errorText.includes(
         "PINGME_MODELS_NOT_READY"
@@ -665,7 +612,6 @@ async function sendMessage() {
         "PingMe AI চালু হতে সমস্যা হচ্ছে। পেজটা একবার Refresh করে আবার চেষ্টা কর।",
         "ai"
       );
-
 
     } else {
 
@@ -732,17 +678,13 @@ if (messageInput) {
   );
 
 
-  // ========================================================
   // INPUT AUTO RESIZE
-  // ========================================================
-
   messageInput.addEventListener(
     "input",
     function() {
 
       this.style.height =
         "auto";
-
 
       this.style.height =
         Math.min(
@@ -771,12 +713,10 @@ document
         const text =
           this.querySelector(".text");
 
-
         messageInput.value =
           text
             ? text.textContent.trim()
             : this.textContent.trim();
-
 
         messageInput.focus();
 
@@ -788,29 +728,6 @@ document
     );
 
   });
-
-
-// ==========================================================
-// PLUS BUTTON
-// ==========================================================
-
-if (plusBtn) {
-
-  plusBtn.addEventListener(
-    "click",
-    function() {
-
-      if (attachmentMenu) {
-
-        attachmentMenu.hidden =
-          !attachmentMenu.hidden;
-
-      }
-
-    }
-  );
-
-}
 
 
 // ==========================================================
@@ -871,42 +788,6 @@ if (micBtn) {
   );
 
 }
-
-
-// ==========================================================
-// ATTACHMENTS
-// ==========================================================
-
-[
-  "cameraBtn",
-  "photoOption",
-  "fileOption",
-  "audioOption",
-  "screenOption",
-  "projectOption"
-
-].forEach(id => {
-
-  const button =
-    document.getElementById(id);
-
-
-  if (button) {
-
-    button.addEventListener(
-      "click",
-      function() {
-
-        alert(
-          "এই ফিচারটা পরে যোগ করা হবে।"
-        );
-
-      }
-    );
-
-  }
-
-});
 
 
 // ==========================================================
