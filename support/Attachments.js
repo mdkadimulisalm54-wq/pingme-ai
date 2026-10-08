@@ -25,20 +25,14 @@
 
         style.textContent = `
 
-        /* =================================================
-           PREVIEW
-           ================================================= */
-
         #${PREVIEW_ID} {
             display: none;
             width: 100%;
             box-sizing: border-box;
-            padding: 4px 7px 2px;
-            gap: 6px;
+            padding: 5px 7px 3px;
+            gap: 7px;
             flex-wrap: wrap;
             align-items: flex-start;
-            position: relative;
-            z-index: 5;
         }
 
         #${PREVIEW_ID}.show {
@@ -53,41 +47,41 @@
         .pingme-photo-attachment {
             position: relative !important;
 
-            width: 38px !important;
-            height: 38px !important;
+            width: 44px !important;
+            height: 44px !important;
 
-            min-width: 38px !important;
-            max-width: 38px !important;
+            min-width: 44px !important;
+            max-width: 44px !important;
 
-            min-height: 38px !important;
-            max-height: 38px !important;
+            min-height: 44px !important;
+            max-height: 44px !important;
 
-            flex: 0 0 38px !important;
+            flex: 0 0 44px !important;
 
             box-sizing: border-box !important;
             overflow: hidden !important;
 
             display: block !important;
 
-            border-radius: 9px !important;
+            border-radius: 10px !important;
 
             background: #eef1f4 !important;
             border: 1px solid rgba(0,0,0,.07) !important;
 
-            box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06) !important;
         }
 
         .pingme-photo-attachment img {
             display: block !important;
 
-            width: 38px !important;
-            height: 38px !important;
+            width: 100% !important;
+            height: 100% !important;
 
-            min-width: 38px !important;
-            max-width: 38px !important;
+            min-width: 0 !important;
+            max-width: none !important;
 
-            min-height: 38px !important;
-            max-height: 38px !important;
+            min-height: 0 !important;
+            max-height: none !important;
 
             box-sizing: border-box !important;
 
@@ -111,15 +105,10 @@
             width: 42px;
             height: 42px;
 
-            min-width: 42px;
-            max-width: 42px;
-
-            min-height: 42px;
-            max-height: 42px;
-
             flex: 0 0 42px;
 
             box-sizing: border-box;
+
             padding: 7px;
 
             border-radius: 10px;
@@ -207,9 +196,6 @@
             width: 165px;
             height: 48px;
 
-            min-width: 165px;
-            max-width: 165px;
-
             flex: 0 0 165px;
 
             box-sizing: border-box;
@@ -234,7 +220,6 @@
         .pingme-document-icon {
             width: 30px;
             height: 34px;
-
             min-width: 30px;
 
             display: flex;
@@ -326,7 +311,6 @@
             box-shadow: 0 2px 6px rgba(0,0,0,.14);
 
             cursor: pointer;
-
             z-index: 10;
 
             -webkit-tap-highlight-color: transparent;
@@ -349,36 +333,33 @@
             stroke: currentColor !important;
 
             stroke-width: 2 !important;
-
             stroke-linecap: round !important;
         }
 
 
         /* =================================================
-           PHOTO REMOVE — SMALL
+           PHOTO REMOVE
            ================================================= */
 
         .pingme-photo-attachment .pingme-attachment-remove {
-            top: 2px !important;
-            right: 2px !important;
+            top: 3px !important;
+            right: 3px !important;
 
-            width: 14px !important;
-            height: 14px !important;
+            width: 16px !important;
+            height: 16px !important;
 
-            min-width: 14px !important;
-            max-width: 14px !important;
+            min-width: 16px !important;
+            max-width: 16px !important;
 
-            min-height: 14px !important;
-            max-height: 14px !important;
+            min-height: 16px !important;
+            max-height: 16px !important;
 
-            box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
         }
 
         .pingme-photo-attachment .pingme-attachment-remove svg {
-            width: 8px !important;
-            height: 8px !important;
-
-            stroke-width: 2 !important;
+            width: 9px !important;
+            height: 9px !important;
         }
 
 
@@ -405,32 +386,32 @@
         @media (max-width: 480px) {
 
             #${PREVIEW_ID} {
-                padding: 4px 7px 2px;
-                gap: 6px;
+                padding: 5px 7px 3px;
+                gap: 7px;
             }
 
             .pingme-photo-attachment {
-                width: 38px !important;
-                height: 38px !important;
+                width: 44px !important;
+                height: 44px !important;
 
-                min-width: 38px !important;
-                max-width: 38px !important;
+                min-width: 44px !important;
+                max-width: 44px !important;
 
-                min-height: 38px !important;
-                max-height: 38px !important;
+                min-height: 44px !important;
+                max-height: 44px !important;
 
-                flex: 0 0 38px !important;
+                flex: 0 0 44px !important;
             }
 
             .pingme-photo-attachment img {
-                width: 38px !important;
-                height: 38px !important;
+                width: 100% !important;
+                height: 100% !important;
 
-                min-width: 38px !important;
-                max-width: 38px !important;
+                min-width: 0 !important;
+                max-width: none !important;
 
-                min-height: 38px !important;
-                max-height: 38px !important;
+                min-height: 0 !important;
+                max-height: none !important;
             }
 
             .pingme-document-attachment {
@@ -487,7 +468,6 @@
                 preview,
                 chatInput
             );
-
         }
 
         return preview;
@@ -518,7 +498,6 @@
         }
 
         if (bytes < 1024 * 1024) {
-
             return (
                 (bytes / 1024).toFixed(1) +
                 " KB"
@@ -526,7 +505,6 @@
         }
 
         if (bytes < 1024 * 1024 * 1024) {
-
             return (
                 (bytes / (1024 * 1024)).toFixed(1) +
                 " MB"
