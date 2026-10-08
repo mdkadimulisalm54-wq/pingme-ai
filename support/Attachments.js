@@ -1,4 +1,4 @@
- /* =========================================================
+/* =========================================================
    PingMe AI — Attachments Support
    Photos • Files • Documents
    Preview • Remove • Multiple Files
@@ -25,14 +25,20 @@
 
         style.textContent = `
 
+        /* =================================================
+           PREVIEW
+           ================================================= */
+
         #${PREVIEW_ID} {
             display: none;
             width: 100%;
             box-sizing: border-box;
-            padding: 7px 8px 4px;
-            gap: 8px;
+            padding: 4px 7px 2px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: flex-start;
+            position: relative;
+            z-index: 5;
         }
 
         #${PREVIEW_ID}.show {
@@ -46,34 +52,50 @@
 
         .pingme-photo-attachment {
             position: relative !important;
-            width: 42px !important;
-            height: 42px !important;
-            min-width: 42px !important;
-            max-width: 42px !important;
-            min-height: 42px !important;
-            max-height: 42px !important;
-            flex: 0 0 42px !important;
+
+            width: 38px !important;
+            height: 38px !important;
+
+            min-width: 38px !important;
+            max-width: 38px !important;
+
+            min-height: 38px !important;
+            max-height: 38px !important;
+
+            flex: 0 0 38px !important;
+
             box-sizing: border-box !important;
             overflow: hidden !important;
+
             display: block !important;
-            border-radius: 10px !important;
+
+            border-radius: 9px !important;
+
             background: #eef1f4 !important;
-            border: 1px solid rgba(0,0,0,.08) !important;
-            box-shadow: 0 2px 7px rgba(0,0,0,.06) !important;
+            border: 1px solid rgba(0,0,0,.07) !important;
+
+            box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
         }
 
         .pingme-photo-attachment img {
             display: block !important;
-            width: 100% !important;
-            height: 100% !important;
-            min-width: 0 !important;
-            max-width: none !important;
-            min-height: 0 !important;
-            max-height: none !important;
+
+            width: 38px !important;
+            height: 38px !important;
+
+            min-width: 38px !important;
+            max-width: 38px !important;
+
+            min-height: 38px !important;
+            max-height: 38px !important;
+
             box-sizing: border-box !important;
+
             object-fit: cover !important;
             object-position: center !important;
+
             background: #eef1f4 !important;
+
             margin: 0 !important;
             padding: 0 !important;
         }
@@ -85,38 +107,56 @@
 
         .pingme-file-attachment {
             position: relative;
+
             width: 42px;
             height: 42px;
+
+            min-width: 42px;
+            max-width: 42px;
+
+            min-height: 42px;
+            max-height: 42px;
+
             flex: 0 0 42px;
+
             box-sizing: border-box;
             padding: 7px;
+
             border-radius: 10px;
+
             background: #f6f8fa;
             border: 1px solid #e0e4e8;
+
             box-shadow: 0 2px 7px rgba(0,0,0,.06);
 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: flex-start;
+
             overflow: hidden;
         }
 
         .pingme-file-icon {
             width: 27px;
             height: 27px;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             border-radius: 8px;
+
             background: #e9eef3;
             color: #596675;
+
             margin-bottom: 3px;
         }
 
         .pingme-file-icon svg {
             width: 16px;
             height: 16px;
+
             fill: none;
             stroke: currentColor;
             stroke-width: 1.7;
@@ -131,11 +171,15 @@
 
         .pingme-file-name {
             display: block;
+
             width: 100%;
+
             font-size: 8.5px;
             line-height: 10px;
             font-weight: 600;
+
             color: #30343a;
+
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -143,9 +187,12 @@
 
         .pingme-file-size {
             display: block;
+
             margin-top: 1px;
+
             font-size: 8px;
             line-height: 10px;
+
             color: #858b92;
         }
 
@@ -156,20 +203,29 @@
 
         .pingme-document-attachment {
             position: relative;
+
             width: 165px;
             height: 48px;
+
+            min-width: 165px;
+            max-width: 165px;
+
             flex: 0 0 165px;
+
             box-sizing: border-box;
 
             display: flex;
             align-items: center;
+
             gap: 7px;
 
             padding: 6px 7px;
 
             border-radius: 11px;
+
             background: #f7f9fb;
             border: 1px solid #e0e4e8;
+
             box-shadow: 0 2px 8px rgba(0,0,0,.05);
 
             overflow: hidden;
@@ -178,6 +234,7 @@
         .pingme-document-icon {
             width: 30px;
             height: 34px;
+
             min-width: 30px;
 
             display: flex;
@@ -185,6 +242,7 @@
             justify-content: center;
 
             border-radius: 7px;
+
             background: #edf1f5;
             color: #596675;
         }
@@ -192,6 +250,7 @@
         .pingme-document-icon svg {
             width: 17px;
             height: 19px;
+
             fill: none;
             stroke: currentColor;
             stroke-width: 1.7;
@@ -206,11 +265,15 @@
 
         .pingme-document-name {
             display: block;
+
             width: 100%;
+
             font-size: 10.5px;
             line-height: 13px;
             font-weight: 600;
+
             color: #30343a;
+
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -218,9 +281,12 @@
 
         .pingme-document-size {
             display: block;
+
             margin-top: 1px;
+
             font-size: 9.5px;
             line-height: 12px;
+
             color: #858b92;
         }
 
@@ -231,18 +297,22 @@
 
         .pingme-attachment-remove {
             position: absolute !important;
+
             top: 4px !important;
             right: 4px !important;
 
             width: 18px !important;
             height: 18px !important;
+
             min-width: 18px !important;
             max-width: 18px !important;
+
             min-height: 18px !important;
             max-height: 18px !important;
 
             padding: 0 !important;
             margin: 0 !important;
+
             border: 0 !important;
             border-radius: 50% !important;
 
@@ -254,7 +324,9 @@
             color: #454a50 !important;
 
             box-shadow: 0 2px 6px rgba(0,0,0,.14);
+
             cursor: pointer;
+
             z-index: 10;
 
             -webkit-tap-highlight-color: transparent;
@@ -272,10 +344,41 @@
         .pingme-attachment-remove svg {
             width: 10px !important;
             height: 10px !important;
+
             fill: none !important;
             stroke: currentColor !important;
+
             stroke-width: 2 !important;
+
             stroke-linecap: round !important;
+        }
+
+
+        /* =================================================
+           PHOTO REMOVE — SMALL
+           ================================================= */
+
+        .pingme-photo-attachment .pingme-attachment-remove {
+            top: 2px !important;
+            right: 2px !important;
+
+            width: 14px !important;
+            height: 14px !important;
+
+            min-width: 14px !important;
+            max-width: 14px !important;
+
+            min-height: 14px !important;
+            max-height: 14px !important;
+
+            box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+        }
+
+        .pingme-photo-attachment .pingme-attachment-remove svg {
+            width: 8px !important;
+            height: 8px !important;
+
+            stroke-width: 2 !important;
         }
 
 
@@ -285,10 +388,12 @@
 
         .pingme-attachment-count {
             width: 100%;
+
             padding: 0 3px 2px;
 
             font-size: 10px;
             line-height: 13px;
+
             color: #888;
         }
 
@@ -300,36 +405,41 @@
         @media (max-width: 480px) {
 
             #${PREVIEW_ID} {
-                padding-left: 7px;
-                padding-right: 7px;
-                gap: 7px;
+                padding: 4px 7px 2px;
+                gap: 6px;
             }
 
-            .pingme-photo-attachment,
-            .pingme-file-attachment {
-                width: 42px !important;
-                height: 42px !important;
-                min-width: 42px !important;
-                max-width: 42px !important;
-                min-height: 42px !important;
-                max-height: 42px !important;
-                flex: 0 0 42px !important;
+            .pingme-photo-attachment {
+                width: 38px !important;
+                height: 38px !important;
+
+                min-width: 38px !important;
+                max-width: 38px !important;
+
+                min-height: 38px !important;
+                max-height: 38px !important;
+
+                flex: 0 0 38px !important;
             }
 
             .pingme-photo-attachment img {
-                width: 100% !important;
-                height: 100% !important;
-                min-width: 0 !important;
-                max-width: none !important;
-                min-height: 0 !important;
-                max-height: none !important;
+                width: 38px !important;
+                height: 38px !important;
+
+                min-width: 38px !important;
+                max-width: 38px !important;
+
+                min-height: 38px !important;
+                max-height: 38px !important;
             }
 
             .pingme-document-attachment {
                 width: 165px !important;
                 height: 48px !important;
+
                 min-width: 165px !important;
                 max-width: 165px !important;
+
                 flex: 0 0 165px !important;
             }
         }
@@ -408,6 +518,7 @@
         }
 
         if (bytes < 1024 * 1024) {
+
             return (
                 (bytes / 1024).toFixed(1) +
                 " KB"
@@ -415,6 +526,7 @@
         }
 
         if (bytes < 1024 * 1024 * 1024) {
+
             return (
                 (bytes / (1024 * 1024)).toFixed(1) +
                 " MB"
