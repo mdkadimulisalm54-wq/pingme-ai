@@ -47,25 +47,25 @@
         .pingme-photo-attachment {
             position: relative !important;
 
-            width: 44px !important;
-            height: 44px !important;
+            width: 38px !important;
+            height: 38px !important;
 
-            min-width: 44px !important;
-            max-width: 44px !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
 
-            min-height: 44px !important;
-            max-height: 44px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
 
-            flex: 0 0 44px !important;
+            flex: 0 0 38px !important;
 
             box-sizing: border-box !important;
             overflow: hidden !important;
 
             display: block !important;
 
-            border-radius: 10px !important;
+            border-radius: 9px !important;
 
-            background: #eef1f4 !important;
+            background: #000 !important;
             border: 1px solid rgba(0,0,0,.07) !important;
 
             box-shadow: 0 2px 6px rgba(0,0,0,.06) !important;
@@ -88,7 +88,7 @@
             object-fit: cover !important;
             object-position: center !important;
 
-            background: #eef1f4 !important;
+            background: #000 !important;
 
             margin: 0 !important;
             padding: 0 !important;
@@ -277,23 +277,23 @@
 
 
         /* =================================================
-           REMOVE BUTTON
+           REMOVE / PHOTO CONTROL
            ================================================= */
 
         .pingme-attachment-remove {
             position: absolute !important;
 
-            top: 4px !important;
-            right: 4px !important;
+            top: 3px !important;
+            right: 3px !important;
 
-            width: 18px !important;
-            height: 18px !important;
+            width: 16px !important;
+            height: 16px !important;
 
-            min-width: 18px !important;
-            max-width: 18px !important;
+            min-width: 16px !important;
+            max-width: 16px !important;
 
-            min-height: 18px !important;
-            max-height: 18px !important;
+            min-height: 16px !important;
+            max-height: 16px !important;
 
             padding: 0 !important;
             margin: 0 !important;
@@ -308,10 +308,10 @@
             background: rgba(255,255,255,.94) !important;
             color: #454a50 !important;
 
-            box-shadow: 0 2px 6px rgba(0,0,0,.14);
+            box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
 
             cursor: pointer;
-            z-index: 10;
+            z-index: 20 !important;
 
             -webkit-tap-highlight-color: transparent;
         }
@@ -326,40 +326,14 @@
         }
 
         .pingme-attachment-remove svg {
-            width: 10px !important;
-            height: 10px !important;
+            width: 9px !important;
+            height: 9px !important;
 
             fill: none !important;
             stroke: currentColor !important;
 
             stroke-width: 2 !important;
             stroke-linecap: round !important;
-        }
-
-
-        /* =================================================
-           PHOTO REMOVE
-           ================================================= */
-
-        .pingme-photo-attachment .pingme-attachment-remove {
-            top: 3px !important;
-            right: 3px !important;
-
-            width: 16px !important;
-            height: 16px !important;
-
-            min-width: 16px !important;
-            max-width: 16px !important;
-
-            min-height: 16px !important;
-            max-height: 16px !important;
-
-            box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
-        }
-
-        .pingme-photo-attachment .pingme-attachment-remove svg {
-            width: 9px !important;
-            height: 9px !important;
         }
 
 
@@ -391,16 +365,16 @@
             }
 
             .pingme-photo-attachment {
-                width: 44px !important;
-                height: 44px !important;
+                width: 38px !important;
+                height: 38px !important;
 
-                min-width: 44px !important;
-                max-width: 44px !important;
+                min-width: 38px !important;
+                max-width: 38px !important;
 
-                min-height: 44px !important;
-                max-height: 44px !important;
+                min-height: 38px !important;
+                max-height: 38px !important;
 
-                flex: 0 0 44px !important;
+                flex: 0 0 38px !important;
             }
 
             .pingme-photo-attachment img {
