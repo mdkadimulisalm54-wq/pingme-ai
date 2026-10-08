@@ -47,16 +47,16 @@
         .pingme-photo-attachment {
             position: relative !important;
 
-            width: 38px !important;
-            height: 38px !important;
+            width: 26px !important;
+            height: 26px !important;
 
-            min-width: 38px !important;
-            max-width: 38px !important;
+            min-width: 26px !important;
+            max-width: 26px !important;
 
-            min-height: 38px !important;
-            max-height: 38px !important;
+            min-height: 26px !important;
+            max-height: 26px !important;
 
-            flex: 0 0 38px !important;
+            flex: 0 0 26px !important;
 
             box-sizing: border-box !important;
             overflow: hidden !important;
