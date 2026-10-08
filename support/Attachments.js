@@ -1,4 +1,4 @@
-/* =========================================================
+ /* =========================================================
    PingMe AI — Attachments Support
    Photos • Files • Documents
    Preview • Remove • Multiple Files
@@ -46,17 +46,17 @@
 
         .pingme-photo-attachment {
             position: relative !important;
-            width: 58px !important;
-            height: 58px !important;
-            min-width: 58px !important;
-            max-width: 58px !important;
-            min-height: 58px !important;
-            max-height: 58px !important;
-            flex: 0 0 58px !important;
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            max-width: 42px !important;
+            min-height: 42px !important;
+            max-height: 42px !important;
+            flex: 0 0 42px !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
             display: block !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             background: #eef1f4 !important;
             border: 1px solid rgba(0,0,0,.08) !important;
             box-shadow: 0 2px 7px rgba(0,0,0,.06) !important;
@@ -85,12 +85,12 @@
 
         .pingme-file-attachment {
             position: relative;
-            width: 58px;
-            height: 58px;
-            flex: 0 0 58px;
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
             box-sizing: border-box;
             padding: 7px;
-            border-radius: 12px;
+            border-radius: 10px;
             background: #f6f8fa;
             border: 1px solid #e0e4e8;
             box-shadow: 0 2px 7px rgba(0,0,0,.06);
@@ -307,13 +307,13 @@
 
             .pingme-photo-attachment,
             .pingme-file-attachment {
-                width: 58px !important;
-                height: 58px !important;
-                min-width: 58px !important;
-                max-width: 58px !important;
-                min-height: 58px !important;
-                max-height: 58px !important;
-                flex: 0 0 58px !important;
+                width: 42px !important;
+                height: 42px !important;
+                min-width: 42px !important;
+                max-width: 42px !important;
+                min-height: 42px !important;
+                max-height: 42px !important;
+                flex: 0 0 42px !important;
             }
 
             .pingme-photo-attachment img {
