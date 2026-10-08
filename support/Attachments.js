@@ -44,55 +44,40 @@
            PHOTO
            ================================================= */
 
-        .pingme-photo-attachment {
-            position: relative !important;
+            .pingme-photo-attachment { 
+  position: relative !important; 
+  width: 180px !important; 
+  height: 180px !important; 
+  min-width: 180px !important; 
+  max-width: 180px !important; 
+  min-height: 180px !important; 
+  max-height: 180px !important; 
+  flex: 0 0 180px !important; 
+  box-sizing: border-box !important; 
+  overflow: hidden !important; 
+  display: block !important; 
+  border-radius: 12px !important; 
+  background: #f3f3f3 !important; 
+  border: 1px solid rgba(0,0,0,.08) !important; 
+  box-shadow: 0 2px 8px rgba(0,0,0,.08) !important; 
+} 
 
-            width: 26px !important;
-            height: 26px !important;
-
-            min-width: 26px !important;
-            max-width: 26px !important;
-
-            min-height: 26px !important;
-            max-height: 26px !important;
-
-            flex: 0 0 26px !important;
-
-            box-sizing: border-box !important;
-            overflow: hidden !important;
-
-            display: block !important;
-
-            border-radius: 9px !important;
-
-            background: #000 !important;
-            border: 1px solid rgba(0,0,0,.07) !important;
-
-            box-shadow: 0 2px 6px rgba(0,0,0,.06) !important;
-        }
-
-        .pingme-photo-attachment img {
-            display: block !important;
-
-            width: 100% !important;
-            height: 100% !important;
-
-            min-width: 0 !important;
-            max-width: none !important;
-
-            min-height: 0 !important;
-            max-height: none !important;
-
-            box-sizing: border-box !important;
-
-            object-fit: cover !important;
-            object-position: center !important;
-
-            background: #000 !important;
-
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+.pingme-photo-attachment img { 
+  display: block !important; 
+  width: 100% !important; 
+  height: 100% !important; 
+  min-width: 0 !important; 
+  max-width: 100% !important; 
+  min-height: 0 !important; 
+  max-height: 100% !important; 
+  box-sizing: border-box !important; 
+  object-fit: cover !important; 
+  object-position: center !important; 
+  background: transparent !important; 
+  margin: 0 !important; 
+  padding: 0 !important; 
+}
+         
 
 
         /* =================================================
