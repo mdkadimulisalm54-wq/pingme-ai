@@ -12,10 +12,6 @@
 
     let selectedFiles = [];
 
-    /* =====================================================
-       STYLES
-       ===================================================== */
-
     function addStyles() {
 
         if (document.getElementById(STYLE_ID)) return;
@@ -33,6 +29,7 @@
             gap: 7px;
             flex-wrap: wrap;
             align-items: flex-start;
+            overflow: hidden;
         }
 
         #${PREVIEW_ID}.show {
@@ -41,95 +38,125 @@
 
 
         /* =================================================
-           PHOTO
+           PHOTO — COMPACT THUMBNAIL
            ================================================= */
 
-            .pingme-photo-attachment { 
-  position: relative !important; 
-  width: 180px !important; 
-  height: 180px !important; 
-  min-width: 180px !important; 
-  max-width: 180px !important; 
-  min-height: 180px !important; 
-  max-height: 180px !important; 
-  flex: 0 0 180px !important; 
-  box-sizing: border-box !important; 
-  overflow: hidden !important; 
-  display: block !important; 
-  border-radius: 12px !important; 
-  background: #f3f3f3 !important; 
-  border: 1px solid rgba(0,0,0,.08) !important; 
-  box-shadow: 0 2px 8px rgba(0,0,0,.08) !important; 
-} 
+        .pingme-photo-attachment {
+            position: relative !important;
 
-.pingme-photo-attachment img { 
-  display: block !important; 
-  width: 100% !important; 
-  height: 100% !important; 
-  min-width: 0 !important; 
-  max-width: 100% !important; 
-  min-height: 0 !important; 
-  max-height: 100% !important; 
-  box-sizing: border-box !important; 
-  object-fit: cover !important; 
-  object-position: center !important; 
-  background: transparent !important; 
-  margin: 0 !important; 
-  padding: 0 !important; 
-}
-         
+            width: 46px !important;
+            height: 46px !important;
+
+            min-width: 46px !important;
+            min-height: 46px !important;
+
+            max-width: 46px !important;
+            max-height: 46px !important;
+
+            flex: 0 0 46px !important;
+
+            box-sizing: border-box !important;
+
+            overflow: hidden !important;
+
+            display: block !important;
+
+            padding: 0 !important;
+            margin: 0 !important;
+
+            border-radius: 10px !important;
+
+            background: #000 !important;
+
+            border: 1px solid rgba(0,0,0,.08) !important;
+
+            box-shadow: 0 2px 6px rgba(0,0,0,.08) !important;
+        }
+
+        .pingme-photo-attachment img {
+            display: block !important;
+
+            width: 100% !important;
+            height: 100% !important;
+
+            min-width: 0 !important;
+            min-height: 0 !important;
+
+            max-width: 100% !important;
+            max-height: 100% !important;
+
+            box-sizing: border-box !important;
+
+            object-fit: cover !important;
+            object-position: center !important;
+
+            background: #000 !important;
+
+            padding: 0 !important;
+            margin: 0 !important;
+
+            border: 0 !important;
+        }
 
 
         /* =================================================
-           FILE
+           FILE — SAME COMPACT SCALE
            ================================================= */
 
         .pingme-file-attachment {
-            position: relative;
+            position: relative !important;
 
-            width: 42px;
-            height: 42px;
+            width: 46px !important;
+            height: 46px !important;
 
-            flex: 0 0 42px;
+            min-width: 46px !important;
+            min-height: 46px !important;
 
-            box-sizing: border-box;
+            max-width: 46px !important;
+            max-height: 46px !important;
 
-            padding: 7px;
+            flex: 0 0 46px !important;
 
-            border-radius: 10px;
+            box-sizing: border-box !important;
 
-            background: #f6f8fa;
-            border: 1px solid #e0e4e8;
+            padding: 5px !important;
+            margin: 0 !important;
 
-            box-shadow: 0 2px 7px rgba(0,0,0,.06);
+            border-radius: 10px !important;
 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
+            background: #f6f8fa !important;
+            border: 1px solid #e0e4e8 !important;
 
-            overflow: hidden;
+            box-shadow: 0 2px 7px rgba(0,0,0,.06) !important;
+
+            display: flex !important;
+
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+
+            overflow: hidden !important;
         }
 
         .pingme-file-icon {
-            width: 27px;
-            height: 27px;
+            width: 26px !important;
+            height: 26px !important;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
 
-            border-radius: 8px;
+            border-radius: 7px !important;
 
-            background: #e9eef3;
-            color: #596675;
+            background: #e9eef3 !important;
+            color: #596675 !important;
 
-            margin-bottom: 3px;
+            margin: 0 0 2px !important;
         }
 
         .pingme-file-icon svg {
-            width: 16px;
-            height: 16px;
+            width: 15px !important;
+            height: 15px !important;
 
             fill: none;
             stroke: currentColor;
@@ -148,8 +175,8 @@
 
             width: 100%;
 
-            font-size: 8.5px;
-            line-height: 10px;
+            font-size: 7px;
+            line-height: 8px;
             font-weight: 600;
 
             color: #30343a;
@@ -162,17 +189,17 @@
         .pingme-file-size {
             display: block;
 
-            margin-top: 1px;
+            margin-top: 0;
 
-            font-size: 8px;
-            line-height: 10px;
+            font-size: 6.5px;
+            line-height: 8px;
 
             color: #858b92;
         }
 
 
         /* =================================================
-           DOCUMENT
+           DOCUMENT — ORIGINAL SIZE
            ================================================= */
 
         .pingme-document-attachment {
@@ -180,6 +207,12 @@
 
             width: 165px;
             height: 48px;
+
+            min-width: 165px;
+            min-height: 48px;
+
+            max-width: 165px;
+            max-height: 48px;
 
             flex: 0 0 165px;
 
@@ -191,6 +224,8 @@
             gap: 7px;
 
             padding: 6px 7px;
+
+            margin: 0;
 
             border-radius: 11px;
 
@@ -262,7 +297,7 @@
 
 
         /* =================================================
-           REMOVE / PHOTO CONTROL
+           REMOVE BUTTON — ALWAYS ON TOP OF CARD
            ================================================= */
 
         .pingme-attachment-remove {
@@ -275,9 +310,9 @@
             height: 16px !important;
 
             min-width: 16px !important;
-            max-width: 16px !important;
-
             min-height: 16px !important;
+
+            max-width: 16px !important;
             max-height: 16px !important;
 
             padding: 0 !important;
@@ -295,10 +330,11 @@
 
             box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
 
-            cursor: pointer;
+            cursor: pointer !important;
+
             z-index: 20 !important;
 
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent !important;
         }
 
         .pingme-attachment-remove:hover {
@@ -349,28 +385,23 @@
                 gap: 7px;
             }
 
-            .pingme-photo-attachment {
-                width: 38px !important;
-                height: 38px !important;
+            .pingme-photo-attachment,
+            .pingme-file-attachment {
+                width: 46px !important;
+                height: 46px !important;
 
-                min-width: 38px !important;
-                max-width: 38px !important;
+                min-width: 46px !important;
+                min-height: 46px !important;
 
-                min-height: 38px !important;
-                max-height: 38px !important;
+                max-width: 46px !important;
+                max-height: 46px !important;
 
-                flex: 0 0 38px !important;
+                flex: 0 0 46px !important;
             }
 
             .pingme-photo-attachment img {
                 width: 100% !important;
                 height: 100% !important;
-
-                min-width: 0 !important;
-                max-width: none !important;
-
-                min-height: 0 !important;
-                max-height: none !important;
             }
 
             .pingme-document-attachment {
@@ -378,7 +409,10 @@
                 height: 48px !important;
 
                 min-width: 165px !important;
+                min-height: 48px !important;
+
                 max-width: 165px !important;
+                max-height: 48px !important;
 
                 flex: 0 0 165px !important;
             }
@@ -583,10 +617,6 @@
         selectedFiles.forEach(
             (file, index) => {
 
-                /* =========================================
-                   PHOTO
-                   ========================================= */
-
                 if (isImage(file)) {
 
                     const card =
@@ -655,10 +685,6 @@
                 }
 
 
-                /* =========================================
-                   DOCUMENT
-                   ========================================= */
-
                 if (isDocument(file)) {
 
                     const card =
@@ -724,10 +750,6 @@
                     return;
                 }
 
-
-                /* =========================================
-                   FILE
-                   ========================================= */
 
                 const card =
                     document.createElement("div");
@@ -932,7 +954,6 @@
             resetFileInputs();
             renderPreview();
         }
-
     };
 
 
@@ -952,8 +973,7 @@
 
 
     if (
-        document.readyState ===
-        "loading"
+        document.readyState === "loading"
     ) {
 
         document.addEventListener(
