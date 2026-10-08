@@ -298,32 +298,45 @@
 
         @media (max-width: 480px) {
 
-            #${PREVIEW_ID} {
-                padding-left: 7px;
-                padding-right: 7px;
-                gap: 7px;
-            }
-
-            .pingme-photo-attachment,
-            .pingme-file-attachment {
-                width: 88px;
-                height: 88px;
-                flex-basis: 88px;
-            }
-
-            .pingme-document-attachment {
-                width: 160px;
-                flex-basis: 160px;
-            }
-        }
-
-        `;
-
-        document.head.appendChild(style);
+    #${PREVIEW_ID} {
+        padding-left: 7px;
+        padding-right: 7px;
+        gap: 7px;
     }
 
+    .pingme-photo-attachment,
+    .pingme-file-attachment {
+        width: 92px !important;
+        height: 92px !important;
+        min-width: 92px !important;
+        max-width: 92px !important;
+        min-height: 92px !important;
+        max-height: 92px !important;
+        flex: 0 0 92px !important;
+    }
 
-    /* =====================================================
+    .pingme-photo-attachment img {
+        width: 92px !important;
+        height: 92px !important;
+        min-width: 92px !important;
+        max-width: 92px !important;
+        min-height: 92px !important;
+        max-height: 92px !important;
+    }
+
+    .pingme-document-attachment {
+        width: 165px !important;
+        height: 48px !important;
+        min-width: 165px !important;
+        max-width: 165px !important;
+        flex: 0 0 165px !important;
+    }
+   }     
+     `;    
+     document.head.appendChild(style);  
+    }
+       
+    /* ====================================================
        PREVIEW CONTAINER
        ===================================================== */
 
