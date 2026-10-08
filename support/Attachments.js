@@ -43,39 +43,41 @@
         /* =================================================
            PHOTO
            ================================================= */
-      .pingme-photo-attachment {
-    position: relative !important;
-    width: 92px !important;
-    height: 92px !important;
-    min-width: 92px !important;
-    max-width: 92px !important;
-    min-height: 92px !important;
-    max-height: 92px !important;
-    flex: 0 0 92px !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-    display: block !important;
-    border-radius: 14px !important;
-    background: #eef1f4 !important;
-    border: 1px solid rgba(0,0,0,.08) !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,.08) !important;
-}
 
-.pingme-photo-attachment img {
-    display: block !important;
-    width: 92px !important;
-    height: 92px !important;
-    min-width: 92px !important;
-    max-width: 92px !important;
-    min-height: 92px !important;
-    max-height: 92px !important;
-    box-sizing: border-box !important;
-    object-fit: cover !important;
-    object-position: center !important;
-    background: #eef1f4 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
+        .pingme-photo-attachment {
+            position: relative !important;
+            width: 58px !important;
+            height: 58px !important;
+            min-width: 58px !important;
+            max-width: 58px !important;
+            min-height: 58px !important;
+            max-height: 58px !important;
+            flex: 0 0 58px !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+            display: block !important;
+            border-radius: 12px !important;
+            background: #eef1f4 !important;
+            border: 1px solid rgba(0,0,0,.08) !important;
+            box-shadow: 0 2px 7px rgba(0,0,0,.06) !important;
+        }
+
+        .pingme-photo-attachment img {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            box-sizing: border-box !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            background: #eef1f4 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
 
         /* =================================================
            FILE
@@ -83,15 +85,15 @@
 
         .pingme-file-attachment {
             position: relative;
-            width: 92px;
-            height: 92px;
-            flex: 0 0 92px;
+            width: 58px;
+            height: 58px;
+            flex: 0 0 58px;
             box-sizing: border-box;
-            padding: 9px;
-            border-radius: 14px;
+            padding: 7px;
+            border-radius: 12px;
             background: #f6f8fa;
             border: 1px solid #e0e4e8;
-            box-shadow: 0 3px 10px rgba(0,0,0,.06);
+            box-shadow: 0 2px 7px rgba(0,0,0,.06);
 
             display: flex;
             flex-direction: column;
@@ -101,20 +103,20 @@
         }
 
         .pingme-file-icon {
-            width: 32px;
-            height: 32px;
+            width: 27px;
+            height: 27px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 9px;
+            border-radius: 8px;
             background: #e9eef3;
             color: #596675;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .pingme-file-icon svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             fill: none;
             stroke: currentColor;
             stroke-width: 1.7;
@@ -130,8 +132,8 @@
         .pingme-file-name {
             display: block;
             width: 100%;
-            font-size: 10.5px;
-            line-height: 13px;
+            font-size: 8.5px;
+            line-height: 10px;
             font-weight: 600;
             color: #30343a;
             white-space: nowrap;
@@ -142,8 +144,8 @@
         .pingme-file-size {
             display: block;
             margin-top: 1px;
-            font-size: 9.5px;
-            line-height: 12px;
+            font-size: 8px;
+            line-height: 10px;
             color: #858b92;
         }
 
@@ -227,55 +229,54 @@
            REMOVE BUTTON
            ================================================= */
 
-.pingme-attachment-remove {
-    position: absolute !important;
-    top: 5px !important;
-    right: 5px !important;
+        .pingme-attachment-remove {
+            position: absolute !important;
+            top: 4px !important;
+            right: 4px !important;
 
-    width: 21px !important;
-    height: 21px !important;
-    min-width: 21px !important;
-    max-width: 21px !important;
-    min-height: 21px !important;
-    max-height: 21px !important;
+            width: 18px !important;
+            height: 18px !important;
+            min-width: 18px !important;
+            max-width: 18px !important;
+            min-height: 18px !important;
+            max-height: 18px !important;
 
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    border-radius: 50% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 50% !important;
 
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
 
-    background: rgba(255,255,255,.94) !important;
-    color: #454a50 !important;
+            background: rgba(255,255,255,.94) !important;
+            color: #454a50 !important;
 
-    box-shadow: 0 2px 7px rgba(0,0,0,.16);
-    cursor: pointer;
-    z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,.14);
+            cursor: pointer;
+            z-index: 10;
 
-    -webkit-tap-highlight-color: transparent;
-}
+            -webkit-tap-highlight-color: transparent;
+        }
 
-.pingme-attachment-remove:hover {
-    background: #fff !important;
-    color: #111 !important;
-}
+        .pingme-attachment-remove:hover {
+            background: #fff !important;
+            color: #111 !important;
+        }
 
-.pingme-attachment-remove:active {
-    transform: scale(.9);
-}
+        .pingme-attachment-remove:active {
+            transform: scale(.9);
+        }
 
-.pingme-attachment-remove svg {
-    width: 12px !important;
-    height: 12px !important;
-    fill: none !important;
-    stroke: currentColor !important;
-    stroke-width: 2 !important;
-    stroke-linecap: round !important;
-}
-         
+        .pingme-attachment-remove svg {
+            width: 10px !important;
+            height: 10px !important;
+            fill: none !important;
+            stroke: currentColor !important;
+            stroke-width: 2 !important;
+            stroke-linecap: round !important;
+        }
 
 
         /* =================================================
@@ -298,44 +299,46 @@
 
         @media (max-width: 480px) {
 
-    #${PREVIEW_ID} {
-        padding-left: 7px;
-        padding-right: 7px;
-        gap: 7px;
+            #${PREVIEW_ID} {
+                padding-left: 7px;
+                padding-right: 7px;
+                gap: 7px;
+            }
+
+            .pingme-photo-attachment,
+            .pingme-file-attachment {
+                width: 58px !important;
+                height: 58px !important;
+                min-width: 58px !important;
+                max-width: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                flex: 0 0 58px !important;
+            }
+
+            .pingme-photo-attachment img {
+                width: 100% !important;
+                height: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                min-height: 0 !important;
+                max-height: none !important;
+            }
+
+            .pingme-document-attachment {
+                width: 165px !important;
+                height: 48px !important;
+                min-width: 165px !important;
+                max-width: 165px !important;
+                flex: 0 0 165px !important;
+            }
+        }
+    `;
+
+        document.head.appendChild(style);
     }
 
-    .pingme-photo-attachment,
-    .pingme-file-attachment {
-        width: 92px !important;
-        height: 92px !important;
-        min-width: 92px !important;
-        max-width: 92px !important;
-        min-height: 92px !important;
-        max-height: 92px !important;
-        flex: 0 0 92px !important;
-    }
 
-    .pingme-photo-attachment img {
-        width: 92px !important;
-        height: 92px !important;
-        min-width: 92px !important;
-        max-width: 92px !important;
-        min-height: 92px !important;
-        max-height: 92px !important;
-    }
-
-    .pingme-document-attachment {
-        width: 165px !important;
-        height: 48px !important;
-        min-width: 165px !important;
-        max-width: 165px !important;
-        flex: 0 0 165px !important;
-    }
-   }     
-     `;    
-     document.head.appendChild(style);  
-    }
-       
     /* ====================================================
        PREVIEW CONTAINER
        ===================================================== */
