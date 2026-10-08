@@ -123,40 +123,288 @@ const pingMeConversation = [];
 const MAX_MEMORY_MESSAGES = 30;
 
 
+// ==========================================================
+// CURRENT HISTORY CHAT
+// ==========================================================
+
+let pingMeCurrentChatId = null;
+
+
+function ensureHistoryChat() {
+
+  if (
+    !window.PingMeHistory ||
+    typeof window.PingMeHistory.createChat !==
+      "function"
+  ) {
+    return null;
+  }
+
+
+  if (pingMeCurrentChatId) {
+
+    const existing =
+      window.PingMeHistory.getChat(
+        pingMeCurrentChatId
+      );
+
+    if (existing) {
+      return pingMeCurrentChatId;
+    }
+
+  }
+
+
+  const chat =
+    window.PingMeHistory.createChat(
+      "New Chat"
+    );
+
+
+  if (!chat || !chat.id) {
+    return null;
+  }
+
+
+  pingMeCurrentChatId =
+    chat.id;
+
+
+  try {
+
+    localStorage.setItem(
+      "pingme_current_chat_id",
+      pingMeCurrentChatId
+    );
+
+  } catch (_) {}
+
+
+  return pingMeCurrentChatId;
+
+}
+
+
+function loadCurrentHistoryChat() {
+
+  if (
+    !window.PingMeHistory ||
+    typeof window.PingMeHistory.getChat !==
+      "function"
+  ) {
+    return;
+  }
+
+
+  let savedId = null;
+
+
+  try {
+
+    savedId =
+      localStorage.getItem(
+        "pingme_current_chat_id"
+      );
+
+  } catch (_) {}
+
+
+  if (!savedId) {
+    return;
+  }
+
+
+  const chat =
+    window.PingMeHistory.getChat(
+      savedId
+    );
+
+
+  if (!chat) {
+    return;
+  }
+
+
+  pingMeCurrentChatId =
+    chat.id;
+
+
+  if (
+    !Array.isArray(chat.messages) ||
+    !chat.messages.length
+  ) {
+    return;
+  }
+
+
+  /*
+   * বর্তমান conversation context
+   * পুরোনো chat-এর message দিয়ে
+   * restore করা হবে।
+   */
+
+  chat.messages.forEach(
+    function(message) {
+
+      if (
+        !message ||
+        !message.content
+      ) {
+        return;
+      }
+
+
+      const role =
+        message.role === "assistant"
+          ? "ai"
+          : "user";
+
+
+      pingMeConversation.push({
+
+        role:
+          role,
+
+        text:
+          String(
+            message.content
+          ).trim()
+
+      });
+
+    }
+  );
+
+
+  while (
+    pingMeConversation.length >
+    MAX_MEMORY_MESSAGES
+  ) {
+
+    pingMeConversation.shift();
+
+  }
+
+}
+
+
+// ==========================================================
+// SAVE CONVERSATION
+// ==========================================================
+
 function saveConversation(role, text) {
 
   if (!text || !String(text).trim()) {
     return;
   }
 
+
+  const cleanText =
+    String(text).trim();
+
+
   pingMeConversation.push({
+
     role: role,
-    text: String(text).trim()
+
+    text: cleanText
+
   });
 
+
+  /*
+   * পুরোনো addChatToHistory থাকলে
+   * সেটাও নষ্ট করা হচ্ছে না।
+   */
+
   if (
-    typeof window.addChatToHistory === "function"
+    typeof window.addChatToHistory ===
+    "function"
   ) {
+
     window.addChatToHistory({
+
       role: role,
-      text: String(text).trim()
+
+      text: cleanText
+
     });
+
   }
+
+
+  /*
+   * নতুন History system
+   */
+
+  if (
+    window.PingMeHistory
+  ) {
+
+    const chatId =
+      ensureHistoryChat();
+
+
+    if (chatId) {
+
+      if (
+        role === "user" &&
+        typeof window.PingMeHistory
+          .addUserMessage ===
+          "function"
+      ) {
+
+        window.PingMeHistory
+          .addUserMessage(
+            chatId,
+            cleanText
+          );
+
+      }
+
+
+      if (
+        role === "ai" &&
+        typeof window.PingMeHistory
+          .addAssistantMessage ===
+          "function"
+      ) {
+
+        window.PingMeHistory
+          .addAssistantMessage(
+            chatId,
+            cleanText
+          );
+
+      }
+
+    }
+
+  }
+
 
   while (
     pingMeConversation.length >
     MAX_MEMORY_MESSAGES
   ) {
+
     pingMeConversation.shift();
+
   }
+
 }
 
+
+// ==========================================================
+// GET CONVERSATION CONTEXT
+// ==========================================================
 
 function getConversationContext() {
 
   if (!pingMeConversation.length) {
     return "No previous conversation.";
   }
+
 
   return pingMeConversation
     .map(item => {
@@ -166,10 +414,12 @@ function getConversationContext() {
           ? "User"
           : "PingMe";
 
+
       return `${speaker}: ${item.text}`;
 
     })
     .join("\n");
+
 }
 
 
@@ -183,28 +433,36 @@ function addMessage(text, sender) {
     welcomeScreen.style.display = "none";
   }
 
+
   const row =
     document.createElement("div");
+
 
   row.className =
     sender === "user"
       ? "message-row user"
       : "message-row ai";
 
+
   const box =
     document.createElement("div");
+
 
   box.className =
     "message-box";
 
+
   const message =
     document.createElement("div");
+
 
   message.className =
     "message";
 
+
   message.textContent =
     text;
+
 
   box.appendChild(message);
 
@@ -218,6 +476,7 @@ function addMessage(text, sender) {
     const actions =
       document.createElement("div");
 
+
     actions.className =
       "message-actions";
 
@@ -226,13 +485,17 @@ function addMessage(text, sender) {
     const copyBtn =
       document.createElement("button");
 
+
     copyBtn.type = "button";
+
 
     copyBtn.className =
       "message-action-btn";
 
+
     copyBtn.textContent =
       "📋 Copy";
+
 
     copyBtn.onclick =
       async function() {
@@ -243,8 +506,10 @@ function addMessage(text, sender) {
             text
           );
 
+
           copyBtn.textContent =
             "✓ Copied";
+
 
           setTimeout(() => {
 
@@ -267,13 +532,17 @@ function addMessage(text, sender) {
     const linkBtn =
       document.createElement("button");
 
+
     linkBtn.type = "button";
+
 
     linkBtn.className =
       "message-action-btn";
 
+
     linkBtn.textContent =
       "🔗 Copy Link";
+
 
     linkBtn.onclick =
       async function() {
@@ -283,10 +552,12 @@ function addMessage(text, sender) {
             /https?:\/\/[^\s]+/i
           );
 
+
         if (!match) {
 
           linkBtn.textContent =
             "No link";
+
 
           setTimeout(() => {
 
@@ -295,8 +566,11 @@ function addMessage(text, sender) {
 
           }, 1500);
 
+
           return;
+
         }
+
 
         try {
 
@@ -304,8 +578,10 @@ function addMessage(text, sender) {
             match[0]
           );
 
+
           linkBtn.textContent =
             "✓ Link Copied";
+
 
           setTimeout(() => {
 
@@ -336,10 +612,13 @@ function addMessage(text, sender) {
 
   chatArea.appendChild(row);
 
+
   chatArea.scrollTop =
     chatArea.scrollHeight;
 
+
   return row;
+
 }
 
 
@@ -353,29 +632,38 @@ function addThinkingMessage() {
     welcomeScreen.style.display = "none";
   }
 
+
   const row =
     document.createElement("div");
+
 
   row.className =
     "message-row ai";
 
+
   const message =
     document.createElement("div");
+
 
   message.className =
     "message thinking-message";
 
+
   message.innerHTML =
     `<div class="thinking-spinner"></div>`;
+
 
   row.appendChild(message);
 
   chatArea.appendChild(row);
 
+
   chatArea.scrollTop =
     chatArea.scrollHeight;
 
+
   return row;
+
 }
 
 
@@ -389,6 +677,7 @@ async function getModels() {
 
   const maxAttempts = 100;
 
+
   while (
     !window.pingMeAIModel1 &&
     !window.pingMeAIModel2 &&
@@ -397,12 +686,19 @@ async function getModels() {
   ) {
 
     await new Promise(resolve => {
-      setTimeout(resolve, 100);
+
+      setTimeout(
+        resolve,
+        100
+      );
+
     });
+
 
     attempts++;
 
   }
+
 
   const models = [
 
@@ -412,6 +708,7 @@ async function getModels() {
 
   ].filter(Boolean);
 
+
   if (!models.length) {
 
     throw new Error(
@@ -420,7 +717,9 @@ async function getModels() {
 
   }
 
+
   return models;
+
 }
 
 
@@ -433,8 +732,10 @@ async function generateAIResponse(userText) {
   const models =
     await getModels();
 
+
   const previousConversation =
     getConversationContext();
+
 
   const prompt = `
 
@@ -475,7 +776,9 @@ Do not identify yourself as Google Gemini.
 Now respond naturally.
 `;
 
+
   let lastError = null;
+
 
   for (const model of models) {
 
@@ -486,8 +789,10 @@ Now respond naturally.
           prompt
         );
 
+
       const answer =
         result?.response?.text?.();
+
 
       if (
         answer &&
@@ -505,16 +810,21 @@ Now respond naturally.
         error
       );
 
+
       lastError = error;
 
     }
 
   }
 
+
   throw (
     lastError ||
-    new Error("ALL_MODELS_FAILED")
+    new Error(
+      "ALL_MODELS_FAILED"
+    )
   );
+
 }
 
 
@@ -527,29 +837,44 @@ async function sendMessage() {
   const text =
     messageInput.value.trim();
 
+
   if (!text) {
     return;
   }
 
+
   sendBtn.disabled = true;
+
+
+  /*
+   * History chat আগে নিশ্চিত করা হচ্ছে।
+   */
+
+  ensureHistoryChat();
+
 
   addMessage(
     text,
     "user"
   );
 
+
   saveConversation(
     "user",
     text
   );
 
+
   messageInput.value = "";
+
 
   messageInput.style.height =
     "auto";
 
+
   const thinking =
     addThinkingMessage();
+
 
   try {
 
@@ -558,19 +883,23 @@ async function sendMessage() {
         text
       );
 
+
     if (thinking) {
       thinking.remove();
     }
+
 
     addMessage(
       answer,
       "ai"
     );
 
+
     saveConversation(
       "ai",
       answer
     );
+
 
   } catch (error) {
 
@@ -579,9 +908,11 @@ async function sendMessage() {
       error
     );
 
+
     if (thinking) {
       thinking.remove();
     }
+
 
     const errorText =
       String(
@@ -589,6 +920,7 @@ async function sendMessage() {
         error ||
         ""
       );
+
 
     if (
       errorText.includes("429") ||
@@ -602,6 +934,7 @@ async function sendMessage() {
         "ai"
       );
 
+
     } else if (
       errorText.includes(
         "PINGME_MODELS_NOT_READY"
@@ -612,6 +945,7 @@ async function sendMessage() {
         "PingMe AI চালু হতে সমস্যা হচ্ছে। পেজটা একবার Refresh করে আবার চেষ্টা কর।",
         "ai"
       );
+
 
     } else {
 
@@ -686,6 +1020,7 @@ if (messageInput) {
       this.style.height =
         "auto";
 
+
       this.style.height =
         Math.min(
           this.scrollHeight,
@@ -713,12 +1048,15 @@ document
         const text =
           this.querySelector(".text");
 
+
         messageInput.value =
           text
             ? text.textContent.trim()
             : this.textContent.trim();
 
+
         messageInput.focus();
+
 
         messageInput.dispatchEvent(
           new Event("input")
@@ -791,6 +1129,13 @@ if (micBtn) {
 
 
 // ==========================================================
+// RESTORE CURRENT HISTORY
+// ==========================================================
+
+loadCurrentHistoryChat();
+
+
+// ==========================================================
 // READY
 // ==========================================================
 
@@ -798,9 +1143,11 @@ console.log(
   "PingMe AI is ready."
 );
 
+
 console.log(
   "Nickname: PingMe"
 );
+
 
 console.log(
   "Company: PingMe AI"
