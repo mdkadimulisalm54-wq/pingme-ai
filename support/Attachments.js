@@ -43,27 +43,39 @@
         /* =================================================
            PHOTO
            ================================================= */
+      .pingme-photo-attachment {
+    position: relative !important;
+    width: 92px !important;
+    height: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    min-height: 92px !important;
+    max-height: 92px !important;
+    flex: 0 0 92px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    display: block !important;
+    border-radius: 14px !important;
+    background: #eef1f4 !important;
+    border: 1px solid rgba(0,0,0,.08) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.08) !important;
+}
 
-        .pingme-photo-attachment {
-            position: relative;
-            width: 92px;
-            height: 92px;
-            flex: 0 0 92px;
-            border-radius: 14px;
-            overflow: hidden;
-            background: #eef1f4;
-            border: 1px solid rgba(0,0,0,.08);
-            box-shadow: 0 3px 10px rgba(0,0,0,.08);
-        }
-
-        .pingme-photo-attachment img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #eef1f4;
-        }
-
+.pingme-photo-attachment img {
+    display: block !important;
+    width: 92px !important;
+    height: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    min-height: 92px !important;
+    max-height: 92px !important;
+    box-sizing: border-box !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    background: #eef1f4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
 
         /* =================================================
            FILE
@@ -215,52 +227,55 @@
            REMOVE BUTTON
            ================================================= */
 
-        .pingme-attachment-remove {
-            position: absolute;
+.pingme-attachment-remove {
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
 
-            top: 5px;
-            right: 5px;
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px !important;
+    max-width: 21px !important;
+    min-height: 21px !important;
+    max-height: 21px !important;
 
-            width: 21px;
-            height: 21px;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
 
-            padding: 0;
-            border: 0;
-            border-radius: 50%;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+    background: rgba(255,255,255,.94) !important;
+    color: #454a50 !important;
 
-            background: rgba(255,255,255,.94);
-            color: #454a50;
+    box-shadow: 0 2px 7px rgba(0,0,0,.16);
+    cursor: pointer;
+    z-index: 10;
 
-            box-shadow: 0 2px 7px rgba(0,0,0,.16);
+    -webkit-tap-highlight-color: transparent;
+}
 
-            cursor: pointer;
-            z-index: 5;
+.pingme-attachment-remove:hover {
+    background: #fff !important;
+    color: #111 !important;
+}
 
-            -webkit-tap-highlight-color: transparent;
-        }
+.pingme-attachment-remove:active {
+    transform: scale(.9);
+}
 
-        .pingme-attachment-remove:hover {
-            background: #ffffff;
-            color: #111;
-        }
-
-        .pingme-attachment-remove:active {
-            transform: scale(.9);
-        }
-
-        .pingme-attachment-remove svg {
-            width: 12px;
-            height: 12px;
-
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-        }
+.pingme-attachment-remove svg {
+    width: 12px !important;
+    height: 12px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+}
+         
 
 
         /* =================================================
