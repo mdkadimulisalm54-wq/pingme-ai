@@ -1,4 +1,3 @@
-
 /* ==========================================================
    PINGME AI — MAIN SCRIPT
    Chat • History • Gemini • Attachments
@@ -410,24 +409,54 @@ Respond naturally.
 
 async function sendMessage() {
     if (!messageInput || !sendBtn || !chatArea) return;
+    if (sendBtn.disabled) return;
 
     const text = messageInput.value.trim();
     const attachmentAI = window.PingMeAttachmentAI;
-    const hasAttachments = attachmentAI?.hasFiles?.() || false;
+    const attachmentStore = window.PingMeAttachments;
 
-    if ((!text && !hasAttachments) || sendBtn.disabled) return;
+    // Read the actual selected files, not only the bridge status.
+    const attachmentFiles =
+        attachmentStore?.getFiles?.() ||
+        attachmentAI?.getFiles?.() ||
+        [];
+
+    const hasAttachments = attachmentFiles.length > 0;
+
+    if (!text && !hasAttachments) return;
 
     sendBtn.disabled = true;
 
+    let thinking = null;
+
     try {
         let prepared = null;
+        let attachmentParts = [];
 
         if (hasAttachments) {
-            if (typeof attachmentAI.prepareMessage !== "function") {
+            if (typeof attachmentAI?.prepareMessage !== "function") {
                 throw new Error("ATTACHMENT_AI_NOT_READY");
             }
 
-            prepared = await attachmentAI.prepareMessage(text);
+            // Pass the selected files directly to the attachment bridge.
+            prepared = await attachmentAI.prepareMessage(
+                text,
+                attachmentFiles
+            );
+
+            attachmentParts = prepared?.parts?.slice(1) || [];
+
+            // Never silently send only the text when files were selected.
+            if (!attachmentParts.length) {
+                throw new Error("ATTACHMENT_DATA_MISSING");
+            }
+
+            console.log(
+                "PingMe: prepared attachment parts",
+                attachmentParts.map(part =>
+                    part.inlineData?.mimeType || "text attachment"
+                )
+            );
         }
 
         const userText = text ||
@@ -450,63 +479,55 @@ async function sendMessage() {
         messageInput.value = "";
         messageInput.style.height = "auto";
 
-        const thinking = addThinkingMessage();
+        thinking = addThinkingMessage();
 
-        try {
-            const attachmentParts = prepared?.parts?.slice(1) || [];
-            const answer = await generateAIResponse(userText, attachmentParts);
+        const answer = await generateAIResponse(
+            userText,
+            attachmentParts
+        );
 
-            thinking?.remove();
+        thinking?.remove();
+        thinking = null;
 
-            const row = addMessage(answer, "ai", true);
-            const message = row.querySelector(".message");
+        const row = addMessage(answer, "ai", true);
+        const message = row.querySelector(".message");
 
-            await typeAIResponse(message, answer);
-            saveConversation("ai", answer);
+        await typeAIResponse(message, answer);
+        saveConversation("ai", answer);
 
-            if (hasAttachments) {
-                attachmentAI.clear?.();
-            }
-
-        } catch (error) {
-            console.error("PingMe AI ERROR:", error);
-            thinking?.remove();
-
-            const errorText = String(error?.message || error || "");
-            let reply;
-
-            if (
-                errorText.includes("429") ||
-                errorText.toLowerCase().includes("quota")
-            ) {
-                reply = "AI এখন একটু ব্যস্ত আছে। একটু পর আবার চেষ্টা কর।";
-            } else if (errorText.includes("PINGME_MODELS_NOT_READY")) {
-                reply = "PingMe AI চালু হতে সমস্যা হচ্ছে। পেজটা একবার Refresh করে আবার চেষ্টা কর।";
-            } else if (errorText.includes("ATTACHMENT_AI_NOT_READY")) {
-                reply = "অ্যাটাচমেন্ট সিস্টেম চালু হয়নি। পেজটা Refresh করে আবার চেষ্টা কর।";
-            } else {
-                reply = "এই মুহূর্তে PingMe AI-এর সাথে কানেক্ট হতে পারলাম না। একটু পর আবার চেষ্টা কর।";
-            }
-
-            addMessage(reply, "ai");
+        if (hasAttachments) {
+            attachmentAI.clear?.();
         }
 
     } catch (error) {
-        console.error("PingMe attachment error:", error);
+        console.error("PingMe send error:", error);
+
+        thinking?.remove();
 
         const errorText = String(error?.message || error || "");
+        let reply;
 
         if (
             errorText.includes("এই ফাইলের ফরম্যাট") ||
             errorText.includes("Could not read file:")
         ) {
-            addMessage(errorText, "ai");
+            reply = errorText;
+        } else if (errorText === "ATTACHMENT_AI_NOT_READY") {
+            reply = "অ্যাটাচমেন্ট সিস্টেম চালু হয়নি। পেজ Refresh করে আবার চেষ্টা কর।";
+        } else if (errorText === "ATTACHMENT_DATA_MISSING") {
+            reply = "ছবির ডেটা প্রস্তুত হয়নি। ছবিটি আবার যুক্ত করে চেষ্টা কর।";
+        } else if (
+            errorText.includes("429") ||
+            errorText.toLowerCase().includes("quota")
+        ) {
+            reply = "AI এখন একটু ব্যস্ত আছে। একটু পর আবার চেষ্টা কর।";
+        } else if (errorText.includes("PINGME_MODELS_NOT_READY")) {
+            reply = "PingMe AI চালু হতে সমস্যা হচ্ছে। পেজ Refresh করে আবার চেষ্টা কর।";
         } else {
-            addMessage(
-                "অ্যাটাচমেন্ট প্রস্তুত করতে সমস্যা হয়েছে। ফাইলটি আবার চেষ্টা কর।",
-                "ai"
-            );
+            reply = "PingMe AI-এর সাথে সংযোগে সমস্যা হয়েছে। একটু পর আবার চেষ্টা কর।";
         }
+
+        addMessage(reply, "ai");
 
     } finally {
         sendBtn.disabled = false;
