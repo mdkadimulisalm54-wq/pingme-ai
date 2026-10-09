@@ -36,16 +36,16 @@
             display: flex !important;
         }
 
-        /* PHOTOS — SMALL PREVIEW */
+        /* PHOTOS — MEDIUM PREVIEW */
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
-            width: 54px !important;
-            height: 54px !important;
-            min-width: 54px !important;
-            min-height: 54px !important;
-            max-width: 54px !important;
-            max-height: 54px !important;
-            flex: 0 0 54px !important;
+            width: 64px !important;
+            height: 64px !important;
+            min-width: 64px !important;
+            min-height: 64px !important;
+            max-width: 64px !important;
+            max-height: 64px !important;
+            flex: 0 0 64px !important;
             box-sizing: border-box !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -74,16 +74,16 @@
             background: transparent !important;
         }
 
-        /* FILES */
+        /* FILES — COMPACT ICON */
         #${PREVIEW_ID} .pingme-file-attachment {
             position: relative !important;
-            width: 34px !important;
-            height: 34px !important;
-            min-width: 34px !important;
-            min-height: 34px !important;
-            max-width: 34px !important;
-            max-height: 34px !important;
-            flex: 0 0 34px !important;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            flex: 0 0 40px !important;
             box-sizing: border-box !important;
             padding: 3px !important;
             margin: 0 !important;
@@ -98,10 +98,10 @@
         }
 
         #${PREVIEW_ID} .pingme-file-icon {
-            width: 22px !important;
-            height: 22px !important;
-            min-width: 22px !important;
-            min-height: 22px !important;
+            width: 26px !important;
+            height: 26px !important;
+            min-width: 26px !important;
+            min-height: 26px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -111,8 +111,8 @@
         }
 
         #${PREVIEW_ID} .pingme-file-icon svg {
-            width: 13px !important;
-            height: 13px !important;
+            width: 15px !important;
+            height: 15px !important;
             fill: none !important;
             stroke: currentColor !important;
             stroke-width: 1.7 !important;
@@ -244,21 +244,23 @@
             }
 
             #${PREVIEW_ID} .pingme-photo-attachment {
-                width: 48px !important;
-                height: 48px !important;
-                min-width: 48px !important;
-                min-height: 48px !important;
-                max-width: 48px !important;
-                max-height: 48px !important;
-                flex: 0 0 48px !important;
+                width: 64px !important;
+                height: 64px !important;
+                min-width: 64px !important;
+                min-height: 64px !important;
+                max-width: 64px !important;
+                max-height: 64px !important;
+                flex: 0 0 64px !important;
             }
 
             #${PREVIEW_ID} .pingme-file-attachment {
-                width: 34px !important;
-                height: 34px !important;
-                min-width: 34px !important;
-                min-height: 34px !important;
-                flex: 0 0 34px !important;
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                min-height: 40px !important;
+                max-width: 40px !important;
+                max-height: 40px !important;
+                flex: 0 0 40px !important;
             }
 
             #${PREVIEW_ID} .pingme-document-attachment {
