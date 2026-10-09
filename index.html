@@ -1611,27 +1611,35 @@ function addUserMessage(message, files = []) {
         box.appendChild(text);
     }
 
-    files.forEach(file => {
-        if (!file || !file.type?.startsWith("image/")) return;
+    if (files.some(file => file?.type?.startsWith("image/"))) {
+        const imageBox = document.createElement("div");
 
-        const image = document.createElement("img");
+        imageBox.style.cssText =
+            "display:flex;flex-wrap:wrap;gap:6px;" +
+            "max-width:100%;margin-top:8px;";
 
-        image.alt = file.name || "Attached image";
-        image.className = "user-message-image";
-        image.style.cssText =
-            "display:block;max-width:100%;width:auto;" +
-            "max-height:320px;object-fit:contain;" +
-            "border-radius:12px;margin-top:8px;";
+        files.forEach(file => {
+            if (!file || !file.type?.startsWith("image/")) return;
 
-        const url = URL.createObjectURL(file);
-        image.src = url;
+            const image = document.createElement("img");
+            image.alt = file.name || "Attached image";
+            image.className = "user-message-image";
 
-        box.appendChild(image);
-    });
+            image.style.cssText =
+                "display:block;width:100px;height:100px;" +
+                "max-width:100%;object-fit:cover;" +
+                "border-radius:10px;flex:0 0 100px;";
+
+            image.src = URL.createObjectURL(file);
+            imageBox.appendChild(image);
+        });
+
+        box.appendChild(imageBox);
+    }
 
     chatArea.appendChild(box);
     scrollToBottom();
-    }
+}
 
 /* =========================================================
    AI MESSAGE
