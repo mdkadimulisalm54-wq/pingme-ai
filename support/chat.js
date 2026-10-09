@@ -1,5 +1,7 @@
-// PingMe AI — Chat Support
-// Message UI + History + Gemini-Style Loading Orb
+// ==========================================================
+// PINGME AI — CHAT SUPPORT
+// Message UI • History • Animated SVG Sparkle Loader
+// ==========================================================
 
 (() => {
     "use strict";
@@ -9,10 +11,12 @@
 
     const STYLE_ID = "pingme-chat-support-style";
     const ACTIVE_CHAT_KEY = "pingme_active_chat_id";
+    const CURRENT_CHAT_KEY = "pingme_current_chat_id";
+    const LOADER_ID = "pingmeAiLoaderRow";
 
-    /* =====================================================
-       STYLES
-       ===================================================== */
+    // ======================================================
+    // STYLES
+    // ======================================================
 
     if (!document.getElementById(STYLE_ID)) {
         const style = document.createElement("style");
@@ -32,7 +36,7 @@
                 line-height: 1.5;
                 white-space: pre-wrap;
                 overflow-wrap: anywhere;
-                animation: pingmeUserIn .35s ease both;
+                animation: pingmeUserIn .3s ease both;
             }
 
             .ai-message {
@@ -44,57 +48,90 @@
                 color: #202124 !important;
                 line-height: 1.6;
                 overflow-wrap: anywhere;
-                animation: pingmeAIIn .4s ease both;
+                animation: pingmeAIIn .3s ease both;
             }
 
-            .ai-message h3 { margin: 8px 0 6px !important; }
-
-            @keyframes pingmeUserIn {
-                from { opacity: 0; transform: translateY(8px) scale(.97); }
-                to { opacity: 1; transform: translateY(0) scale(1); }
+            .ai-message h3 {
+                margin: 8px 0 6px !important;
             }
 
-            @keyframes pingmeAIIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
+            .pingme-loader-row {
+                display: flex;
+                align-items: center;
+                min-height: 42px;
+                margin: 6px 0;
             }
 
             .pingme-ai-loader {
-                width: 23px;
-                height: 23px;
-                margin: 12px 0;
-                border-radius: 50%;
-                position: relative;
-                display: none;
-                background: conic-gradient(
-                    from 0deg,
-                    #4285f4,
-                    #9b72cb,
-                    #d96570,
-                    #4285f4
-                );
-                animation: pingmeOrbSpin 1.15s linear infinite;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 5px 2px;
+                animation: pingmeSparkleRotate 2.4s linear infinite;
+                filter: drop-shadow(0 0 5px rgba(130,100,255,.18));
             }
 
-            .pingme-ai-loader::before {
-                content: "";
-                position: absolute;
-                inset: 3px;
-                border-radius: 50%;
-                background: var(--pingme-loader-inner, #fff);
+            .pingme-ai-loader svg {
+                display: block;
+                width: 100%;
+                height: 100%;
+                overflow: visible;
+                animation: pingmeSparklePulse 1.15s ease-in-out infinite alternate;
             }
 
-            .pingme-ai-loader.show { display: block; }
-
-            @keyframes pingmeOrbSpin {
-                to { transform: rotate(360deg); }
+            .pingme-ai-loader svg path {
+                transform-origin: center;
             }
 
-            .thinking { display: none !important; }
+            .thinking {
+                display: none !important;
+            }
+
+            @keyframes pingmeUserIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(6px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes pingmeAIIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(7px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes pingmeSparkleRotate {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            @keyframes pingmeSparklePulse {
+                from {
+                    transform: scale(.8);
+                }
+                to {
+                    transform: scale(1.08);
+                }
+            }
 
             @media (prefers-reduced-motion: reduce) {
-                .user-message, .ai-message, .pingme-ai-loader {
-                    animation-duration: 0s !important;
+                .user-message,
+                .ai-message,
+                .pingme-ai-loader,
+                .pingme-ai-loader svg {
+                    animation: none !important;
                 }
             }
         `;
@@ -102,12 +139,11 @@
         document.head.appendChild(style);
     }
 
-    /* =====================================================
-       HISTORY
-       ===================================================== */
+    // ======================================================
+    // HISTORY SUPPORT
+    // ======================================================
 
     let activeChatId = null;
-    let historyObserver = null;
 
     function getHistory() {
         return window.PingMeHistory || null;
@@ -117,7 +153,9 @@
         if (activeChatId) return activeChatId;
 
         try {
-            activeChatId = localStorage.getItem(ACTIVE_CHAT_KEY);
+            activeChatId =
+                localStorage.getItem(CURRENT_CHAT_KEY) ||
+                localStorage.getItem(ACTIVE_CHAT_KEY);
         } catch (_) {}
 
         return activeChatId;
@@ -130,11 +168,15 @@
 
         try {
             localStorage.setItem(ACTIVE_CHAT_KEY, id);
+            localStorage.setItem(CURRENT_CHAT_KEY, id);
         } catch (_) {}
     }
 
     function makeTitle(text) {
-        const clean = String(text || "").replace(/\s+/g, " ").trim();
+        const clean = String(text || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
         return clean ? clean.slice(0, 45) : "New Chat";
     }
 
@@ -158,7 +200,10 @@
                 return chat.id;
             }
         } catch (error) {
-            console.error("PingMe History: Could not create chat.", error);
+            console.error(
+                "PingMe History: Could not create chat.",
+                error
+            );
         }
 
         return null;
@@ -171,31 +216,51 @@
 
         clone.querySelectorAll(
             ".pingme-message-actions, .pingme-ai-loader, button"
-        ).forEach(el => el.remove());
+        ).forEach(element => element.remove());
 
-        return String(clone.innerText || clone.textContent || "").trim();
+        return String(
+            clone.innerText || clone.textContent || ""
+        ).trim();
     }
 
-    function saveMessage(node) {
-        const history = getHistory();
-        if (!history || !node || node.dataset.historySaved === "true") return;
+    // Legacy message support only.
+    // Main script.js saves its own messages directly.
+    function saveLegacyMessage(node) {
+        if (
+            !node ||
+            node.dataset.historySaved === "true"
+        ) {
+            return;
+        }
 
         const isUser = node.classList.contains("user-message");
         const isAI = node.classList.contains("ai-message");
+
         if (!isUser && !isAI) return;
 
         const content = messageText(node);
         if (!content) return;
 
+        const history = getHistory();
+        if (!history) return;
+
         const chatId = ensureChat(isUser ? content : "");
         if (!chatId) return;
 
         try {
-            if (isUser && typeof history.addUserMessage === "function") {
+            if (
+                isUser &&
+                typeof history.addUserMessage === "function"
+            ) {
                 history.addUserMessage(chatId, content);
-            } else if (isAI && typeof history.addAssistantMessage === "function") {
+            } else if (
+                isAI &&
+                typeof history.addAssistantMessage === "function"
+            ) {
                 history.addAssistantMessage(chatId, content);
-            } else if (typeof history.addMessage === "function") {
+            } else if (
+                typeof history.addMessage === "function"
+            ) {
                 history.addMessage(chatId, {
                     role: isUser ? "user" : "assistant",
                     content,
@@ -208,104 +273,151 @@
 
             node.dataset.historySaved = "true";
         } catch (error) {
-            console.error("PingMe History: Could not save message.", error);
+            console.error(
+                "PingMe History: Could not save message.",
+                error
+            );
         }
     }
-
-    /* =====================================================
-       MESSAGE WATCHER
-       ===================================================== */
 
     function processNode(node) {
         if (!node || node.nodeType !== 1) return;
 
         if (node.matches(".user-message, .ai-message")) {
-            saveMessage(node);
+            saveLegacyMessage(node);
         }
 
-        node.querySelectorAll?.(".user-message, .ai-message").forEach(saveMessage);
+        node.querySelectorAll?.(
+            ".user-message, .ai-message"
+        ).forEach(saveLegacyMessage);
     }
 
     function connectChatArea() {
         const area = document.getElementById("chatArea");
-        if (!area || area.dataset.pingmeHistoryObserver === "true") return;
+
+        if (!area || area.dataset.pingmeHistoryObserver === "true") {
+            return;
+        }
 
         area.dataset.pingmeHistoryObserver = "true";
 
-        historyObserver = new MutationObserver(mutations => {
+        const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(processNode);
 
-                // Catch text/content updates without saving duplicates.
                 const target = mutation.target?.nodeType === 1
-                    ? mutation.target.closest(".user-message, .ai-message")
-                    : mutation.target?.parentElement?.closest(".user-message, .ai-message");
+                    ? mutation.target.closest(
+                        ".user-message, .ai-message"
+                    )
+                    : mutation.target?.parentElement?.closest(
+                        ".user-message, .ai-message"
+                    );
 
-                if (target && target.dataset.historySaved !== "true") {
-                    saveMessage(target);
-                }
+                if (target) saveLegacyMessage(target);
             });
         });
 
-        historyObserver.observe(area, {
+        observer.observe(area, {
             childList: true,
             subtree: true,
             characterData: true
         });
     }
 
-    /* =====================================================
-       ROTATING AI INDICATOR
-       ===================================================== */
+    // ======================================================
+    // SVG SPARKLE LOADER
+    // ======================================================
 
     function addLoader() {
         const area = document.getElementById("chatArea");
-        if (!area || document.getElementById("pingmeAiLoader")) return;
+
+        if (!area) return null;
+
+        let row = document.getElementById(LOADER_ID);
+
+        if (row) {
+            if (row.parentElement !== area) {
+                area.appendChild(row);
+            }
+            return row;
+        }
+
+        row = document.createElement("div");
+        row.id = LOADER_ID;
+        row.className = "message-row ai pingme-loader-row";
+
+        const message = document.createElement("div");
+        message.className = "message thinking-message";
 
         const loader = document.createElement("div");
-        loader.id = "pingmeAiLoader";
         loader.className = "pingme-ai-loader";
         loader.setAttribute("role", "status");
-        loader.setAttribute("aria-label", "AI is responding");
+        loader.setAttribute("aria-label", "PingMe is thinking");
 
-        area.appendChild(loader);
-        updateLoaderColor();
-    }
+        loader.innerHTML = `
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+                <defs>
+                    <linearGradient
+                        id="pingmeSparkleGradient"
+                        x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#4285F4"/>
+                        <stop offset="48%" stop-color="#9B72CB"/>
+                        <stop offset="100%" stop-color="#D96570"/>
+                    </linearGradient>
+                    <linearGradient
+                        id="pingmeSparkleSmallGradient"
+                        x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#67B7FF"/>
+                        <stop offset="100%" stop-color="#A78BFA"/>
+                    </linearGradient>
+                </defs>
 
-    function updateLoaderColor() {
-        const loader = document.getElementById("pingmeAiLoader");
-        const area = document.getElementById("chatArea");
-        if (!loader || !area) return;
+                <path
+                    fill="url(#pingmeSparkleGradient)"
+                    d="M24 1 C27 15 33 21 47 24
+                       C33 27 27 33 24 47
+                       C21 33 15 27 1 24
+                       C15 21 21 15 24 1Z"/>
 
-        const dark = document.documentElement.classList.contains("dark") ||
-            document.body.classList.contains("dark") ||
-            document.documentElement.dataset.theme === "dark";
+                <path
+                    fill="url(#pingmeSparkleSmallGradient)"
+                    d="M40 1 C41 5 43 7 47 8
+                       C43 9 41 11 40 15
+                       C39 11 37 9 33 8
+                       C37 7 39 5 40 1Z"/>
+            </svg>
+        `;
 
-        loader.style.setProperty("--pingme-loader-inner", dark ? "#181818" : "#fff");
+        message.appendChild(loader);
+        row.appendChild(message);
+        area.appendChild(row);
+
+        area.scrollTop = area.scrollHeight;
+
+        return row;
     }
 
     function showLoader() {
         addLoader();
 
-        const loader = document.getElementById("pingmeAiLoader");
-        if (loader) {
-            loader.classList.add("show");
+        const area = document.getElementById("chatArea");
 
-            const area = document.getElementById("chatArea");
-            if (area && loader.parentElement !== area) area.appendChild(loader);
+        if (area) {
+            area.scrollTop = area.scrollHeight;
         }
 
         const thinking = document.getElementById("thinking");
-        if (thinking) thinking.classList.remove("show");
 
-        updateLoaderColor();
+        if (thinking) {
+            thinking.classList.remove("show");
+        }
     }
 
     function hideLoader() {
-        document.getElementById("pingmeAiLoader")?.classList.remove("show");
+        document.getElementById(LOADER_ID)?.remove();
     }
 
-    // Other support files can control the loader without changing AI logic.
+    // Shared loader API for script.js.
     window.PingMeLoader = {
         show: showLoader,
         hide: hideLoader
@@ -315,9 +427,9 @@
     document.addEventListener("pingme:ai:complete", hideLoader);
     document.addEventListener("pingme:ai:error", hideLoader);
 
-    /* =====================================================
-       THINKING ELEMENT WATCHER
-       ===================================================== */
+    // ======================================================
+    // LEGACY THINKING ELEMENT
+    // ======================================================
 
     const thinking = document.getElementById("thinking");
 
@@ -333,19 +445,21 @@
         });
     }
 
-    /* =====================================================
-       STARTUP
-       ===================================================== */
+    // ======================================================
+    // STARTUP
+    // ======================================================
 
     connectChatArea();
 
-    // If History Support loads after this file, connect when ready.
     window.addEventListener("load", () => {
         connectChatArea();
+
         if (getHistory()) {
             console.log("PingMe Chat Support: History connected.");
         } else {
-            console.warn("PingMe Chat Support: History Support not found.");
+            console.warn(
+                "PingMe Chat Support: History Support not found."
+            );
         }
     });
 
