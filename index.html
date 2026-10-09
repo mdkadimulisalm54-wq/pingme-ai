@@ -1377,17 +1377,16 @@ async function sendMessage() {
 
     const message =
     input.value.trim();
-
-const hasFiles =
-    window.PingMeAttachmentAI?.hasFiles() ||
-    false;
+const attachmentFiles =
+    window.PingMeAttachmentAI?.getFiles?.() || [];
 
 if (
     message === "" &&
-    !hasFiles
+    attachmentFiles.length === 0
 ) {
     return;
 }
+
 
 
     messageSent();
@@ -1397,10 +1396,7 @@ if (
         "none";
 
 
-    addUserMessage(
-    message,
-    window.PingMeAttachmentAI?.getFiles?.() || []
-);
+    addUserMessage(message, attachmentFiles);
 window.PingMeAttachments?.clear?.();      
 
     input.value = "";
