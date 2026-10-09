@@ -26,19 +26,19 @@
 
         const hasText = !!input?.value.trim();
         const hasFiles = selectedFiles.length > 0;
+        const shouldSend = hasText || hasFiles;
 
         button.classList.toggle("has-attachments", hasFiles);
+        button.classList.toggle("active", shouldSend);
 
-        // Attachment আছে, input খালি হলেও Send সক্রিয়
+        // মাইকও যেন খালি ইনপুটে কাজ করতে পারে
+        button.disabled = false;
+
         if (hasFiles) {
             button.style.setProperty("display", "flex", "important");
             button.style.setProperty("visibility", "visible", "important");
             button.style.setProperty("opacity", "1", "important");
         }
-
-        // লেখা ও attachment—দুটোই না থাকলে
-        // আগের voice/mic UI-কে নিয়ন্ত্রণ করতে দাও।
-        button.disabled = !hasText && !hasFiles;
     }
 
     function addStyles() {
@@ -62,7 +62,9 @@
             min-height: 0 !important;
         }
 
-        #${PREVIEW_ID}.show { display: flex !important; }
+        #${PREVIEW_ID}.show {
+            display: flex !important;
+        }
 
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
@@ -146,7 +148,9 @@
             stroke-linejoin: round !important;
         }
 
-        #${PREVIEW_ID} .pingme-file-info { display: none !important; }
+        #${PREVIEW_ID} .pingme-file-info {
+            display: none !important;
+        }
 
         #${PREVIEW_ID} .pingme-document-attachment {
             position: relative !important;
@@ -336,6 +340,7 @@
 
     function isDocument(file) {
         const name = String(file?.name || "").toLowerCase();
+
         return [
             ".pdf", ".doc", ".docx", ".txt", ".rtf",
             ".xls", ".xlsx", ".ppt", ".pptx"
@@ -370,14 +375,18 @@
             "pingme-document-input"
         ].forEach(id => {
             const element = document.getElementById(id);
+
             if (element) {
-                try { element.value = ""; } catch {}
+                try {
+                    element.value = "";
+                } catch {}
             }
         });
     }
 
     function renderPreview() {
         const preview = createPreview();
+
         if (!preview) {
             updateSendButton();
             return;
@@ -403,11 +412,13 @@
                 const image = document.createElement("img");
                 image.alt = "Selected photo";
                 image.draggable = false;
+
                 loadImage(file, image);
                 card.appendChild(image);
             } else if (isDocument(file)) {
                 card = document.createElement("div");
                 card.className = "pingme-document-attachment";
+
                 card.innerHTML = `
                     <span class="pingme-document-icon">${fileIcon()}</span>
                     <span class="pingme-document-info">
@@ -417,7 +428,9 @@
             } else {
                 card = document.createElement("div");
                 card.className = "pingme-file-attachment";
-                card.innerHTML = `<span class="pingme-file-icon">${fileIcon()}</span>
+
+                card.innerHTML = `
+                    <span class="pingme-file-icon">${fileIcon()}</span>
                     <span class="pingme-file-info">
                         <span class="pingme-file-name">${escapeHTML(file.name)}</span>
                         <span class="pingme-file-size">${formatSize(file.size)}</span>
@@ -433,6 +446,7 @@
             remove.addEventListener("click", event => {
                 event.preventDefault();
                 event.stopPropagation();
+
                 selectedFiles.splice(index, 1);
                 resetFileInputs();
                 renderPreview();
@@ -445,7 +459,9 @@
         if (selectedFiles.length > 1) {
             const count = document.createElement("div");
             count.className = "pingme-attachment-count";
-            count.textContent = `${selectedFiles.length} attachments selected`;
+            count.textContent =
+                `${selectedFiles.length} attachments selected`;
+
             preview.appendChild(count);
         }
 
@@ -498,6 +514,7 @@
 
         remove(index) {
             if (index < 0 || index >= selectedFiles.length) return;
+
             selectedFiles.splice(index, 1);
             resetFileInputs();
             renderPreview();
@@ -509,11 +526,14 @@
         addStyles();
         createPreview();
         updateSendButton();
+
         console.log("PingMe Attachments Support Connected");
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initialize, { once: true });
+        document.addEventListener("DOMContentLoaded", initialize, {
+            once: true
+        });
     } else {
         initialize();
     }
