@@ -157,12 +157,11 @@
         };
     }
 
-    async function sendToChat(chat, message) {
+    async function sendToChat(chat, message, files = getFiles()) {
         if (!chat) {
             throw new Error("AI chat session পাওয়া যায়নি।");
         }
 
-        const files = getFiles();
         const text = String(message || "").trim();
 
         if (!files.length) {
@@ -181,7 +180,6 @@
 
         const result = await chat.sendMessage(prepared.parts);
 
-        // Clear attachments only after Gemini accepts the message.
         window.PingMeAttachments?.clear?.();
 
         return result;
