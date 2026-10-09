@@ -1376,16 +1376,18 @@ sendButton.addEventListener(
 async function sendMessage() {
 
     const message =
-        input.value.trim();
+    input.value.trim();
 
+const hasFiles =
+    window.PingMeAttachmentAI?.hasFiles() ||
+    false;
 
-    if (
-        message === ""
-    ) {
-
-        return;
-
-    }
+if (
+    message === "" &&
+    !hasFiles
+) {
+    return;
+}
 
 
     messageSent();
