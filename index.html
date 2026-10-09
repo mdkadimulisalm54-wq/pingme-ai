@@ -1342,16 +1342,17 @@ sendButton.addEventListener(
     "click",
     function () {
 
-        if (
-            input.value.trim() === ""
-        ) {
+        const hasText =
+            input.value.trim() !== "";
 
-          startAIVoice();
+        const hasFiles =
+            window.PingMeAttachments?.hasFiles?.() ||
+            false;
 
-        } else {
-
+        if (hasText || hasFiles) {
             sendMessage();
-
+        } else {
+            startAIVoice();
         }
 
     }
