@@ -25,27 +25,67 @@
             : "";
     }
 
-    function readAsBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+    function getMimeType(file) {
+        const mime = String(file.type || "").toLowerCase();
 
-            reader.onload = () => {
-                const result = String(reader.result || "");
-                const comma = result.indexOf(",");
+        if (mime && mime !== "application/octet-stream") {
+            return mime;
+        }
 
-                if (comma < 0) {
-                    reject(new Error("ফাইল পড়া যায়নি: " + file.name));
-                    return;
-                }
+        const extension = getExtension(file.name);
 
-                resolve(result.slice(comma + 1));
-            };
+        const types = {
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            webp: "image/webp",
+            gif: "image/gif",
+            bmp: "image/bmp",
+            heic: "image/heic",
+            heif: "image/heif",
+            pdf: "application/pdf",
+            txt: "text/plain",
+            md: "text/markdown",
+            csv: "text/csv",
+            json: "application/json",
+            xml: "application/xml",
+            html: "text/html",
+            htm: "text/html",
+            css: "text/css",
+            js: "text/javascript",
+            yaml: "text/yaml",
+            yml: "text/yaml",
+            rtf: "application/rtf"
+        };
 
-            reader.onerror = () =>
-                reject(new Error("ফাইল পড়া যায়নি: " + file.name));
+        return types[extension] || mime || "application/octet-stream";
+    }
 
-            reader.readAsDataURL(file);
-        });
+    async function readAsBase64(file) {
+        if (!(file instanceof Blob) || file.size === 0) {
+            throw new Error("ছবির ফাইলটি খালি বা পড়ার অযোগ্য।");
+        }
+
+        try {
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            const chunkSize = 8192;
+            let binary = "";
+
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                binary += String.fromCharCode(
+                    ...bytes.subarray(i, i + chunkSize)
+                );
+            }
+
+            return btoa(binary);
+        } catch (error) {
+            console.error("PingMe: File read failed", error);
+
+            throw new Error(
+                "ফাইল পড়া যায়নি: " + (file.name || "attachment")
+            );
+        }
     }
 
     async function prepare(files = getFiles()) {
@@ -56,17 +96,16 @@
             if (!(file instanceof Blob)) continue;
 
             const name = String(file.name || "attachment");
-            const mime = String(
-                file.type || "application/octet-stream"
-            ).toLowerCase();
-
+            const mime = getMimeType(file);
             const extension = getExtension(name);
 
             if (mime.startsWith("image/") || mime === "application/pdf") {
+                const data = await readAsBase64(file);
+
                 parts.push({
                     inlineData: {
                         mimeType: mime,
-                        data: await readAsBase64(file)
+                        data
                     }
                 });
 
@@ -85,7 +124,9 @@
 
             if (isText) {
                 parts.push({
-                    text: `Attachment: ${name}\nContent:\n${await file.text()}`
+                    text:
+                        `Attachment: ${name}\nContent:\n` +
+                        await file.text()
                 });
 
                 names.push(name);
@@ -106,7 +147,8 @@
         return {
             parts: [
                 {
-                    text: String(message || "").trim() ||
+                    text:
+                        String(message || "").trim() ||
                         "Please examine the attached files and help the user."
                 },
                 ...prepared.parts
@@ -115,20 +157,31 @@
         };
     }
 
-    // Send text and attachments through the existing Gemini chat.
     async function sendToChat(chat, message) {
-        if (!chat) throw new Error("AI chat session পাওয়া যায়নি।");
-
-        const files = getFiles();
-
-        if (!files.length) {
-            return chat.sendMessage(message);
+        if (!chat) {
+            throw new Error("AI chat session পাওয়া যায়নি।");
         }
 
-        const prepared = await prepareMessage(message, files);
+        const files = getFiles();
+        const text = String(message || "").trim();
+
+        if (!files.length) {
+            if (!text) {
+                throw new Error("মেসেজ বা ফাইল সংযুক্ত কর।");
+            }
+
+            return chat.sendMessage(text);
+        }
+
+        const prepared = await prepareMessage(text, files);
+
+        if (!prepared.parts.length) {
+            throw new Error("পাঠানোর মতো কোনো ফাইল পাওয়া যায়নি।");
+        }
+
         const result = await chat.sendMessage(prepared.parts);
 
-        // Clear attachments only after a successful send.
+        // Clear attachments only after Gemini accepts the message.
         window.PingMeAttachments?.clear?.();
 
         return result;
