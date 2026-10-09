@@ -1,3 +1,4 @@
+
 /* =========================================================
    PingMe AI — Attachments Support
    Photos • Files • Documents
@@ -36,16 +37,16 @@
             display: flex !important;
         }
 
-        /* PHOTOS — MEDIUM PREVIEW */
+        /* PHOTOS — 72px PREVIEW */
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
-            width: 64px !important;
-            height: 64px !important;
-            min-width: 64px !important;
-            min-height: 64px !important;
-            max-width: 64px !important;
-            max-height: 64px !important;
-            flex: 0 0 64px !important;
+            width: 72px !important;
+            height: 72px !important;
+            min-width: 72px !important;
+            min-height: 72px !important;
+            max-width: 72px !important;
+            max-height: 72px !important;
+            flex: 0 0 72px !important;
             box-sizing: border-box !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -74,16 +75,16 @@
             background: transparent !important;
         }
 
-        /* FILES — COMPACT ICON */
+        /* FILES — 46px ICON */
         #${PREVIEW_ID} .pingme-file-attachment {
             position: relative !important;
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
-            max-width: 40px !important;
-            max-height: 40px !important;
-            flex: 0 0 40px !important;
+            width: 46px !important;
+            height: 46px !important;
+            min-width: 46px !important;
+            min-height: 46px !important;
+            max-width: 46px !important;
+            max-height: 46px !important;
+            flex: 0 0 46px !important;
             box-sizing: border-box !important;
             padding: 3px !important;
             margin: 0 !important;
@@ -124,7 +125,7 @@
             display: none !important;
         }
 
-        /* DOCUMENTS */
+        /* DOCUMENTS — UNCHANGED */
         #${PREVIEW_ID} .pingme-document-attachment {
             position: relative !important;
             width: 165px !important;
@@ -244,23 +245,23 @@
             }
 
             #${PREVIEW_ID} .pingme-photo-attachment {
-                width: 64px !important;
-                height: 64px !important;
-                min-width: 64px !important;
-                min-height: 64px !important;
-                max-width: 64px !important;
-                max-height: 64px !important;
-                flex: 0 0 64px !important;
+                width: 72px !important;
+                height: 72px !important;
+                min-width: 72px !important;
+                min-height: 72px !important;
+                max-width: 72px !important;
+                max-height: 72px !important;
+                flex: 0 0 72px !important;
             }
 
             #${PREVIEW_ID} .pingme-file-attachment {
-                width: 40px !important;
-                height: 40px !important;
-                min-width: 40px !important;
-                min-height: 40px !important;
-                max-width: 40px !important;
-                max-height: 40px !important;
-                flex: 0 0 40px !important;
+                width: 46px !important;
+                height: 46px !important;
+                min-width: 46px !important;
+                min-height: 46px !important;
+                max-width: 46px !important;
+                max-height: 46px !important;
+                flex: 0 0 46px !important;
             }
 
             #${PREVIEW_ID} .pingme-document-attachment {
