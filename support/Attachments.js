@@ -1,7 +1,6 @@
 /* =========================================================
    PingMe AI — Attachments Support
-   Photos • Files • Documents
-   Preview • Remove • Multiple Files
+   Photos • Files • Documents • Preview • Remove
    ========================================================= */
 
 (() => {
@@ -11,15 +10,13 @@
     const PREVIEW_ID = "pingme-attachments-preview";
     let selectedFiles = [];
 
-    function getInput() {
-        return document.getElementById("chatInput") ||
-               document.getElementById("messageInput");
-    }
+    const getInput = () =>
+        document.getElementById("chatInput") ||
+        document.getElementById("messageInput");
 
-    function getSendButton() {
-        return document.getElementById("sendButton") ||
-               document.getElementById("sendBtn");
-    }
+    const getSendButton = () =>
+        document.getElementById("sendButton") ||
+        document.getElementById("sendBtn");
 
     function updateSendButton() {
         const button = getSendButton();
@@ -30,16 +27,17 @@
         const hasText = !!input?.value.trim();
         const hasFiles = selectedFiles.length > 0;
 
-        button.classList.toggle(
-            "has-attachments",
-            hasFiles
-        );
+        button.classList.toggle("has-attachments", hasFiles);
 
-        if (hasText || hasFiles) {
-            button.style.visibility = "visible";
-            button.style.opacity = "1";
+        // Attachment আছে, input খালি হলেও Send সক্রিয়
+        if (hasFiles) {
+            button.style.setProperty("display", "flex", "important");
+            button.style.setProperty("visibility", "visible", "important");
+            button.style.setProperty("opacity", "1", "important");
         }
 
+        // লেখা ও attachment—দুটোই না থাকলে
+        // আগের voice/mic UI-কে নিয়ন্ত্রণ করতে দাও।
         button.disabled = !hasText && !hasFiles;
     }
 
@@ -64,9 +62,7 @@
             min-height: 0 !important;
         }
 
-        #${PREVIEW_ID}.show {
-            display: flex !important;
-        }
+        #${PREVIEW_ID}.show { display: flex !important; }
 
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
@@ -150,9 +146,7 @@
             stroke-linejoin: round !important;
         }
 
-        #${PREVIEW_ID} .pingme-file-info {
-            display: none !important;
-        }
+        #${PREVIEW_ID} .pingme-file-info { display: none !important; }
 
         #${PREVIEW_ID} .pingme-document-attachment {
             position: relative !important;
@@ -305,19 +299,15 @@
         let preview = document.getElementById(PREVIEW_ID);
         if (preview) return preview;
 
-        const chatInput = getInput();
-        if (!chatInput) return null;
+        const input = getInput();
+        if (!input) return null;
 
         preview = document.createElement("div");
         preview.id = PREVIEW_ID;
 
-        const row = chatInput.closest(".input-row");
-
-        if (row) {
-            row.insertBefore(preview, chatInput);
-        } else {
-            chatInput.parentNode.insertBefore(preview, chatInput);
-        }
+        const row = input.closest(".input-row");
+        if (row) row.insertBefore(preview, input);
+        else input.parentNode.insertBefore(preview, input);
 
         return preview;
     }
@@ -334,16 +324,14 @@
     function formatSize(bytes) {
         if (!bytes) return "0 B";
         if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024)
-            return (bytes / 1024).toFixed(1) + " KB";
-        if (bytes < 1024 * 1024 * 1024)
-            return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-        return (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        if (bytes < 1073741824)
+            return (bytes / 1048576).toFixed(1) + " MB";
+        return (bytes / 1073741824).toFixed(1) + " GB";
     }
 
     function isImage(file) {
-        return String(file?.type || "")
-            .toLowerCase().startsWith("image/");
+        return String(file?.type || "").toLowerCase().startsWith("image/");
     }
 
     function isDocument(file) {
@@ -354,36 +342,46 @@
         ].some(ext => name.endsWith(ext));
     }
 
-    function closeIcon() {
-        return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    const closeIcon = () => `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 7l10 10"></path>
             <path d="M17 7L7 17"></path>
         </svg>`;
-    }
 
-    function fileIcon() {
-        return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    const fileIcon = () => `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 3.5h9l5 5v12H5z"></path>
             <path d="M14 3.5v5h5"></path>
             <path d="M8 13h8"></path>
             <path d="M8 16.5h6"></path>
         </svg>`;
-    }
 
     function loadImage(file, image) {
         const reader = new FileReader();
-
-        reader.onload = event => {
-            image.src = event.target.result;
-        };
-
+        reader.onload = event => image.src = event.target.result;
         reader.onerror = () => image.removeAttribute("src");
         reader.readAsDataURL(file);
     }
 
+    function resetFileInputs() {
+        [
+            "pingme-photo-input",
+            "pingme-file-input",
+            "pingme-document-input"
+        ].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                try { element.value = ""; } catch {}
+            }
+        });
+    }
+
     function renderPreview() {
         const preview = createPreview();
-        if (!preview) return;
+        if (!preview) {
+            updateSendButton();
+            return;
+        }
 
         preview.innerHTML = "";
 
@@ -405,36 +403,24 @@
                 const image = document.createElement("img");
                 image.alt = "Selected photo";
                 image.draggable = false;
-
                 loadImage(file, image);
                 card.appendChild(image);
             } else if (isDocument(file)) {
                 card = document.createElement("div");
                 card.className = "pingme-document-attachment";
-
                 card.innerHTML = `
                     <span class="pingme-document-icon">${fileIcon()}</span>
                     <span class="pingme-document-info">
-                        <span class="pingme-document-name">
-                            ${escapeHTML(file.name)}
-                        </span>
-                        <span class="pingme-document-size">
-                            ${formatSize(file.size)}
-                        </span>
+                        <span class="pingme-document-name">${escapeHTML(file.name)}</span>
+                        <span class="pingme-document-size">${formatSize(file.size)}</span>
                     </span>`;
             } else {
                 card = document.createElement("div");
                 card.className = "pingme-file-attachment";
-
-                card.innerHTML = `
-                    <span class="pingme-file-icon">${fileIcon()}</span>
+                card.innerHTML = `<span class="pingme-file-icon">${fileIcon()}</span>
                     <span class="pingme-file-info">
-                        <span class="pingme-file-name">
-                            ${escapeHTML(file.name)}
-                        </span>
-                        <span class="pingme-file-size">
-                            ${formatSize(file.size)}
-                        </span>
+                        <span class="pingme-file-name">${escapeHTML(file.name)}</span>
+                        <span class="pingme-file-size">${formatSize(file.size)}</span>
                     </span>`;
             }
 
@@ -447,7 +433,6 @@
             remove.addEventListener("click", event => {
                 event.preventDefault();
                 event.stopPropagation();
-
                 selectedFiles.splice(index, 1);
                 resetFileInputs();
                 renderPreview();
@@ -460,47 +445,30 @@
         if (selectedFiles.length > 1) {
             const count = document.createElement("div");
             count.className = "pingme-attachment-count";
-            count.textContent =
-                `${selectedFiles.length} attachments selected`;
-
+            count.textContent = `${selectedFiles.length} attachments selected`;
             preview.appendChild(count);
         }
 
         updateSendButton();
     }
 
-    function resetFileInputs() {
-        [
-            "pingme-photo-input",
-            "pingme-file-input",
-            "pingme-document-input"
-        ].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                try {
-                    input.value = "";
-                } catch {}
-            }
-        });
-    }
-
     function addFiles(files) {
-        if (!files || !files.length) return;
+        if (!files?.length) return;
 
         Array.from(files).forEach(file => {
             if (!file) return;
 
-            const exists = selectedFiles.some(existing =>
-                existing.name === file.name &&
-                existing.size === file.size &&
-                existing.lastModified === file.lastModified
+            const exists = selectedFiles.some(item =>
+                item.name === file.name &&
+                item.size === file.size &&
+                item.lastModified === file.lastModified
             );
 
             if (!exists) selectedFiles.push(file);
         });
 
-        renderPreview();
         resetFileInputs();
+        renderPreview();
         updateSendButton();
 
         console.log("PingMe Attachments:", selectedFiles);
@@ -512,22 +480,14 @@
     });
 
     document.addEventListener("input", event => {
-        if (
-            event.target.id === "chatInput" ||
-            event.target.id === "messageInput"
-        ) {
+        if (["chatInput", "messageInput"].includes(event.target?.id)) {
             updateSendButton();
         }
     });
 
     window.PingMeAttachments = {
-        getFiles() {
-            return [...selectedFiles];
-        },
-
-        hasFiles() {
-            return selectedFiles.length > 0;
-        },
+        getFiles: () => [...selectedFiles],
+        hasFiles: () => selectedFiles.length > 0,
 
         clear() {
             selectedFiles = [];
@@ -538,7 +498,6 @@
 
         remove(index) {
             if (index < 0 || index >= selectedFiles.length) return;
-
             selectedFiles.splice(index, 1);
             resetFileInputs();
             renderPreview();
@@ -554,9 +513,7 @@
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initialize, {
-            once: true
-        });
+        document.addEventListener("DOMContentLoaded", initialize, { once: true });
     } else {
         initialize();
     }
