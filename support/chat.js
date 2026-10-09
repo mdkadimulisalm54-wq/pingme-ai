@@ -1,6 +1,6 @@
 // ==========================================================
 // PINGME AI — CHAT SUPPORT
-// Message UI • History • Three-Dot Glow Loader
+// Message UI • History • Four-Corner Glow Loader
 // ==========================================================
 
 (() => {
@@ -55,6 +55,8 @@
                 margin: 8px 0 6px !important;
             }
 
+            /* LOADER ROW */
+
             .pingme-loader-row {
                 display: flex;
                 align-items: center;
@@ -65,20 +67,19 @@
             .pingme-loader-row .thinking-message {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                width: 96px;
-                height: 62px;
+                justify-content: flex-start;
+                width: 70px;
+                height: 54px;
                 margin: 0;
                 padding: 0;
-                border-radius: 22px 22px 22px 7px;
                 background: transparent;
                 overflow: visible;
             }
 
             .pingme-ai-loader {
                 position: relative;
-                width: 54px;
-                height: 54px;
+                width: 42px;
+                height: 42px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -86,31 +87,37 @@
                 isolation: isolate;
             }
 
-            /* Rounded, three-corner-like moving outline */
+            /* Four soft rounded corners — not circular */
+
             .pingme-loader-orbit {
                 position: absolute;
-                inset: 2px;
+                inset: 3px;
+                box-sizing: border-box;
                 border: 2px solid transparent;
-                border-radius: 38% 62% 58% 42% / 42% 40% 60% 58%;
-                border-top-color: #9abaff;
-                border-left-color: #c4b5fd;
-                border-bottom-color: #d6dfff;
+                border-top-color: #9bc0ff;
+                border-right-color: #b4a2ff;
+                border-bottom-color: #c7d7ff;
+                border-left-color: #a9b8ff;
+                border-radius: 10px;
                 filter:
-                    drop-shadow(0 0 3px rgba(105,145,255,.48))
-                    drop-shadow(0 0 7px rgba(167,139,250,.28));
-                animation: pingmeOrbitSpin 2.2s linear infinite;
+                    drop-shadow(0 0 2px rgba(116,157,255,.42))
+                    drop-shadow(0 0 5px rgba(167,139,250,.24));
+                animation: pingmeOrbitSpin 2.8s linear infinite;
+                will-change: transform;
             }
 
             .pingme-loader-orbit::before {
                 content: "";
                 position: absolute;
                 inset: -3px;
+                box-sizing: border-box;
                 border: 1px solid transparent;
-                border-top-color: rgba(100,149,255,.42);
-                border-left-color: rgba(183,156,255,.32);
-                border-radius: 38% 62% 58% 42% / 42% 40% 60% 58%;
-                animation: pingmeOrbitSpin 1.6s linear infinite reverse;
+                border-top-color: rgba(115,157,255,.38);
+                border-right-color: rgba(177,154,255,.2);
+                border-radius: 12px;
             }
+
+            /* Keep the three dots still while the outline moves */
 
             .pingme-loader-dots {
                 position: relative;
@@ -118,16 +125,17 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 5px;
+                gap: 4px;
             }
 
             .pingme-loader-dots span {
                 display: block;
-                width: 5px;
-                height: 5px;
+                width: 4px;
+                height: 4px;
+                flex-shrink: 0;
                 border-radius: 50%;
-                background: #202124;
-                animation: pingmeDotPulse 1s ease-in-out infinite;
+                background: #252525;
+                animation: pingmeDotPulse 1.05s ease-in-out infinite;
             }
 
             .pingme-loader-dots span:nth-child(2) {
@@ -142,24 +150,61 @@
                 display: none !important;
             }
 
+            .message-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 10px;
+            }
+
+            .message-action-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+
+            .message-action-btn svg {
+                width: 15px;
+                height: 15px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.7;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
             @keyframes pingmeUserIn {
-                from { opacity: 0; transform: translateY(6px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(6px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             @keyframes pingmeAIIn {
-                from { opacity: 0; transform: translateY(7px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(7px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             @keyframes pingmeOrbitSpin {
+                from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
 
             @keyframes pingmeDotPulse {
                 0%, 60%, 100% {
-                    opacity: .48;
-                    transform: scale(.78);
+                    opacity: .5;
+                    transform: scale(.85);
                 }
                 30% {
                     opacity: 1;
@@ -168,12 +213,9 @@
             }
 
             @media (prefers-reduced-motion: reduce) {
-                .user-message,
-                .ai-message,
                 .pingme-loader-orbit,
-                .pingme-loader-orbit::before,
                 .pingme-loader-dots span {
-                    animation-duration: 2.5s !important;
+                    animation: none !important;
                 }
             }
         `;
@@ -265,7 +307,6 @@
         ).trim();
     }
 
-    // Main script.js saves its own messages directly.
     function saveLegacyMessage(node) {
         if (!node || node.dataset.historySaved === "true") {
             return;
@@ -361,7 +402,7 @@
     }
 
     // ======================================================
-    // THREE-DOT GLOW LOADER
+    // FOUR-CORNER GLOW LOADER
     // ======================================================
 
     function addLoader() {
@@ -404,20 +445,32 @@
     }
 
     function showLoader() {
-        addLoader();
+        const row = addLoader();
 
         const area = document.getElementById("chatArea");
-        if (area) area.scrollTop = area.scrollHeight;
+        if (area && row) area.scrollTop = area.scrollHeight;
 
         const thinking = document.getElementById("thinking");
         if (thinking) thinking.classList.remove("show");
     }
 
     function hideLoader() {
-        document.getElementById(LOADER_ID)?.remove();
+        const row = document.getElementById(LOADER_ID);
+
+        if (row) {
+            row.querySelectorAll("*").forEach(element => {
+                element.style.animation = "none";
+            });
+
+            row.remove();
+        }
+
+        // Also clear the old loader if present.
+        const oldThinking = document.getElementById("thinking");
+        if (oldThinking) oldThinking.classList.remove("show");
     }
 
-    // Existing API preserved for script.js.
+    // API used by script.js
     window.PingMeLoader = {
         show: showLoader,
         hide: hideLoader
@@ -446,7 +499,7 @@
     }
 
     // ======================================================
-    // STARTUP — PRESERVED
+    // STARTUP
     // ======================================================
 
     connectChatArea();
