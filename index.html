@@ -1498,10 +1498,11 @@ window.PingMeAttachments?.clear?.();
                 getChatSession();
 
             const result =
-                await window.PingMeAttachmentAI.sendToChat(
-                    chat,
-                    message
-                );
+    await window.PingMeAttachmentAI.sendToChat(
+        chat,
+        message,
+        attachmentFiles
+    );
 
             const response =
                 result.response;
