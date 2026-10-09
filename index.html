@@ -1398,10 +1398,11 @@ if (
 
 
     addUserMessage(
-        message
-    );
+    message,
+    window.PingMeAttachmentAI?.getFiles?.() || []
+);
 
-
+  
     input.value = "";
 
 
