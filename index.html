@@ -1490,26 +1490,25 @@ async function sendMessage() {
            GEMINI
            ================================================= */
 
-        else {
+         else {
 
             const chat =
                 getChatSession();
 
-
             const result =
-                await chat.sendMessage(
+                await window.PingMeAttachmentAI.sendToChat(
+                    chat,
                     message
                 );
 
-
             const response =
                 result.response;
-
 
             reply =
                 response.text();
 
         }
+
 
 
         /* =================================================
