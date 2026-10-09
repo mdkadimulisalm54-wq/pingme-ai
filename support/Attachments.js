@@ -1,4 +1,3 @@
-
 /* =========================================================
    PingMe AI — Attachments Support
    Photos • Files • Documents
@@ -11,6 +10,38 @@
     const STYLE_ID = "pingme-attachments-style";
     const PREVIEW_ID = "pingme-attachments-preview";
     let selectedFiles = [];
+
+    function getInput() {
+        return document.getElementById("chatInput") ||
+               document.getElementById("messageInput");
+    }
+
+    function getSendButton() {
+        return document.getElementById("sendButton") ||
+               document.getElementById("sendBtn");
+    }
+
+    function updateSendButton() {
+        const button = getSendButton();
+        const input = getInput();
+
+        if (!button) return;
+
+        const hasText = !!input?.value.trim();
+        const hasFiles = selectedFiles.length > 0;
+
+        button.classList.toggle(
+            "has-attachments",
+            hasFiles
+        );
+
+        if (hasText || hasFiles) {
+            button.style.visibility = "visible";
+            button.style.opacity = "1";
+        }
+
+        button.disabled = !hasText && !hasFiles;
+    }
 
     function addStyles() {
         document.getElementById(STYLE_ID)?.remove();
@@ -37,7 +68,6 @@
             display: flex !important;
         }
 
-        /* PHOTOS — 72px PREVIEW */
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
             width: 72px !important;
@@ -75,7 +105,6 @@
             background: transparent !important;
         }
 
-        /* FILES — 46px ICON */
         #${PREVIEW_ID} .pingme-file-attachment {
             position: relative !important;
             width: 46px !important;
@@ -125,7 +154,6 @@
             display: none !important;
         }
 
-        /* DOCUMENTS — UNCHANGED */
         #${PREVIEW_ID} .pingme-document-attachment {
             position: relative !important;
             width: 165px !important;
@@ -195,7 +223,6 @@
             color: #858b92 !important;
         }
 
-        /* REMOVE BUTTON */
         #${PREVIEW_ID} .pingme-attachment-remove {
             position: absolute !important;
             top: 2px !important;
@@ -278,7 +305,7 @@
         let preview = document.getElementById(PREVIEW_ID);
         if (preview) return preview;
 
-        const chatInput = document.getElementById("chatInput");
+        const chatInput = getInput();
         if (!chatInput) return null;
 
         preview = document.createElement("div");
@@ -362,6 +389,7 @@
 
         if (!selectedFiles.length) {
             preview.classList.remove("show");
+            updateSendButton();
             return;
         }
 
@@ -437,6 +465,8 @@
 
             preview.appendChild(count);
         }
+
+        updateSendButton();
     }
 
     function resetFileInputs() {
@@ -471,12 +501,23 @@
 
         renderPreview();
         resetFileInputs();
+        updateSendButton();
+
         console.log("PingMe Attachments:", selectedFiles);
     }
 
     window.addEventListener("pingme:plus-files-selected", event => {
         const files = event?.detail?.files;
         if (files) addFiles(files);
+    });
+
+    document.addEventListener("input", event => {
+        if (
+            event.target.id === "chatInput" ||
+            event.target.id === "messageInput"
+        ) {
+            updateSendButton();
+        }
     });
 
     window.PingMeAttachments = {
@@ -492,6 +533,7 @@
             selectedFiles = [];
             resetFileInputs();
             renderPreview();
+            updateSendButton();
         },
 
         remove(index) {
@@ -500,12 +542,14 @@
             selectedFiles.splice(index, 1);
             resetFileInputs();
             renderPreview();
+            updateSendButton();
         }
     };
 
     function initialize() {
         addStyles();
         createPreview();
+        updateSendButton();
         console.log("PingMe Attachments Support Connected");
     }
 
