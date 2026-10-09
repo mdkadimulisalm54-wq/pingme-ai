@@ -1,4 +1,3 @@
-
 /* =========================================================
    PingMe AI — Attachments Support
    Photos • Files • Documents
@@ -13,7 +12,7 @@
     let selectedFiles = [];
 
     function addStyles() {
-        if (document.getElementById(STYLE_ID)) return;
+        document.getElementById(STYLE_ID)?.remove();
 
         const style = document.createElement("style");
         style.id = STYLE_ID;
@@ -23,9 +22,10 @@
             display: none !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
             box-sizing: border-box !important;
-            padding: 4px 7px 3px !important;
-            gap: 6px !important;
+            padding: 5px 4px !important;
+            gap: 7px !important;
             flex-wrap: wrap !important;
             align-items: flex-start !important;
             overflow: hidden !important;
@@ -36,27 +36,25 @@
             display: flex !important;
         }
 
-        /* PHOTOS — FIXED SMALL SIZE */
+        /* PHOTOS — SMALL PREVIEW */
         #${PREVIEW_ID} .pingme-photo-attachment {
             position: relative !important;
-            width: 34px !important;
-            height: 34px !important;
-            min-width: 34px !important;
-            min-height: 34px !important;
-            max-width: 34px !important;
-            max-height: 34px !important;
-            flex: 0 0 34px !important;
+            width: 54px !important;
+            height: 54px !important;
+            min-width: 54px !important;
+            min-height: 54px !important;
+            max-width: 54px !important;
+            max-height: 54px !important;
+            flex: 0 0 54px !important;
             box-sizing: border-box !important;
-            display: block !important;
             padding: 0 !important;
             margin: 0 !important;
             overflow: hidden !important;
-            border-radius: 8px !important;
-            background: #000 !important;
-            border: 1px solid rgba(0,0,0,.12) !important;
+            border-radius: 9px !important;
+            background: transparent !important;
+            border: 1px solid rgba(0,0,0,.10) !important;
             box-shadow: none !important;
             line-height: 0 !important;
-            transform: none !important;
         }
 
         #${PREVIEW_ID} .pingme-photo-attachment img {
@@ -67,18 +65,16 @@
             min-height: 0 !important;
             max-width: 100% !important;
             max-height: 100% !important;
-            box-sizing: border-box !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: 0 !important;
-            background: #000 !important;
             object-fit: cover !important;
             object-position: center !important;
-            border-radius: 7px !important;
-            transform: none !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
         }
 
-        /* FILES — SAME SMALL SIZE */
+        /* FILES */
         #${PREVIEW_ID} .pingme-file-attachment {
             position: relative !important;
             width: 34px !important;
@@ -94,13 +90,11 @@
             border-radius: 8px !important;
             background: #f6f8fa !important;
             border: 1px solid #e0e4e8 !important;
-            box-shadow: none !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             overflow: hidden !important;
             line-height: 0 !important;
-            transform: none !important;
         }
 
         #${PREVIEW_ID} .pingme-file-icon {
@@ -108,16 +102,12 @@
             height: 22px !important;
             min-width: 22px !important;
             min-height: 22px !important;
-            max-width: 22px !important;
-            max-height: 22px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             border-radius: 5px !important;
             background: #e9eef3 !important;
             color: #596675 !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         #${PREVIEW_ID} .pingme-file-icon svg {
@@ -134,16 +124,16 @@
             display: none !important;
         }
 
-        /* DOCUMENTS — UNCHANGED */
+        /* DOCUMENTS */
         #${PREVIEW_ID} .pingme-document-attachment {
             position: relative !important;
             width: 165px !important;
             height: 48px !important;
-            min-width: 165px !important;
+            min-width: 0 !important;
             min-height: 48px !important;
-            max-width: 165px !important;
+            max-width: 100% !important;
             max-height: 48px !important;
-            flex: 0 0 165px !important;
+            flex: 0 1 165px !important;
             box-sizing: border-box !important;
             display: flex !important;
             align-items: center !important;
@@ -209,12 +199,12 @@
             position: absolute !important;
             top: 2px !important;
             right: 2px !important;
-            width: 12px !important;
-            height: 12px !important;
-            min-width: 12px !important;
-            min-height: 12px !important;
-            max-width: 12px !important;
-            max-height: 12px !important;
+            width: 14px !important;
+            height: 14px !important;
+            min-width: 14px !important;
+            min-height: 14px !important;
+            max-width: 14px !important;
+            max-height: 14px !important;
             padding: 0 !important;
             margin: 0 !important;
             border: 0 !important;
@@ -222,29 +212,23 @@
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            background: rgba(255,255,255,.94) !important;
+            background: rgba(255,255,255,.95) !important;
             color: #454a50 !important;
             box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
             cursor: pointer !important;
             z-index: 50 !important;
             line-height: 0 !important;
-            transform: none !important;
         }
 
         #${PREVIEW_ID} .pingme-attachment-remove svg {
-            width: 7px !important;
-            height: 7px !important;
+            width: 8px !important;
+            height: 8px !important;
             fill: none !important;
             stroke: currentColor !important;
             stroke-width: 2 !important;
             stroke-linecap: round !important;
         }
 
-        #${PREVIEW_ID} .pingme-attachment-remove:active {
-            transform: scale(.9) !important;
-        }
-
-        /* COUNT */
         #${PREVIEW_ID} .pingme-attachment-count {
             width: 100% !important;
             padding: 0 2px 1px !important;
@@ -255,38 +239,31 @@
 
         @media (max-width: 480px) {
             #${PREVIEW_ID} {
-                padding: 4px 7px 3px !important;
+                padding: 4px 3px !important;
                 gap: 6px !important;
             }
 
-            #${PREVIEW_ID} .pingme-photo-attachment,
+            #${PREVIEW_ID} .pingme-photo-attachment {
+                width: 48px !important;
+                height: 48px !important;
+                min-width: 48px !important;
+                min-height: 48px !important;
+                max-width: 48px !important;
+                max-height: 48px !important;
+                flex: 0 0 48px !important;
+            }
+
             #${PREVIEW_ID} .pingme-file-attachment {
                 width: 34px !important;
                 height: 34px !important;
                 min-width: 34px !important;
                 min-height: 34px !important;
-                max-width: 34px !important;
-                max-height: 34px !important;
                 flex: 0 0 34px !important;
             }
 
-            #${PREVIEW_ID} .pingme-photo-attachment img {
-                width: 100% !important;
-                height: 100% !important;
-                min-width: 0 !important;
-                min-height: 0 !important;
-                max-width: 100% !important;
-                max-height: 100% !important;
-            }
-
             #${PREVIEW_ID} .pingme-document-attachment {
-                width: 165px !important;
-                height: 48px !important;
-                min-width: 165px !important;
-                min-height: 48px !important;
-                max-width: 165px !important;
-                max-height: 48px !important;
-                flex: 0 0 165px !important;
+                flex-basis: 165px !important;
+                max-width: 100% !important;
             }
         }
         `;
@@ -365,9 +342,11 @@
 
     function loadImage(file, image) {
         const reader = new FileReader();
+
         reader.onload = event => {
             image.src = event.target.result;
         };
+
         reader.onerror = () => image.removeAttribute("src");
         reader.readAsDataURL(file);
     }
@@ -395,6 +374,7 @@
                 const image = document.createElement("img");
                 image.alt = "Selected photo";
                 image.draggable = false;
+
                 loadImage(file, image);
                 card.appendChild(image);
             } else if (isDocument(file)) {
@@ -436,6 +416,7 @@
             remove.addEventListener("click", event => {
                 event.preventDefault();
                 event.stopPropagation();
+
                 selectedFiles.splice(index, 1);
                 resetFileInputs();
                 renderPreview();
@@ -450,6 +431,7 @@
             count.className = "pingme-attachment-count";
             count.textContent =
                 `${selectedFiles.length} attachments selected`;
+
             preview.appendChild(count);
         }
     }
@@ -511,6 +493,7 @@
 
         remove(index) {
             if (index < 0 || index >= selectedFiles.length) return;
+
             selectedFiles.splice(index, 1);
             resetFileInputs();
             renderPreview();
