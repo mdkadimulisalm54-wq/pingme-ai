@@ -1637,11 +1637,11 @@ function addUserMessage(message, files = []) {
 
         box.appendChild(imageBox);
     }
-
+    window.PingMeMessageDocuments?.render(files, box);
+       
     chatArea.appendChild(box);
     scrollToBottom();
 }
-
 /* =========================================================
    AI MESSAGE
    ========================================================= */
