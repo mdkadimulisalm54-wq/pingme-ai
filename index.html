@@ -1602,35 +1602,37 @@ if (
    USER MESSAGE
    ========================================================= */
 
-function addUserMessage(
-    message
-) {
+function addUserMessage(message, files = []) {
+    const box = document.createElement("div");
+    box.className = "user-message";
 
-    const box =
-        document.createElement(
-            "div"
-        );
+    if (message) {
+        const text = document.createElement("div");
+        text.textContent = message;
+        box.appendChild(text);
+    }
 
+    files.forEach(file => {
+        if (!file || !file.type?.startsWith("image/")) return;
 
-    box.className =
-        "user-message";
+        const image = document.createElement("img");
 
+        image.alt = file.name || "Attached image";
+        image.className = "user-message-image";
+        image.style.cssText =
+            "display:block;max-width:100%;width:auto;" +
+            "max-height:320px;object-fit:contain;" +
+            "border-radius:12px;margin-top:8px;";
 
-    box.textContent =
-        message;
+        const url = URL.createObjectURL(file);
+        image.src = url;
 
+        box.appendChild(image);
+    });
 
-    chatArea.appendChild(
-        box
-    );
-
-
+    chatArea.appendChild(box);
     scrollToBottom();
-
-}
-function startAIVoice() {
-    console.log("Direct AI Voice Started");
-}
+    }
 
 /* =========================================================
    AI MESSAGE
