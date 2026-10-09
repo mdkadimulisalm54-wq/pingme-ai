@@ -1,7 +1,6 @@
-
 /* =========================================================
    PingMe AI — Attachment AI Bridge
-   Images • PDF • Text Files • Multiple Attachments
+   Images • PDFs • Text Files • Gemini Chat
    ========================================================= */
 
 (() => {
@@ -10,18 +9,13 @@
     const API_NAME = "PingMeAttachmentAI";
 
     const TEXT_EXTENSIONS = [
-        "txt", "md", "csv", "json", "xml", "html",
-        "htm", "css", "js", "ts", "py", "java",
-        "c", "cpp", "h", "sql", "log", "yaml",
-        "yml", "ini", "rtf"
+        "txt", "md", "csv", "json", "xml", "html", "htm",
+        "css", "js", "ts", "py", "java", "c", "cpp",
+        "h", "sql", "log", "yaml", "yml", "ini", "rtf"
     ];
 
     function getFiles() {
         return window.PingMeAttachments?.getFiles?.() || [];
-    }
-
-    function hasFiles() {
-        return getFiles().length > 0;
     }
 
     function getExtension(name) {
@@ -40,18 +34,15 @@
                 const comma = result.indexOf(",");
 
                 if (comma < 0) {
-                    reject(new Error(
-                        `Could not read file: ${file.name}`
-                    ));
+                    reject(new Error("ফাইল পড়া যায়নি: " + file.name));
                     return;
                 }
 
                 resolve(result.slice(comma + 1));
             };
 
-            reader.onerror = () => reject(
-                new Error(`Could not read file: ${file.name}`)
-            );
+            reader.onerror = () =>
+                reject(new Error("ফাইল পড়া যায়নি: " + file.name));
 
             reader.readAsDataURL(file);
         });
@@ -68,15 +59,14 @@
             const mime = String(
                 file.type || "application/octet-stream"
             ).toLowerCase();
+
             const extension = getExtension(name);
 
             if (mime.startsWith("image/") || mime === "application/pdf") {
-                const data = await readAsBase64(file);
-
                 parts.push({
                     inlineData: {
                         mimeType: mime,
-                        data
+                        data: await readAsBase64(file)
                     }
                 });
 
@@ -94,12 +84,8 @@
                 TEXT_EXTENSIONS.includes(extension);
 
             if (isText) {
-                const content = await file.text();
-
                 parts.push({
-                    text:
-                        `Attachment: ${name}\n` +
-                        `Content:\n${content}`
+                    text: `Attachment: ${name}\nContent:\n${await file.text()}`
                 });
 
                 names.push(name);
@@ -107,7 +93,7 @@
             }
 
             throw new Error(
-                `এই ফাইলের ফরম্যাট এখনো সাপোর্ট করা হচ্ছে না: ${name}`
+                "এই ফাইলের ফরম্যাট এখনো সাপোর্ট করা হচ্ছে না: " + name
             );
         }
 
@@ -115,7 +101,7 @@
     }
 
     async function prepareMessage(message, files = getFiles()) {
-        const result = await prepare(files);
+        const prepared = await prepare(files);
 
         return {
             parts: [
@@ -123,20 +109,38 @@
                     text: String(message || "").trim() ||
                         "Please examine the attached files and help the user."
                 },
-                ...result.parts
+                ...prepared.parts
             ],
-            names: result.names
+            names: prepared.names
         };
+    }
+
+    // Send text and attachments through the existing Gemini chat.
+    async function sendToChat(chat, message) {
+        if (!chat) throw new Error("AI chat session পাওয়া যায়নি।");
+
+        const files = getFiles();
+
+        if (!files.length) {
+            return chat.sendMessage(message);
+        }
+
+        const prepared = await prepareMessage(message, files);
+        const result = await chat.sendMessage(prepared.parts);
+
+        // Clear attachments only after a successful send.
+        window.PingMeAttachments?.clear?.();
+
+        return result;
     }
 
     window[API_NAME] = {
         getFiles,
-        hasFiles,
+        hasFiles: () => getFiles().length > 0,
         prepare,
         prepareMessage,
-        clear() {
-            window.PingMeAttachments?.clear?.();
-        }
+        sendToChat,
+        clear: () => window.PingMeAttachments?.clear?.()
     };
 
     console.log("PingMe Attachment AI Bridge Connected");
