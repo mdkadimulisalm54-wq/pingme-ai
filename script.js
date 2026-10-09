@@ -1,6 +1,8 @@
-// ==========================================================
-// PINGME AI — MAIN SCRIPT
-// ==========================================================
+
+/* ==========================================================
+   PINGME AI — MAIN SCRIPT
+   Chat • History • Gemini • Attachments
+   ========================================================== */
 
 "use strict";
 
@@ -172,7 +174,7 @@ const PINGME_ICONS = {
 };
 
 // ==========================================================
-// THINKING LOADER — USE support/chat.js
+// THINKING LOADER
 // ==========================================================
 
 function addThinkingMessage() {
@@ -188,7 +190,6 @@ function addThinkingMessage() {
         };
     }
 
-    // Fallback only if support/chat.js has not loaded
     const row = document.createElement("div");
     row.className = "message-row ai";
     row.id = "pingmeFallbackLoader";
@@ -201,7 +202,11 @@ function addThinkingMessage() {
     chatArea.appendChild(row);
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return row;
+    return {
+        remove() {
+            row.remove();
+        }
+    };
 }
 
 // ==========================================================
@@ -294,8 +299,6 @@ async function typeAIResponse(message, answer) {
 
     while (index < answer.length) {
         const character = answer[index];
-
-        // ছোট ছোট অংশে দেখাবে; বড় উত্তরেও UI সচল থাকবে
         const chunkSize = answer.length > 1500 ? 3 : 1;
         const nextIndex = Math.min(index + chunkSize, answer.length);
 
@@ -353,10 +356,10 @@ async function getModels() {
 }
 
 // ==========================================================
-// GENERATE AI RESPONSE
+// GENERATE AI RESPONSE — TEXT + ATTACHMENTS
 // ==========================================================
 
-async function generateAIResponse(userText) {
+async function generateAIResponse(userText, attachmentParts = []) {
     const models = await getModels();
     const previousConversation = getConversationContext();
 
@@ -369,6 +372,7 @@ ${previousConversation}
 LATEST USER MESSAGE:
 User: ${userText}
 
+Analyze any attached files or images when provided.
 Answer the latest message and all its relevant questions.
 Use previous conversation only when relevant.
 Your nickname is PingMe. Your company is PingMe AI.
@@ -376,14 +380,21 @@ Never identify yourself as Gemini or Google Gemini.
 Respond naturally.
 `;
 
+    const requestParts = [
+        { text: prompt },
+        ...attachmentParts
+    ];
+
     let lastError = null;
 
     for (const model of models) {
         try {
-            const result = await model.generateContent(prompt);
+            const result = await model.generateContent(requestParts);
             const answer = result?.response?.text?.();
 
-            if (answer && answer.trim()) return answer.trim();
+            if (answer && answer.trim()) {
+                return answer.trim();
+            }
         } catch (error) {
             console.error("PingMe model error:", error);
             lastError = error;
@@ -394,22 +405,47 @@ Respond naturally.
 }
 
 // ==========================================================
-// SEND MESSAGE
+// SEND MESSAGE — TEXT + ATTACHMENTS
 // ==========================================================
 
 async function sendMessage() {
     if (!messageInput || !sendBtn || !chatArea) return;
 
     const text = messageInput.value.trim();
-    if (!text || sendBtn.disabled) return;
+    const attachmentAI = window.PingMeAttachmentAI;
+    const hasAttachments = attachmentAI?.hasFiles?.() || false;
+
+    if ((!text && !hasAttachments) || sendBtn.disabled) return;
 
     sendBtn.disabled = true;
 
     try {
+        let prepared = null;
+
+        if (hasAttachments) {
+            if (typeof attachmentAI.prepareMessage !== "function") {
+                throw new Error("ATTACHMENT_AI_NOT_READY");
+            }
+
+            prepared = await attachmentAI.prepareMessage(text);
+        }
+
+        const userText = text ||
+            "Please examine the attached files and help me understand them.";
+
+        const attachmentNames = prepared?.names || [];
+
+        const displayText = [
+            text,
+            attachmentNames.length
+                ? "Attachments: " + attachmentNames.join(", ")
+                : ""
+        ].filter(Boolean).join("\n\n");
+
         ensureHistoryChat();
 
-        addMessage(text, "user");
-        saveConversation("user", text);
+        addMessage(displayText || userText, "user");
+        saveConversation("user", displayText || userText);
 
         messageInput.value = "";
         messageInput.style.height = "auto";
@@ -417,18 +453,21 @@ async function sendMessage() {
         const thinking = addThinkingMessage();
 
         try {
-            const answer = await generateAIResponse(text);
+            const attachmentParts = prepared?.parts?.slice(1) || [];
+            const answer = await generateAIResponse(userText, attachmentParts);
 
-            // Hide loader BEFORE showing the typed response
             thinking?.remove();
 
             const row = addMessage(answer, "ai", true);
             const message = row.querySelector(".message");
 
             await typeAIResponse(message, answer);
-
-            // Save complete response only once, after typing
             saveConversation("ai", answer);
+
+            if (hasAttachments) {
+                attachmentAI.clear?.();
+            }
+
         } catch (error) {
             console.error("PingMe AI ERROR:", error);
             thinking?.remove();
@@ -443,12 +482,32 @@ async function sendMessage() {
                 reply = "AI এখন একটু ব্যস্ত আছে। একটু পর আবার চেষ্টা কর।";
             } else if (errorText.includes("PINGME_MODELS_NOT_READY")) {
                 reply = "PingMe AI চালু হতে সমস্যা হচ্ছে। পেজটা একবার Refresh করে আবার চেষ্টা কর।";
+            } else if (errorText.includes("ATTACHMENT_AI_NOT_READY")) {
+                reply = "অ্যাটাচমেন্ট সিস্টেম চালু হয়নি। পেজটা Refresh করে আবার চেষ্টা কর।";
             } else {
                 reply = "এই মুহূর্তে PingMe AI-এর সাথে কানেক্ট হতে পারলাম না। একটু পর আবার চেষ্টা কর।";
             }
 
             addMessage(reply, "ai");
         }
+
+    } catch (error) {
+        console.error("PingMe attachment error:", error);
+
+        const errorText = String(error?.message || error || "");
+
+        if (
+            errorText.includes("এই ফাইলের ফরম্যাট") ||
+            errorText.includes("Could not read file:")
+        ) {
+            addMessage(errorText, "ai");
+        } else {
+            addMessage(
+                "অ্যাটাচমেন্ট প্রস্তুত করতে সমস্যা হয়েছে। ফাইলটি আবার চেষ্টা কর।",
+                "ai"
+            );
+        }
+
     } finally {
         sendBtn.disabled = false;
         messageInput.focus();
