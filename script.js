@@ -1,6 +1,7 @@
+
 /* ==========================================================
    PINGME AI — MAIN SCRIPT
-   Chat • History • Gemini • Attachments • Typewriter
+   Chat • History • Gemini • Attachments • Sky Loader • Typewriter
    ========================================================== */
 
 "use strict";
@@ -191,7 +192,7 @@ const PINGME_ICONS = {
 };
 
 // ==========================================================
-// THINKING LOADER — RELIABLE CLEANUP
+// LOADER — ONE INSTANCE, CLEAN START AND STOP
 // ==========================================================
 
 function stopThinkingLoader() {
@@ -217,7 +218,7 @@ function addThinkingMessage() {
         welcomeScreen.style.display = "none";
     }
 
-    // Remove stale loaders before creating a new one.
+    // Remove an old loader before showing a new one.
     stopThinkingLoader();
 
     if (typeof window.PingMeLoader?.show === "function") {
@@ -259,6 +260,8 @@ function addThinkingMessage() {
 // ==========================================================
 
 function addMessage(text, sender, typing = false) {
+    if (!chatArea) return null;
+
     if (welcomeScreen) {
         welcomeScreen.style.display = "none";
     }
@@ -273,7 +276,7 @@ function addMessage(text, sender, typing = false) {
 
     const message = document.createElement("div");
     message.className = "message";
-    message.textContent = typing ? "" : text;
+    message.textContent = typing ? "" : String(text ?? "");
 
     box.appendChild(message);
 
@@ -339,32 +342,44 @@ function addMessage(text, sender, typing = false) {
 }
 
 // ==========================================================
-// AI TYPEWRITER
+// AI TYPEWRITER — STARTS AFTER LOADER IS REMOVED
 // ==========================================================
 
 async function typeAIResponse(message, answer) {
+    if (!message) return;
+
     const text = String(answer || "");
     message.textContent = "";
+    message.classList.add("typing-active");
 
-    for (let index = 0; index < text.length; index++) {
-        message.textContent += text[index];
-        chatArea.scrollTop = chatArea.scrollHeight;
+    try {
+        for (let index = 0; index < text.length; index++) {
+            message.textContent += text[index];
 
-        let delay = 28;
+            if (chatArea) {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
 
-        if (text[index] === "\n") {
-            delay = 65;
-        } else if (/[.!?।]/.test(text[index])) {
-            delay = 120;
-        } else if (text[index] === "," || text[index] === ";") {
-            delay = 55;
+            let delay = 22;
+
+            if (text[index] === "\n") {
+                delay = 55;
+            } else if (/[.!?।]/.test(text[index])) {
+                delay = 100;
+            } else if (text[index] === "," || text[index] === ";") {
+                delay = 45;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
+    } finally {
+        message.classList.remove("typing-active");
+        message.textContent = text;
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        if (chatArea) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
     }
-
-    message.textContent = text;
-    chatArea.scrollTop = chatArea.scrollHeight;
 }
 
 // ==========================================================
@@ -520,6 +535,7 @@ async function sendMessage() {
         messageInput.value = "";
         messageInput.style.height = "auto";
 
+        // 1. Show the animated loader while waiting for the model.
         thinking = addThinkingMessage();
 
         const answer = await generateAIResponse(
@@ -527,18 +543,20 @@ async function sendMessage() {
             attachmentParts
         );
 
-        // Remove loader before displaying the AI answer.
+        // 2. Remove the loader completely before the typewriter starts.
         thinking?.remove();
         thinking = null;
         stopThinkingLoader();
 
+        // 3. Create an empty AI message, then type the answer into it.
         const row = addMessage("", "ai", true);
-        const message = row.querySelector(".message");
+        const message = row?.querySelector(".message");
 
         if (message) {
             await typeAIResponse(message, answer);
         }
 
+        // 4. Save the complete answer after typing finishes.
         saveConversation("ai", answer);
 
         if (hasAttachments) {
@@ -596,7 +614,7 @@ if (sendBtn) {
 }
 
 // ==========================================================
-// ENTER TO SEND
+// ENTER TO SEND + AUTO-GROW INPUT
 // ==========================================================
 
 if (messageInput) {
@@ -631,7 +649,7 @@ document.querySelectorAll(".suggestion-item").forEach(button => {
 });
 
 // ==========================================================
-// EXISTING PLACEHOLDER BUTTONS
+// EXISTING PLACEHOLDER BUTTONS — PRESERVED
 // ==========================================================
 
 if (settingsBtn) {
