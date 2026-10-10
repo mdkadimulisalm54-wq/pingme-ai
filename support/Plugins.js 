@@ -1,37 +1,45 @@
 
 /* =========================================================
-   PingMe AI — Plugins Manager & UI
+   PingMe AI — Complete Plugins Page
+   Manager • Enable/Disable • Open/Back • Mobile UI
    ========================================================= */
 
 (() => {
     "use strict";
 
     const KEY = "pingme_plugins_v1";
+    const STYLE_ID = "pm-plugins-style";
+    const PAGE_ID = "pm-plugins-page";
     const registry = new Map();
-    let panel = null;
+
+    let page = null;
+    let previousOverflow = "";
 
     const builtIns = [
         {
             id: "web-search",
             name: "Web Search",
             description: "Search the web for useful information.",
-            category: "Research"
+            category: "Research",
+            icon: "⌕"
         },
         {
             id: "gmail",
             name: "Gmail",
-            description: "Connect and manage your emails.",
-            category: "Productivity"
+            description: "Connect Gmail to manage your emails.",
+            category: "Productivity",
+            icon: "✉"
         },
         {
             id: "google-drive",
             name: "Google Drive",
             description: "Access files from Google Drive.",
-            category: "Productivity"
+            category: "Productivity",
+            icon: "▣"
         }
     ];
 
-    function read() {
+    function readSettings() {
         try {
             return JSON.parse(localStorage.getItem(KEY) || "{}");
         } catch {
@@ -39,16 +47,17 @@
         }
     }
 
-    function save(data) {
+    function saveSettings(data) {
         localStorage.setItem(KEY, JSON.stringify(data));
+
         window.dispatchEvent(new CustomEvent("pingme:plugins-changed", {
             detail: { plugins: list() }
         }));
     }
 
     function register(plugin) {
-        if (!plugin?.id || !/^[a-z0-9-]+$/.test(plugin.id)) {
-            throw new Error("Invalid plugin ID.");
+        if (!plugin || !/^[a-z0-9-]+$/.test(plugin.id || "")) {
+            throw new Error("A valid plugin ID is required.");
         }
 
         registry.set(plugin.id, {
@@ -63,18 +72,20 @@
     }
 
     function get(id) {
-        const p = registry.get(id);
-        if (!p) return null;
+        const plugin = registry.get(id);
+        if (!plugin) return null;
+
+        const settings = readSettings();
 
         return {
-            id: p.id,
-            name: p.name,
-            description: p.description || "",
-            category: p.category || "Other",
-            status: p.status,
-            enabled: read()[id]?.enabled === true,
-            connected: p.status === "connected",
-            available: Boolean(p.execute)
+            id: plugin.id,
+            name: plugin.name || plugin.id,
+            description: plugin.description || "",
+            category: plugin.category || "Other",
+            status: plugin.status,
+            enabled: settings[id]?.enabled === true,
+            connected: plugin.status === "connected",
+            available: Boolean(plugin.execute)
         };
     }
 
@@ -83,11 +94,17 @@
     }
 
     function setEnabled(id, enabled) {
-        if (!registry.has(id)) throw new Error("Plugin not found.");
+        if (!registry.has(id)) {
+            throw new Error("Plugin not found: " + id);
+        }
 
-        const data = read();
-        data[id] = { ...(data[id] || {}), enabled: Boolean(enabled) };
-        save(data);
+        const data = readSettings();
+        data[id] = {
+            ...(data[id] || {}),
+            enabled: Boolean(enabled)
+        };
+
+        saveSettings(data);
         render();
         return get(id);
     }
@@ -97,130 +114,240 @@
     }
 
     async function execute(id, input, context = {}) {
-        const p = registry.get(id);
+        const plugin = registry.get(id);
 
-        if (!p) throw new Error("Plugin not found.");
+        if (!plugin) throw new Error("Plugin not found: " + id);
         if (!isEnabled(id)) throw new Error("Enable this plugin first.");
-        if (p.status !== "connected" || !p.execute) {
-            throw new Error(p.name + " is not connected yet.");
+
+        if (plugin.status !== "connected" || !plugin.execute) {
+            throw new Error(plugin.name + " is not connected yet.");
         }
 
-        return p.execute(input, context);
+        return plugin.execute(input, context);
     }
 
     function addStyles() {
-        if (document.getElementById("pingme-plugins-style")) return;
+        if (document.getElementById(STYLE_ID)) return;
 
         const style = document.createElement("style");
-        style.id = "pingme-plugins-style";
+        style.id = STYLE_ID;
+
         style.textContent = `
-            #pingmePluginsPanel {
+            #${PAGE_ID} {
                 position: fixed;
                 inset: 0;
-                z-index: 99990;
+                z-index: 2147483000;
+                display: block;
+                overflow-y: auto;
+                overscroll-behavior: contain;
                 background: var(--bg, var(--background, #fff));
                 color: var(--text, var(--text-color, #171717));
-                overflow-y: auto;
-                padding: 20px;
-                box-sizing: border-box;
                 font-family: inherit;
+                -webkit-overflow-scrolling: touch;
             }
-            #pingmePluginsPanel * { box-sizing: border-box; }
-            .pm-plugins-head {
-                display:flex; align-items:center; gap:14px;
-                margin:0 auto 24px; max-width:760px;
+
+            #${PAGE_ID}[hidden] { display: none !important; }
+
+            #${PAGE_ID} * { box-sizing: border-box; }
+
+            #${PAGE_ID} .pm-head {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 14px 18px;
+                background: var(--bg, var(--background, #fff));
+                border-bottom: 1px solid #8882;
             }
-            .pm-plugins-head h2 { margin:0; font-size:22px; }
-            .pm-plugins-back {
-                width:42px; height:42px; border:1px solid #8884;
-                border-radius:50%; background:transparent;
-                color:inherit; font-size:23px; cursor:pointer;
+
+            #${PAGE_ID} .pm-back {
+                width: 42px;
+                height: 42px;
+                border: 1px solid #8884;
+                border-radius: 50%;
+                background: transparent;
+                color: inherit;
+                font-size: 27px;
+                cursor: pointer;
             }
-            .pm-plugins-content { max-width:760px; margin:auto; }
-            .pm-plugins-intro { margin:0 0 22px; color:inherit; opacity:.7; }
-            .pm-plugin-card {
-                display:flex; align-items:center; gap:14px;
-                padding:16px; margin:12px 0;
-                border:1px solid #8884; border-radius:16px;
+
+            #${PAGE_ID} .pm-head h2 {
+                margin: 0;
+                font-size: 21px;
+                font-weight: 650;
             }
-            .pm-plugin-icon {
-                width:44px; height:44px; flex:0 0 44px;
-                display:grid; place-items:center; border-radius:13px;
-                background:#8882; font-size:21px;
+
+            #${PAGE_ID} .pm-content {
+                width: 100%;
+                max-width: 720px;
+                margin: 0 auto;
+                padding: 22px 18px 36px;
             }
-            .pm-plugin-info { flex:1; min-width:0; }
-            .pm-plugin-info h3 { margin:0 0 5px; font-size:16px; }
-            .pm-plugin-info p { margin:0; opacity:.7; font-size:13px; line-height:1.45; }
-            .pm-plugin-status { margin-top:7px; font-size:12px; opacity:.7; }
-            .pm-plugin-toggle {
-                width:44px; height:26px; flex:0 0 44px;
-                appearance:none; border-radius:20px;
-                background:#8886; position:relative; cursor:pointer;
-                transition:background .2s;
+
+            #${PAGE_ID} .pm-intro {
+                margin: 0 0 22px;
+                font-size: 14px;
+                line-height: 1.6;
+                opacity: .7;
             }
-            .pm-plugin-toggle:before {
-                content:""; position:absolute; top:3px; left:3px;
-                width:20px; height:20px; border-radius:50%;
-                background:white; transition:transform .2s;
+
+            #${PAGE_ID} .pm-card {
+                display: flex;
+                align-items: center;
+                gap: 13px;
+                padding: 15px 13px;
+                margin-bottom: 12px;
+                border: 1px solid #8883;
+                border-radius: 17px;
             }
-            .pm-plugin-toggle:checked { background:#1684f8; }
-            .pm-plugin-toggle:checked:before { transform:translateX(18px); }
-            .pm-plugin-note { font-size:12px; opacity:.65; margin-top:20px; }
+
+            #${PAGE_ID} .pm-icon {
+                display: grid;
+                place-items: center;
+                width: 44px;
+                height: 44px;
+                flex: 0 0 44px;
+                border-radius: 13px;
+                background: #8882;
+                font-size: 23px;
+            }
+
+            #${PAGE_ID} .pm-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            #${PAGE_ID} .pm-info h3 {
+                margin: 0 0 5px;
+                font-size: 15px;
+                font-weight: 650;
+            }
+
+            #${PAGE_ID} .pm-info p {
+                margin: 0;
+                font-size: 12px;
+                line-height: 1.5;
+                opacity: .7;
+            }
+
+            #${PAGE_ID} .pm-status {
+                margin-top: 7px;
+                font-size: 11px;
+                opacity: .75;
+            }
+
+            #${PAGE_ID} .pm-toggle {
+                position: relative;
+                width: 45px;
+                height: 26px;
+                flex: 0 0 45px;
+                appearance: none;
+                -webkit-appearance: none;
+                margin: 0;
+                border: 0;
+                border-radius: 20px;
+                background: #8886;
+                cursor: pointer;
+            }
+
+            #${PAGE_ID} .pm-toggle::before {
+                content: "";
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: white;
+                transition: transform .18s ease;
+            }
+
+            #${PAGE_ID} .pm-toggle:checked {
+                background: #1684f8;
+            }
+
+            #${PAGE_ID} .pm-toggle:checked::before {
+                transform: translateX(19px);
+            }
+
+            #${PAGE_ID} .pm-note {
+                margin-top: 20px;
+                font-size: 12px;
+                line-height: 1.6;
+                opacity: .65;
+            }
         `;
+
         document.head.appendChild(style);
     }
 
-    function ensurePanel() {
-        if (panel?.isConnected) return panel;
+    function ensurePage() {
+        if (page?.isConnected) return page;
 
-        panel = document.createElement("section");
-        panel.id = "pingmePluginsPanel";
-        panel.hidden = true;
-        panel.innerHTML = `
-            <header class="pm-plugins-head">
-                <button class="pm-plugins-back" type="button"
-                    aria-label="Back">‹</button>
-                <h2>Plugins</h2>
-            </header>
-            <main class="pm-plugins-content">
-                <p class="pm-plugins-intro">
-                    Use connected tools with PingMe AI.
-                </p>
-                <div class="pm-plugins-list"></div>
-                <p class="pm-plugin-note">
-                    Enabling a plugin does not connect an account.
-                    Integrations require their own secure connection.
-                </p>
-            </main>
-        `;
+        addStyles();
 
-        panel.querySelector(".pm-plugins-back").addEventListener("click", close);
-        document.body.appendChild(panel);
-        return panel;
+        page = document.createElement("section");
+        page.id = PAGE_ID;
+        page.hidden = true;
+        page.setAttribute("role", "dialog");
+        page.setAttribute("aria-label", "Plugins");
+
+        const header = document.createElement("header");
+        header.className = "pm-head";
+
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "pm-back";
+        back.textContent = "‹";
+        back.setAttribute("aria-label", "Back");
+        back.addEventListener("click", close);
+
+        const title = document.createElement("h2");
+        title.textContent = "Plugins";
+
+        header.append(back, title);
+
+        const content = document.createElement("main");
+        content.className = "pm-content";
+
+        const intro = document.createElement("p");
+        intro.className = "pm-intro";
+        intro.textContent = "Use connected tools with PingMe AI.";
+
+        const cards = document.createElement("div");
+        cards.className = "pm-cards";
+
+        const note = document.createElement("p");
+        note.className = "pm-note";
+        note.textContent =
+            "Switching a plugin on does not connect your account. " +
+            "Connections and live integrations must be configured separately.";
+
+        content.append(intro, cards, note);
+        page.append(header, content);
+        document.body.appendChild(page);
+
+        return page;
     }
 
     function render() {
-        if (!panel?.isConnected) return;
+        if (!page?.isConnected) return;
 
-        const host = panel.querySelector(".pm-plugins-list");
+        const host = page.querySelector(".pm-cards");
         host.replaceChildren();
-
-        const icons = {
-            "web-search": "⌕",
-            "gmail": "✉",
-            "google-drive": "▣"
-        };
 
         list().forEach(plugin => {
             const card = document.createElement("article");
-            card.className = "pm-plugin-card";
+            card.className = "pm-card";
 
             const icon = document.createElement("div");
-            icon.className = "pm-plugin-icon";
-            icon.textContent = icons[plugin.id] || "◇";
+            icon.className = "pm-icon";
+            icon.textContent = plugin.icon || "◇";
 
             const info = document.createElement("div");
-            info.className = "pm-plugin-info";
+            info.className = "pm-info";
 
             const name = document.createElement("h3");
             name.textContent = plugin.name;
@@ -229,17 +356,20 @@
             description.textContent = plugin.description;
 
             const status = document.createElement("div");
-            status.className = "pm-plugin-status";
+            status.className = "pm-status";
             status.textContent = plugin.connected
                 ? "Connected"
-                : "Not connected";
+                : plugin.enabled
+                    ? "Enabled · Not connected"
+                    : "Not connected";
 
             info.append(name, description, status);
 
             const toggle = document.createElement("input");
             toggle.type = "checkbox";
-            toggle.className = "pm-plugin-toggle";
+            toggle.className = "pm-toggle";
             toggle.checked = plugin.enabled;
+            toggle.setAttribute("role", "switch");
             toggle.setAttribute("aria-label", "Enable " + plugin.name);
             toggle.addEventListener("change", () => {
                 setEnabled(plugin.id, toggle.checked);
@@ -251,21 +381,22 @@
     }
 
     function open() {
-        addStyles();
-        ensurePanel();
-
-        window.dispatchEvent(new CustomEvent("pingme:plugins-open", {
-            detail: { plugins: list() }
-        }));
-
-        panel.hidden = false;
-        document.body.style.overflow = "hidden";
+        ensurePage();
         render();
+
+        previousOverflow = document.body.style.overflow;
+        page.hidden = false;
+        document.body.style.overflow = "hidden";
+
+        window.dispatchEvent(new CustomEvent("pingme:plugins-page-open"));
     }
 
     function close() {
-        if (panel) panel.hidden = true;
-        document.body.style.overflow = "";
+        if (!page) return;
+
+        page.hidden = true;
+        document.body.style.overflow = previousOverflow;
+
         window.dispatchEvent(new CustomEvent("pingme:plugins-close"));
     }
 
@@ -285,5 +416,6 @@
     window.addEventListener("pingme:plus-plugins", open);
 
     window.dispatchEvent(new CustomEvent("pingme:plugins-ready"));
+
     console.log("PingMe Plugins: Ready");
 })();
