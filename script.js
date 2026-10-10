@@ -1,7 +1,7 @@
-
 /* ==========================================================
    PINGME AI — MAIN SCRIPT
-   Chat • History • Gemini • Attachments • Sky Loader • Typewriter
+   Chat • History • Gemini • Attachments • Animated Loader
+   • Smooth Typewriter • Error Handling
    ========================================================== */
 
 "use strict";
@@ -133,10 +133,16 @@ function saveConversation(role, text) {
     const cleanText = String(text || "").trim();
     if (!cleanText) return;
 
-    pingMeConversation.push({ role, text: cleanText });
+    pingMeConversation.push({
+        role,
+        text: cleanText
+    });
 
     if (typeof window.addChatToHistory === "function") {
-        window.addChatToHistory({ role, text: cleanText });
+        window.addChatToHistory({
+            role,
+            text: cleanText
+        });
     }
 
     const history = window.PingMeHistory;
@@ -192,7 +198,7 @@ const PINGME_ICONS = {
 };
 
 // ==========================================================
-// LOADER — ONE INSTANCE, CLEAN START AND STOP
+// LOADER — SINGLE INSTANCE
 // ==========================================================
 
 function stopThinkingLoader() {
@@ -210,7 +216,10 @@ function stopThinkingLoader() {
     });
 
     const thinking = document.getElementById("thinking");
-    if (thinking) thinking.classList.remove("show");
+
+    if (thinking) {
+        thinking.classList.remove("show");
+    }
 }
 
 function addThinkingMessage() {
@@ -218,13 +227,15 @@ function addThinkingMessage() {
         welcomeScreen.style.display = "none";
     }
 
-    // Remove an old loader before showing a new one.
+    // Clear only an old loader, then show the current one.
     stopThinkingLoader();
 
     if (typeof window.PingMeLoader?.show === "function") {
-        window.PingMeLoader.show();
+        window.PingMeLoader.show("Thinking...");
     } else if (chatArea) {
+        // Fallback for cases where Chat Support is unavailable.
         const row = document.createElement("div");
+
         row.id = "pingmeFallbackLoader";
         row.className = "message-row ai pingme-loader-row";
         row.setAttribute("role", "status");
@@ -239,10 +250,14 @@ function addThinkingMessage() {
         const orbit = document.createElement("div");
         orbit.className = "pingme-loader-orbit";
 
-        const core = document.createElement("div");
-        core.className = "pingme-loader-dots";
+        const dots = document.createElement("div");
+        dots.className = "pingme-loader-dots";
 
-        loader.append(orbit, core);
+        for (let i = 0; i < 3; i++) {
+            dots.appendChild(document.createElement("span"));
+        }
+
+        loader.append(orbit, dots);
         message.appendChild(loader);
         row.appendChild(message);
         chatArea.appendChild(row);
@@ -252,7 +267,10 @@ function addThinkingMessage() {
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    return { remove: stopThinkingLoader };
+    // Allow the browser to paint the loader before long-running work.
+    return {
+        remove: stopThinkingLoader
+    };
 }
 
 // ==========================================================
@@ -267,6 +285,7 @@ function addMessage(text, sender, typing = false) {
     }
 
     const row = document.createElement("div");
+
     row.className = sender === "user"
         ? "message-row user"
         : "message-row ai";
@@ -276,6 +295,7 @@ function addMessage(text, sender, typing = false) {
 
     const message = document.createElement("div");
     message.className = "message";
+
     message.textContent = typing ? "" : String(text ?? "");
 
     box.appendChild(message);
@@ -293,7 +313,10 @@ function addMessage(text, sender, typing = false) {
             const label = copyBtn.querySelector("span");
 
             try {
-                await navigator.clipboard.writeText(message.textContent || "");
+                await navigator.clipboard.writeText(
+                    message.textContent || ""
+                );
+
                 label.textContent = "Copied";
             } catch (_) {
                 label.textContent = "Copy failed";
@@ -311,6 +334,7 @@ function addMessage(text, sender, typing = false) {
 
         linkBtn.addEventListener("click", async () => {
             const label = linkBtn.querySelector("span");
+
             const match = (message.textContent || "")
                 .match(/https?:\/\/[^\s]+/i);
 
@@ -336,19 +360,21 @@ function addMessage(text, sender, typing = false) {
 
     row.appendChild(box);
     chatArea.appendChild(row);
+
     chatArea.scrollTop = chatArea.scrollHeight;
 
     return row;
 }
 
 // ==========================================================
-// AI TYPEWRITER — STARTS AFTER LOADER IS REMOVED
+// AI TYPEWRITER — GRADUAL RESPONSE
 // ==========================================================
 
 async function typeAIResponse(message, answer) {
     if (!message) return;
 
     const text = String(answer || "");
+
     message.textContent = "";
     message.classList.add("typing-active");
 
@@ -360,14 +386,15 @@ async function typeAIResponse(message, answer) {
                 chatArea.scrollTop = chatArea.scrollHeight;
             }
 
-            let delay = 22;
+            // Natural typing speed, with short punctuation pauses.
+            let delay = 16;
 
             if (text[index] === "\n") {
-                delay = 55;
-            } else if (/[.!?।]/.test(text[index])) {
-                delay = 100;
-            } else if (text[index] === "," || text[index] === ";") {
                 delay = 45;
+            } else if (/[.!?।]/.test(text[index])) {
+                delay = 85;
+            } else if (text[index] === "," || text[index] === ";") {
+                delay = 40;
             }
 
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -463,7 +490,7 @@ Respond naturally.
 }
 
 // ==========================================================
-// SEND MESSAGE — TEXT + ATTACHMENTS
+// SEND MESSAGE — LOADER STARTS IMMEDIATELY
 // ==========================================================
 
 async function sendMessage() {
@@ -471,6 +498,7 @@ async function sendMessage() {
     if (sendBtn.disabled) return;
 
     const text = messageInput.value.trim();
+
     const attachmentAI = window.PingMeAttachmentAI;
     const attachmentStore = window.PingMeAttachments;
 
@@ -488,9 +516,41 @@ async function sendMessage() {
     let thinking = null;
 
     try {
+        // Show the user's message immediately.
+        const attachmentNames = attachmentFiles
+            .map(file => file?.name)
+            .filter(Boolean);
+
+        const displayText = [
+            text,
+            attachmentNames.length
+                ? "Attachments: " + attachmentNames.join(", ")
+                : hasAttachments
+                    ? "Attachments included"
+                    : ""
+        ].filter(Boolean).join("\n\n");
+
+        const userText = text ||
+            "Please examine the attached files and help me understand them.";
+
+        ensureHistoryChat();
+
+        addMessage(displayText || userText, "user");
+        saveConversation("user", displayText || userText);
+
+        messageInput.value = "";
+        messageInput.style.height = "auto";
+
+        // Start the loader BEFORE attachment preparation or AI processing.
+        thinking = addThinkingMessage();
+
+        // Let the browser paint the loader before processing continues.
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
         let prepared = null;
         let attachmentParts = [];
 
+        // Prepare attachments while the loader remains visible.
         if (hasAttachments) {
             if (typeof attachmentAI?.prepareMessage !== "function") {
                 throw new Error("ATTACHMENT_AI_NOT_READY");
@@ -515,40 +575,19 @@ async function sendMessage() {
             );
         }
 
-        const userText = text ||
-            "Please examine the attached files and help me understand them.";
-
-        const attachmentNames = prepared?.names || [];
-
-        const displayText = [
-            text,
-            attachmentNames.length
-                ? "Attachments: " + attachmentNames.join(", ")
-                : ""
-        ].filter(Boolean).join("\n\n");
-
-        ensureHistoryChat();
-
-        addMessage(displayText || userText, "user");
-        saveConversation("user", displayText || userText);
-
-        messageInput.value = "";
-        messageInput.style.height = "auto";
-
-        // 1. Show the animated loader while waiting for the model.
-        thinking = addThinkingMessage();
-
+        // Keep the loader visible throughout AI processing.
         const answer = await generateAIResponse(
             userText,
             attachmentParts
         );
 
-        // 2. Remove the loader completely before the typewriter starts.
+        // The complete response is ready: stop the loader now.
         thinking?.remove();
         thinking = null;
+
         stopThinkingLoader();
 
-        // 3. Create an empty AI message, then type the answer into it.
+        // Create the answer bubble and reveal its text gradually.
         const row = addMessage("", "ai", true);
         const message = row?.querySelector(".message");
 
@@ -556,7 +595,7 @@ async function sendMessage() {
             await typeAIResponse(message, answer);
         }
 
-        // 4. Save the complete answer after typing finishes.
+        // Save the complete answer after the animation finishes.
         saveConversation("ai", answer);
 
         if (hasAttachments) {
@@ -568,6 +607,7 @@ async function sendMessage() {
 
         thinking?.remove();
         thinking = null;
+
         stopThinkingLoader();
 
         const errorText = String(error?.message || error || "");
@@ -596,7 +636,9 @@ async function sendMessage() {
         addMessage(reply, "ai");
 
     } finally {
+        // Always clean up after success or failure.
         stopThinkingLoader();
+
         sendBtn.disabled = false;
         messageInput.focus();
     }
@@ -627,7 +669,8 @@ if (messageInput) {
 
     messageInput.addEventListener("input", function () {
         this.style.height = "auto";
-        this.style.height = Math.min(this.scrollHeight, 120) + "px";
+        this.style.height =
+            Math.min(this.scrollHeight, 120) + "px";
     });
 }
 
