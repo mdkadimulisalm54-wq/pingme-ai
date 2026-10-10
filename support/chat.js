@@ -1,7 +1,6 @@
-
 /* ==========================================================
    PINGME AI — CHAT SUPPORT
-   Message UI • History • Four-Corner Glow Loader
+   Message UI • History • Circular Animated AI Loader
    ========================================================== */
 
 (() => {
@@ -56,7 +55,7 @@
                 margin: 8px 0 6px !important;
             }
 
-            /* LOADER */
+            /* CIRCULAR AI LOADER */
 
             .pingme-loader-row {
                 display: flex;
@@ -69,8 +68,8 @@
                 display: flex;
                 align-items: center;
                 justify-content: flex-start;
-                width: 70px;
-                height: 54px;
+                width: 52px;
+                height: 48px;
                 margin: 0;
                 padding: 0;
                 background: transparent;
@@ -79,8 +78,8 @@
 
             .pingme-ai-loader {
                 position: relative;
-                width: 42px;
-                height: 42px;
+                width: 38px;
+                height: 38px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -88,44 +87,32 @@
                 isolation: isolate;
             }
 
-            /* Static rounded-square outline */
+            /* Rotating circular ring */
 
             .pingme-loader-orbit {
                 position: absolute;
-                inset: 3px;
+                inset: 2px;
                 box-sizing: border-box;
-                border: 2px solid rgba(153,177,255,.24);
-                border-radius: 10px;
+                border: 2px solid rgba(34,197,94,.14);
+                border-radius: 50%;
                 pointer-events: none;
+                animation: pingmeRingPulse 1.5s ease-in-out infinite;
             }
-
-            /* Light travels around the fixed outline */
 
             .pingme-loader-orbit::before {
                 content: "";
                 position: absolute;
                 inset: -2px;
-                border-radius: inherit;
-                padding: 2px;
-                background: conic-gradient(
-                    from 0deg,
-                    transparent 0deg,
-                    transparent 235deg,
-                    #91baff 275deg,
-                    #b7a0ff 315deg,
-                    #91baff 345deg,
-                    transparent 360deg
-                );
-                -webkit-mask:
-                    linear-gradient(#000 0 0) content-box,
-                    linear-gradient(#000 0 0);
-                -webkit-mask-composite: xor;
-                mask-composite: exclude;
-                animation: pingmeLightTravel 2.2s linear infinite;
-                filter:
-                    drop-shadow(0 0 2px rgba(116,157,255,.65))
-                    drop-shadow(0 0 5px rgba(167,139,250,.4));
+                box-sizing: border-box;
+                border: 3px solid transparent;
+                border-top-color: #22c55e;
+                border-right-color: #111827;
+                border-radius: 50%;
+                animation: pingmeRingRotate 1.05s linear infinite;
+                filter: drop-shadow(0 0 3px rgba(34,197,94,.3));
             }
+
+            /* Single animated center orb */
 
             .pingme-loader-dots {
                 position: relative;
@@ -133,25 +120,16 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 4px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #202124;
+                box-shadow: 0 0 0 3px rgba(34,197,94,.10);
+                animation: pingmeCorePulse 1.1s ease-in-out infinite;
             }
 
             .pingme-loader-dots span {
-                display: block;
-                width: 4px;
-                height: 4px;
-                flex-shrink: 0;
-                border-radius: 50%;
-                background: #252525;
-                animation: pingmeDotPulse 1.05s ease-in-out infinite;
-            }
-
-            .pingme-loader-dots span:nth-child(2) {
-                animation-delay: .15s;
-            }
-
-            .pingme-loader-dots span:nth-child(3) {
-                animation-delay: .3s;
+                display: none !important;
             }
 
             .thinking {
@@ -183,33 +161,61 @@
             }
 
             @keyframes pingmeUserIn {
-                from { opacity: 0; transform: translateY(6px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(6px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             @keyframes pingmeAIIn {
-                from { opacity: 0; transform: translateY(7px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-
-            @keyframes pingmeLightTravel {
-                to { transform: rotate(360deg); }
-            }
-
-            @keyframes pingmeDotPulse {
-                0%, 60%, 100% {
-                    opacity: .5;
-                    transform: scale(.85);
+                from {
+                    opacity: 0;
+                    transform: translateY(7px);
                 }
-                30% {
+                to {
                     opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes pingmeRingRotate {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            @keyframes pingmeRingPulse {
+                0%, 100% {
+                    transform: scale(.94);
+                    opacity: .75;
+                }
+                50% {
+                    transform: scale(1.04);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes pingmeCorePulse {
+                0%, 100% {
+                    transform: scale(.82);
+                    background: #202124;
+                    box-shadow: 0 0 0 2px rgba(34,197,94,.10);
+                }
+                50% {
                     transform: scale(1.12);
+                    background: #22c55e;
+                    box-shadow: 0 0 0 5px rgba(34,197,94,.13);
                 }
             }
 
             @media (prefers-reduced-motion: reduce) {
+                .pingme-loader-orbit,
                 .pingme-loader-orbit::before,
-                .pingme-loader-dots span {
+                .pingme-loader-dots {
                     animation: none !important;
                 }
             }
@@ -312,7 +318,10 @@
         try {
             if (isUser && typeof history.addUserMessage === "function") {
                 history.addUserMessage(chatId, content);
-            } else if (isAI && typeof history.addAssistantMessage === "function") {
+            } else if (
+                isAI &&
+                typeof history.addAssistantMessage === "function"
+            ) {
                 history.addAssistantMessage(chatId, content);
             } else if (typeof history.addMessage === "function") {
                 history.addMessage(chatId, {
@@ -354,7 +363,9 @@
 
                 const target = mutation.target?.nodeType === 1
                     ? mutation.target.closest(".user-message, .ai-message")
-                    : mutation.target?.parentElement?.closest(".user-message, .ai-message");
+                    : mutation.target?.parentElement?.closest(
+                        ".user-message, .ai-message"
+                    );
 
                 if (target) saveLegacyMessage(target);
             });
@@ -397,12 +408,12 @@
         const orbit = document.createElement("div");
         orbit.className = "pingme-loader-orbit";
 
-        const dots = document.createElement("div");
-        dots.className = "pingme-loader-dots";
-        dots.innerHTML = "<span></span><span></span><span></span>";
+        const core = document.createElement("div");
+        core.className = "pingme-loader-dots";
 
-        loader.append(orbit, dots);
+        orbit.appendChild(core);
         message.appendChild(loader);
+        loader.append(orbit, core);
         row.appendChild(message);
         area.appendChild(row);
 
