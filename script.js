@@ -1,6 +1,6 @@
 /* ==========================================================
    PINGME AI — MAIN SCRIPT
-   Chat • History • Gemini • Attachments
+   Chat • History • Gemini • Attachments • Typewriter
    ========================================================== */
 
 "use strict";
@@ -173,38 +173,68 @@ const PINGME_ICONS = {
 };
 
 // ==========================================================
-// THINKING LOADER
+// THINKING LOADER — RELIABLE CLEANUP
 // ==========================================================
 
-function addThinkingMessage() {
-    if (welcomeScreen) welcomeScreen.style.display = "none";
-
-    if (window.PingMeLoader?.show) {
-        window.PingMeLoader.show();
-
-        return {
-            remove() {
-                window.PingMeLoader?.hide?.();
-            }
-        };
+function stopThinkingLoader() {
+    try {
+        window.PingMeLoader?.hide?.();
+    } catch (error) {
+        console.warn("PingMe loader cleanup:", error);
     }
 
-    const row = document.createElement("div");
-    row.className = "message-row ai";
-    row.id = "pingmeFallbackLoader";
+    document.getElementById("pingmeAiLoaderRow")?.remove();
+    document.getElementById("pingmeFallbackLoader")?.remove();
 
-    const message = document.createElement("div");
-    message.className = "message thinking-message";
-    message.textContent = "PingMe is thinking...";
+    document.querySelectorAll(".pingme-loader-row").forEach(row => {
+        row.remove();
+    });
 
-    row.appendChild(message);
-    chatArea.appendChild(row);
+    const thinking = document.getElementById("thinking");
+
+    if (thinking) {
+        thinking.classList.remove("show");
+    }
+}
+
+function addThinkingMessage() {
+    if (welcomeScreen) {
+        welcomeScreen.style.display = "none";
+    }
+
+    stopThinkingLoader();
+
+    if (typeof window.PingMeLoader?.show === "function") {
+        window.PingMeLoader.show();
+    } else {
+        const row = document.createElement("div");
+        row.id = "pingmeFallbackLoader";
+        row.className = "message-row ai pingme-loader-row";
+        row.setAttribute("role", "status");
+        row.setAttribute("aria-label", "PingMe is preparing a response");
+
+        const message = document.createElement("div");
+        message.className = "message thinking-message";
+
+        const loader = document.createElement("div");
+        loader.className = "pingme-ai-loader";
+
+        const orbit = document.createElement("div");
+        orbit.className = "pingme-loader-orbit";
+
+        const core = document.createElement("div");
+        core.className = "pingme-loader-core";
+
+        loader.append(orbit, core);
+        message.appendChild(loader);
+        row.appendChild(message);
+        chatArea.appendChild(row);
+    }
+
     chatArea.scrollTop = chatArea.scrollHeight;
 
     return {
-        remove() {
-            row.remove();
-        }
+        remove: stopThinkingLoader
     };
 }
 
@@ -213,9 +243,12 @@ function addThinkingMessage() {
 // ==========================================================
 
 function addMessage(text, sender, typing = false) {
-    if (welcomeScreen) welcomeScreen.style.display = "none";
+    if (welcomeScreen) {
+        welcomeScreen.style.display = "none";
+    }
 
     const row = document.createElement("div");
+
     row.className = sender === "user"
         ? "message-row user"
         : "message-row ai";
@@ -242,7 +275,9 @@ function addMessage(text, sender, typing = false) {
             const label = copyBtn.querySelector("span");
 
             try {
-                await navigator.clipboard.writeText(text);
+                await navigator.clipboard.writeText(
+                    message.textContent || ""
+                );
                 label.textContent = "Copied";
             } catch (_) {
                 label.textContent = "Copy failed";
@@ -260,7 +295,8 @@ function addMessage(text, sender, typing = false) {
 
         linkBtn.addEventListener("click", async () => {
             const label = linkBtn.querySelector("span");
-            const match = text.match(/https?:\/\/[^\s]+/i);
+            const match = (message.textContent || "")
+                .match(/https?:\/\/[^\s]+/i);
 
             if (!match) {
                 label.textContent = "No link";
@@ -290,36 +326,32 @@ function addMessage(text, sender, typing = false) {
 }
 
 // ==========================================================
-// SMOOTH AI TYPEWRITER
+// AI TYPEWRITER — VISIBLE CHARACTER-BY-CHARACTER OUTPUT
 // ==========================================================
 
 async function typeAIResponse(message, answer) {
-    let index = 0;
+    const text = String(answer || "");
+    message.textContent = "";
 
-    while (index < answer.length) {
-        const character = answer[index];
-        const chunkSize = answer.length > 1500 ? 3 : 1;
-        const nextIndex = Math.min(index + chunkSize, answer.length);
-
-        message.textContent += answer.slice(index, nextIndex);
-        index = nextIndex;
+    for (let index = 0; index < text.length; index++) {
+        message.textContent += text[index];
 
         chatArea.scrollTop = chatArea.scrollHeight;
 
-        let delay = answer.length > 1500 ? 5 : 18;
+        let delay = 28;
 
-        if (character === "\n") {
-            delay = 45;
-        } else if (/[.!?।]/.test(character)) {
-            delay = 100;
-        } else if (character === "," || character === ";") {
-            delay = 50;
+        if (text[index] === "\n") {
+            delay = 65;
+        } else if (/[.!?।]/.test(text[index])) {
+            delay = 120;
+        } else if (text[index] === "," || text[index] === ";") {
+            delay = 55;
         }
 
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    message.textContent = answer;
+    message.textContent = text;
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
@@ -415,7 +447,6 @@ async function sendMessage() {
     const attachmentAI = window.PingMeAttachmentAI;
     const attachmentStore = window.PingMeAttachments;
 
-    // Read the actual selected files, not only the bridge status.
     const attachmentFiles =
         attachmentStore?.getFiles?.() ||
         attachmentAI?.getFiles?.() ||
@@ -438,7 +469,6 @@ async function sendMessage() {
                 throw new Error("ATTACHMENT_AI_NOT_READY");
             }
 
-            // Pass the selected files directly to the attachment bridge.
             prepared = await attachmentAI.prepareMessage(
                 text,
                 attachmentFiles
@@ -446,7 +476,6 @@ async function sendMessage() {
 
             attachmentParts = prepared?.parts?.slice(1) || [];
 
-            // Never silently send only the text when files were selected.
             if (!attachmentParts.length) {
                 throw new Error("ATTACHMENT_DATA_MISSING");
             }
@@ -486,13 +515,19 @@ async function sendMessage() {
             attachmentParts
         );
 
+        // Stop and remove the loader before showing the answer.
         thinking?.remove();
         thinking = null;
+        stopThinkingLoader();
 
-        const row = addMessage(answer, "ai", true);
+        // Create an empty AI message, then type the answer into it.
+        const row = addMessage("", "ai", true);
         const message = row.querySelector(".message");
 
-        await typeAIResponse(message, answer);
+        if (message) {
+            await typeAIResponse(message, answer);
+        }
+
         saveConversation("ai", answer);
 
         if (hasAttachments) {
@@ -503,6 +538,8 @@ async function sendMessage() {
         console.error("PingMe send error:", error);
 
         thinking?.remove();
+        thinking = null;
+        stopThinkingLoader();
 
         const errorText = String(error?.message || error || "");
         let reply;
@@ -530,6 +567,7 @@ async function sendMessage() {
         addMessage(reply, "ai");
 
     } finally {
+        stopThinkingLoader();
         sendBtn.disabled = false;
         messageInput.focus();
     }
