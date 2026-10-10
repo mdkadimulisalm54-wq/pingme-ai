@@ -114,6 +114,16 @@ if (!document.getElementById(STYLE_ID)) {
             background: #22c55e;  
             box-shadow: 0 0 9px rgba(34,197,94,.35);  
         }  
+        @keyframes pingmeDotPulse {
+    from {
+        transform: scale(.7);
+        opacity: .65;
+    }
+    to {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
 
         .pingme-loader-dots span {  
             display: none !important;  
