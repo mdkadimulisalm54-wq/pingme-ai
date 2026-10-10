@@ -1,1 +1,168 @@
-আসতেছে 
+
+/* =========================================================
+   PingMe AI — Extensible Plugin Manager
+   Plugin Registry • Enable/Disable • Future Integrations
+   ========================================================= */
+
+(() => {
+    "use strict";
+
+    const STORAGE_KEY = "pingme_plugins_v1";
+    const EVENT_NAME = "pingme:plugins-changed";
+
+    const registry = new Map();
+
+    const builtInPlugins = [
+        {
+            id: "web-search",
+            name: "Web Search",
+            description: "Search the web for useful information.",
+            category: "Research",
+            status: "not-connected"
+        },
+        {
+            id: "gmail",
+            name: "Gmail",
+            description: "Connect Gmail to find and manage emails.",
+            category: "Productivity",
+            status: "not-connected"
+        },
+        {
+            id: "google-drive",
+            name: "Google Drive",
+            description: "Access files from your connected Drive.",
+            category: "Productivity",
+            status: "not-connected"
+        }
+    ];
+
+    function readSettings() {
+        try {
+            return JSON.parse(
+                localStorage.getItem(STORAGE_KEY) || "{}"
+            );
+        } catch {
+            return {};
+        }
+    }
+
+    function saveSettings(settings) {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(settings)
+        );
+
+        window.dispatchEvent(
+            new CustomEvent(EVENT_NAME, {
+                detail: { plugins: list() }
+            })
+        );
+    }
+
+    function register(plugin) {
+        if (!plugin || !/^[a-z0-9-]+$/.test(plugin.id || "")) {
+            throw new Error("A valid plugin ID is required.");
+        }
+
+        registry.set(plugin.id, {
+            id: plugin.id,
+            name: plugin.name || plugin.id,
+            description: plugin.description || "",
+            category: plugin.category || "Other",
+            status: plugin.status || "not-connected",
+            execute: typeof plugin.execute === "function"
+                ? plugin.execute
+                : null
+        });
+
+        return get(plugin.id);
+    }
+
+    function get(id) {
+        const plugin = registry.get(id);
+        if (!plugin) return null;
+
+        const settings = readSettings();
+
+        return {
+            id: plugin.id,
+            name: plugin.name,
+            description: plugin.description,
+            category: plugin.category,
+            status: plugin.status,
+            enabled: settings[plugin.id]?.enabled === true,
+            connected: plugin.status === "connected",
+            available: typeof plugin.execute === "function"
+        };
+    }
+
+    function list() {
+        return [...registry.keys()].map(get);
+    }
+
+    function setEnabled(id, enabled) {
+        if (!registry.has(id)) {
+            throw new Error("Plugin not found: " + id);
+        }
+
+        const settings = readSettings();
+
+        settings[id] = {
+            ...(settings[id] || {}),
+            enabled: Boolean(enabled)
+        };
+
+        saveSettings(settings);
+        return get(id);
+    }
+
+    function isEnabled(id) {
+        return get(id)?.enabled === true;
+    }
+
+    async function execute(id, input, context = {}) {
+        const plugin = registry.get(id);
+
+        if (!plugin) {
+            throw new Error("Plugin not found: " + id);
+        }
+
+        if (!isEnabled(id)) {
+            throw new Error("Enable this plugin first.");
+        }
+
+        if (plugin.status !== "connected" || !plugin.execute) {
+            throw new Error(
+                plugin.name + " is not connected yet."
+            );
+        }
+
+        return plugin.execute(input, context);
+    }
+
+    function open() {
+        window.dispatchEvent(
+            new CustomEvent("pingme:plugins-open", {
+                detail: { plugins: list() }
+            })
+        );
+    }
+
+    builtInPlugins.forEach(register);
+
+    window.PingMePlugins = {
+        register,
+        get,
+        list,
+        setEnabled,
+        isEnabled,
+        execute,
+        open
+    };
+
+    window.dispatchEvent(
+        new CustomEvent("pingme:plugins-ready")
+    );
+
+    console.log("PingMe Plugins: Manager ready");
+})();
