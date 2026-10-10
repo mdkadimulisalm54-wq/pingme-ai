@@ -498,7 +498,7 @@ try {
     messageInput.style.height = "auto";  
 
     thinking = addThinkingMessage();  
-
+    window.PingMeLoader?.show();
     const answer = await generateAIResponse(  
         userText,  
         attachmentParts  
