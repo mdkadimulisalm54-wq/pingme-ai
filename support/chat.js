@@ -1,7 +1,7 @@
 
 /* ==========================================================
    PINGME AI — CHAT SUPPORT
-   Sky Loader • Message UI • History Compatibility
+   Animated Loader • English Status • History Compatibility
    ========================================================== */
 
 (() => {
@@ -24,7 +24,6 @@
         style.id = STYLE_ID;
 
         style.textContent = `
-            /* Keep messages inside the chat area */
             #chatArea .message-row {
                 box-sizing: border-box;
                 min-width: 0;
@@ -70,7 +69,8 @@
                 line-height: 1.65;
             }
 
-            /* User bubble: white, sky blue and soft mint */
+            /* User message bubble */
+
             #chatArea .message-row.user .message {
                 display: block;
                 width: fit-content;
@@ -89,13 +89,15 @@
                 animation: pingmeMessageEnter .24s ease-out both;
             }
 
-            /* AI answer */
+            /* AI message */
+
             #chatArea .message-row.ai .message {
                 color: inherit;
                 overflow-wrap: anywhere;
             }
 
             /* Typewriter cursor */
+
             #chatArea .message.typing-active::after {
                 content: "";
                 display: inline-block;
@@ -108,7 +110,8 @@
                 animation: pingmeCursorBlink .8s steps(2, start) infinite;
             }
 
-            /* Legacy message classes: preserve compatibility */
+            /* Legacy message compatibility */
+
             .user-message {
                 display: block;
                 width: fit-content;
@@ -146,7 +149,7 @@
             }
 
             /* =================================================
-               NEW SKY LOADER
+               ANIMATED LOADER
                ================================================= */
 
             #chatArea .pingme-loader-row {
@@ -154,7 +157,7 @@
                 align-items: center;
                 justify-content: flex-start;
                 width: 100%;
-                min-height: 48px;
+                min-height: 38px;
                 margin: 8px 0 12px;
                 padding: 0;
                 visibility: visible !important;
@@ -166,9 +169,10 @@
                 display: flex !important;
                 align-items: center;
                 justify-content: flex-start;
-                width: 44px;
-                min-width: 44px;
-                height: 44px;
+                gap: 10px;
+                width: auto;
+                min-width: 0;
+                height: auto;
                 margin: 0 !important;
                 padding: 0 !important;
                 border: 0 !important;
@@ -180,96 +184,131 @@
                 opacity: 1 !important;
             }
 
+            /* Outer loader */
+
             #chatArea .pingme-ai-loader {
                 position: relative;
                 display: flex !important;
                 align-items: center;
                 justify-content: center;
-                flex: 0 0 38px;
-                width: 38px;
-                height: 38px;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 30px;
                 overflow: visible;
                 border-radius: 50%;
                 background: radial-gradient(
                     circle,
-                    rgba(167, 225, 255, .28) 0%,
-                    rgba(192, 255, 231, .16) 48%,
-                    transparent 74%
+                    rgba(167, 225, 255, .18),
+                    transparent 72%
                 );
-                filter: drop-shadow(0 0 5px rgba(126, 209, 255, .18));
-                animation: pingmeSkyFloat 1.8s ease-in-out infinite;
             }
+
+            /* Rotating ring */
 
             #chatArea .pingme-loader-orbit {
                 position: absolute;
                 inset: 2px;
                 box-sizing: border-box;
-                border: 2px solid transparent;
-                border-top-color: #7dcfff;
-                border-right-color: #b7f2df;
-                border-bottom-color: #ffffff;
+                border: 1.5px solid #d9efff;
+                border-top-color: #70c7ff;
+                border-right-color: #a6e9d4;
+                border-bottom-color: #eaf7ff;
                 border-left-color: #c5eaff;
                 border-radius: 50%;
-                animation: pingmeSkySpin 1.15s linear infinite;
+                animation: pingmeSkySpin 1.5s linear infinite;
             }
 
-            #chatArea .pingme-loader-orbit::before {
-                content: "";
-                position: absolute;
-                inset: 5px;
-                box-sizing: border-box;
-                border: 1.5px solid rgba(130, 211, 255, .58);
-                border-radius: 50%;
-                animation: pingmeSkyInnerSpin 2s linear infinite;
-            }
+            /* Small orbiting point */
 
             #chatArea .pingme-loader-orbit::after {
                 content: "";
                 position: absolute;
                 top: -3px;
                 left: 50%;
-                width: 6px;
-                height: 6px;
+                width: 5px;
+                height: 5px;
                 border: 1px solid #ffffff;
                 border-radius: 50%;
-                background: #8bd7ff;
-                box-shadow: 0 0 8px rgba(116, 207, 255, .7);
+                background: #78caff;
+                box-shadow: 0 0 5px rgba(116, 207, 255, .4);
                 transform: translateX(-50%);
             }
 
-            #chatArea .pingme-loader-dots,
-            #chatArea .pingme-loader-core {
+            /* Three dots inside the ring */
+
+            #chatArea .pingme-loader-dots {
                 position: relative;
                 z-index: 1;
-                display: block !important;
-                flex: 0 0 10px;
-                width: 10px;
-                height: 10px;
-                min-width: 10px;
-                min-height: 10px;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+                flex: 0 0 auto;
+                width: 13px;
+                height: 8px;
+                min-width: 13px;
+                min-height: 8px;
                 padding: 0;
-                border: 2px solid rgba(255, 255, 255, .9);
+                border: 0;
+                border-radius: 0;
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+
+            #chatArea .pingme-loader-dots span {
+                display: block !important;
+                flex: 0 0 3px;
+                width: 3px;
+                height: 3px;
+                min-width: 3px;
+                min-height: 3px;
+                padding: 0;
+                border: 0;
                 border-radius: 50%;
-                background: linear-gradient(135deg, #9cddff, #b8f2df) !important;
-                box-shadow:
-                    0 0 7px rgba(125, 207, 255, .55),
-                    0 0 13px rgba(163, 238, 218, .25);
-                animation: pingmeSkyPulse .8s ease-in-out infinite alternate;
-                visibility: visible !important;
-                opacity: 1 !important;
+                background: #83cfff !important;
+                box-shadow: 0 0 3px rgba(125, 207, 255, .3);
+                animation: pingmeInnerDot .8s ease-in-out infinite;
+                opacity: .5;
             }
 
-            #chatArea .pingme-loader-dots span,
-            #chatArea .pingme-loader-core span {
-                display: none !important;
+            #chatArea .pingme-loader-dots span:nth-child(2) {
+                animation-delay: .15s;
             }
 
-            /* Hide the old separate indicator; keep the new loader */
+            #chatArea .pingme-loader-dots span:nth-child(3) {
+                animation-delay: .3s;
+            }
+
+            /* Animated English status */
+
+            #chatArea .pingme-loader-status {
+                display: inline-flex !important;
+                align-items: center;
+                flex-wrap: wrap;
+                min-width: 0;
+                color: #929da8;
+                font-family: inherit;
+                font-size: 13px;
+                font-weight: 400;
+                line-height: 1.5;
+                letter-spacing: .1px;
+                white-space: pre-wrap;
+            }
+
+            #chatArea .pingme-loader-status span {
+                display: inline-block;
+                animation: pingmeTextWave 1.5s ease-in-out infinite;
+                animation-delay: calc(var(--i) * 35ms);
+            }
+
+            /* Hide old indicator */
+
             #thinking {
                 display: none !important;
             }
 
             /* Copy and link actions */
+
             #chatArea .message-actions,
             #chatArea .pingme-message-actions {
                 display: flex;
@@ -296,7 +335,8 @@
                 stroke-linejoin: round;
             }
 
-            /* Input stays inside its own box as it grows */
+            /* Input sizing */
+
             #messageInput {
                 box-sizing: border-box;
                 min-width: 0;
@@ -306,22 +346,32 @@
                 resize: none;
             }
 
+            /* Animations */
+
             @keyframes pingmeSkySpin {
                 to { transform: rotate(360deg); }
             }
 
-            @keyframes pingmeSkyInnerSpin {
-                to { transform: rotate(-360deg); }
+            @keyframes pingmeInnerDot {
+                0%, 60%, 100% {
+                    opacity: .45;
+                    transform: scale(.75);
+                }
+                30% {
+                    opacity: 1;
+                    transform: scale(1.15);
+                }
             }
 
-            @keyframes pingmeSkyFloat {
-                0%, 100% { transform: translateY(0) scale(.97); }
-                50% { transform: translateY(-3px) scale(1.04); }
-            }
-
-            @keyframes pingmeSkyPulse {
-                from { transform: scale(.72); opacity: .68; }
-                to { transform: scale(1.08); opacity: 1; }
+            @keyframes pingmeTextWave {
+                0%, 70%, 100% {
+                    opacity: .65;
+                    transform: translateY(0);
+                }
+                35% {
+                    opacity: 1;
+                    transform: translateY(-1px);
+                }
             }
 
             @keyframes pingmeCursorBlink {
@@ -329,21 +379,32 @@
             }
 
             @keyframes pingmeLoaderEnter {
-                from { opacity: 0; transform: translateY(4px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(3px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             @keyframes pingmeMessageEnter {
-                from { opacity: 0; transform: translateY(5px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
             @media (prefers-reduced-motion: reduce) {
                 #chatArea .pingme-ai-loader,
                 #chatArea .pingme-loader-orbit,
-                #chatArea .pingme-loader-orbit::before,
-                #chatArea .pingme-loader-dots,
-                #chatArea .pingme-loader-core {
+                #chatArea .pingme-loader-dots span,
+                #chatArea .pingme-loader-status span {
                     animation-duration: 2.5s;
                 }
 
@@ -433,7 +494,7 @@
 
         clone.querySelectorAll(
             ".pingme-message-actions, .message-actions, " +
-            ".pingme-ai-loader, button"
+            ".pingme-ai-loader, .pingme-loader-status, button"
         ).forEach(element => element.remove());
 
         return String(
@@ -536,51 +597,72 @@
        LOADER API
        ====================================================== */
 
-    function addLoader() {
+    function addLoader(label = "Thinking...") {
         const area = document.getElementById("chatArea");
         if (!area) return null;
 
         let row = document.getElementById(LOADER_ID);
 
-        if (row) {
-            if (row.parentElement !== area) {
-                area.appendChild(row);
+        if (!row) {
+            row = document.createElement("div");
+            row.id = LOADER_ID;
+            row.className = "message-row ai pingme-loader-row";
+            row.setAttribute("role", "status");
+
+            const message = document.createElement("div");
+            message.className = "message thinking-message";
+
+            const loader = document.createElement("div");
+            loader.className = "pingme-ai-loader";
+
+            const orbit = document.createElement("div");
+            orbit.className = "pingme-loader-orbit";
+
+            const dots = document.createElement("div");
+            dots.className = "pingme-loader-dots";
+
+            for (let i = 0; i < 3; i++) {
+                dots.appendChild(document.createElement("span"));
             }
-            return row;
+
+            loader.append(orbit, dots);
+
+            const status = document.createElement("span");
+            status.className = "pingme-loader-status";
+
+            message.append(loader, status);
+            row.appendChild(message);
+            area.appendChild(row);
+        } else if (row.parentElement !== area) {
+            area.appendChild(row);
         }
 
-        row = document.createElement("div");
-        row.id = LOADER_ID;
-        row.className = "message-row ai pingme-loader-row";
-        row.setAttribute("role", "status");
-        row.setAttribute(
-            "aria-label",
-            "PingMe is preparing a response"
-        );
+        const status = row.querySelector(".pingme-loader-status");
+        const text = String(label || "Thinking...");
 
-        const message = document.createElement("div");
-        message.className = "message thinking-message";
+        if (status && status.dataset.label !== text) {
+            status.replaceChildren();
 
-        const loader = document.createElement("div");
-        loader.className = "pingme-ai-loader";
+            [...text].forEach((character, index) => {
+                const letter = document.createElement("span");
 
-        const orbit = document.createElement("div");
-        orbit.className = "pingme-loader-orbit";
+                letter.textContent =
+                    character === " " ? "\u00a0" : character;
 
-        const core = document.createElement("div");
-        core.className = "pingme-loader-dots";
+                letter.style.setProperty("--i", index);
+                status.appendChild(letter);
+            });
 
-        loader.append(orbit, core);
-        message.appendChild(loader);
-        row.appendChild(message);
-        area.appendChild(row);
+            status.dataset.label = text;
+            row.setAttribute("aria-label", text);
+        }
 
         return row;
     }
 
-    function showLoader() {
+    function showLoader(label = "Thinking...") {
         const area = document.getElementById("chatArea");
-        const row = addLoader();
+        const row = addLoader(label);
 
         const thinking = document.getElementById("thinking");
         if (thinking) thinking.classList.remove("show");
