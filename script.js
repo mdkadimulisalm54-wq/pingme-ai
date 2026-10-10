@@ -1,3 +1,4 @@
+
 /* ==========================================================
    PINGME AI — MAIN SCRIPT
    Chat • History • Gemini • Attachments • Typewriter
@@ -74,7 +75,6 @@ function ensureHistoryChat() {
 
 function loadCurrentHistoryChat() {
     const history = window.PingMeHistory;
-
     if (!history || typeof history.getChat !== "function") return;
 
     let savedId;
@@ -173,11 +173,12 @@ const PINGME_ICONS = {
 };
 
 // ==========================================================
-// THINKING LOADER — RELIABLE CLEANUP
+// LOADER — CLEANUP
 // ==========================================================
 
 function stopThinkingLoader() {
     try {
+        window.PingMeChatUI?.hideLoader?.();
         window.PingMeLoader?.hide?.();
     } catch (error) {
         console.warn("PingMe loader cleanup:", error);
@@ -191,16 +192,11 @@ function stopThinkingLoader() {
     });
 
     const thinking = document.getElementById("thinking");
-
-    if (thinking) {
-        thinking.classList.remove("show");
-    }
+    if (thinking) thinking.classList.remove("show");
 }
 
 function addThinkingMessage() {
-    if (welcomeScreen) {
-        welcomeScreen.style.display = "none";
-    }
+    if (welcomeScreen) welcomeScreen.style.display = "none";
 
     stopThinkingLoader();
 
@@ -211,7 +207,6 @@ function addThinkingMessage() {
         row.id = "pingmeFallbackLoader";
         row.className = "message-row ai pingme-loader-row";
         row.setAttribute("role", "status");
-        row.setAttribute("aria-label", "PingMe is preparing a response");
 
         const message = document.createElement("div");
         message.className = "message thinking-message";
@@ -223,7 +218,7 @@ function addThinkingMessage() {
         orbit.className = "pingme-loader-orbit";
 
         const core = document.createElement("div");
-        core.className = "pingme-loader-core";
+        core.className = "pingme-loader-dots";
 
         loader.append(orbit, core);
         message.appendChild(loader);
@@ -233,22 +228,17 @@ function addThinkingMessage() {
 
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return {
-        remove: stopThinkingLoader
-    };
+    return { remove: stopThinkingLoader };
 }
 
 // ==========================================================
-// ADD MESSAGE TO UI
+// ADD MESSAGE
 // ==========================================================
 
 function addMessage(text, sender, typing = false) {
-    if (welcomeScreen) {
-        welcomeScreen.style.display = "none";
-    }
+    if (welcomeScreen) welcomeScreen.style.display = "none";
 
     const row = document.createElement("div");
-
     row.className = sender === "user"
         ? "message-row user"
         : "message-row ai";
@@ -258,7 +248,7 @@ function addMessage(text, sender, typing = false) {
 
     const message = document.createElement("div");
     message.className = "message";
-    message.textContent = typing ? "" : text;
+    message.textContent = typing ? "" : String(text ?? "");
 
     box.appendChild(message);
 
@@ -275,9 +265,7 @@ function addMessage(text, sender, typing = false) {
             const label = copyBtn.querySelector("span");
 
             try {
-                await navigator.clipboard.writeText(
-                    message.textContent || ""
-                );
+                await navigator.clipboard.writeText(message.textContent || "");
                 label.textContent = "Copied";
             } catch (_) {
                 label.textContent = "Copy failed";
@@ -326,32 +314,39 @@ function addMessage(text, sender, typing = false) {
 }
 
 // ==========================================================
-// AI TYPEWRITER — VISIBLE CHARACTER-BY-CHARACTER OUTPUT
+// TYPEWRITER — SUPPORT FILE + SAFE FALLBACK
 // ==========================================================
 
 async function typeAIResponse(message, answer) {
-    const text = String(answer || "");
-    message.textContent = "";
+    const text = String(answer ?? "");
+    if (!message) return;
 
-    for (let index = 0; index < text.length; index++) {
-        message.textContent += text[index];
+    // Use the dedicated support-file typewriter when available.
+    if (typeof window.PingMeChatUI?.typeResponse === "function") {
+        await window.PingMeChatUI.typeResponse(message, text);
+        return;
+    }
+
+    // Fallback if chat.js has not loaded yet.
+    message.textContent = "";
+    const textNode = document.createTextNode("");
+    message.appendChild(textNode);
+
+    for (let i = 0; i < text.length; i++) {
+        textNode.data = text.slice(0, i + 1);
 
         chatArea.scrollTop = chatArea.scrollHeight;
 
-        let delay = 28;
+        const char = text[i];
+        let delay = 22;
 
-        if (text[index] === "\n") {
-            delay = 65;
-        } else if (/[.!?।]/.test(text[index])) {
-            delay = 120;
-        } else if (text[index] === "," || text[index] === ";") {
-            delay = 55;
-        }
+        if (char === "\n") delay = 45;
+        else if (/[.!?।]/.test(char)) delay = 95;
+        else if (char === "," || char === ";") delay = 40;
 
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    message.textContent = text;
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
@@ -423,9 +418,7 @@ Respond naturally.
             const result = await model.generateContent(requestParts);
             const answer = result?.response?.text?.();
 
-            if (answer && answer.trim()) {
-                return answer.trim();
-            }
+            if (answer && answer.trim()) return answer.trim();
         } catch (error) {
             console.error("PingMe model error:", error);
             lastError = error;
@@ -436,7 +429,7 @@ Respond naturally.
 }
 
 // ==========================================================
-// SEND MESSAGE — TEXT + ATTACHMENTS
+// SEND MESSAGE — TEXT + ATTACHMENTS + TYPEWRITER
 // ==========================================================
 
 async function sendMessage() {
@@ -457,7 +450,6 @@ async function sendMessage() {
     if (!text && !hasAttachments) return;
 
     sendBtn.disabled = true;
-
     let thinking = null;
 
     try {
@@ -469,11 +461,7 @@ async function sendMessage() {
                 throw new Error("ATTACHMENT_AI_NOT_READY");
             }
 
-            prepared = await attachmentAI.prepareMessage(
-                text,
-                attachmentFiles
-            );
-
+            prepared = await attachmentAI.prepareMessage(text, attachmentFiles);
             attachmentParts = prepared?.parts?.slice(1) || [];
 
             if (!attachmentParts.length) {
@@ -510,28 +498,24 @@ async function sendMessage() {
 
         thinking = addThinkingMessage();
 
-        const answer = await generateAIResponse(
-            userText,
-            attachmentParts
-        );
+        const answer = await generateAIResponse(userText, attachmentParts);
 
-        // Stop and remove the loader before showing the answer.
+        // Remove the loader before creating the answer message.
         thinking?.remove();
         thinking = null;
         stopThinkingLoader();
 
-        // Create an empty AI message, then type the answer into it.
+        // Display one empty AI message, then type into it.
         const row = addMessage("", "ai", true);
         const message = row.querySelector(".message");
 
-        if (message) {
-            await typeAIResponse(message, answer);
-        }
+        await typeAIResponse(message, answer);
 
+        // Save the complete answer only after typing finishes.
         saveConversation("ai", answer);
 
         if (hasAttachments) {
-            attachmentAI.clear?.();
+            attachmentAI?.clear?.();
         }
 
     } catch (error) {
@@ -569,7 +553,8 @@ async function sendMessage() {
     } finally {
         stopThinkingLoader();
         sendBtn.disabled = false;
-        messageInput.focus();
+
+        if (messageInput) messageInput.focus();
     }
 }
 
@@ -608,10 +593,12 @@ if (messageInput) {
 
 document.querySelectorAll(".suggestion-item").forEach(button => {
     button.addEventListener("click", function () {
-        const text = this.querySelector(".text");
+        const suggestion = this.querySelector(".text");
 
-        messageInput.value = text
-            ? text.textContent.trim()
+        if (!messageInput) return;
+
+        messageInput.value = suggestion
+            ? suggestion.textContent.trim()
             : this.textContent.trim();
 
         messageInput.focus();
