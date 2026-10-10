@@ -1,6 +1,6 @@
 /* ==========================================================
    PINGME AI — CHAT SUPPORT
-   Message UI • History • Circular Animated AI Loader
+   Message UI • History • Floating Circular AI Loader
    ========================================================== */
 
 (() => {
@@ -55,21 +55,21 @@
                 margin: 8px 0 6px !important;
             }
 
-            /* CIRCULAR AI LOADER */
+            /* FLOATING CIRCULAR LOADER */
 
             .pingme-loader-row {
                 display: flex;
                 align-items: center;
-                min-height: 42px;
-                margin: 6px 0;
+                min-height: 46px;
+                margin: 8px 0;
             }
 
             .pingme-loader-row .thinking-message {
                 display: flex;
                 align-items: center;
                 justify-content: flex-start;
-                width: 52px;
-                height: 48px;
+                width: 48px;
+                height: 46px;
                 margin: 0;
                 padding: 0;
                 background: transparent;
@@ -78,54 +78,41 @@
 
             .pingme-ai-loader {
                 position: relative;
-                width: 38px;
-                height: 38px;
+                width: 34px;
+                height: 34px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
-                isolation: isolate;
+                animation: pingmeOrbFloat 1.25s ease-in-out infinite;
             }
-
-            /* Rotating circular ring */
 
             .pingme-loader-orbit {
                 position: absolute;
                 inset: 2px;
-                box-sizing: border-box;
-                border: 2px solid rgba(34,197,94,.14);
+                border: 2px solid rgba(34,197,94,.22);
                 border-radius: 50%;
-                pointer-events: none;
-                animation: pingmeRingPulse 1.5s ease-in-out infinite;
+                box-sizing: border-box;
+                background: rgba(34,197,94,.035);
             }
 
             .pingme-loader-orbit::before {
                 content: "";
                 position: absolute;
-                inset: -2px;
-                box-sizing: border-box;
-                border: 3px solid transparent;
-                border-top-color: #22c55e;
-                border-right-color: #111827;
+                inset: 4px;
                 border-radius: 50%;
-                animation: pingmeRingRotate 1.05s linear infinite;
-                filter: drop-shadow(0 0 3px rgba(34,197,94,.3));
+                border: 2px solid #22c55e;
+                box-shadow: 0 0 8px rgba(34,197,94,.18);
             }
-
-            /* Single animated center orb */
 
             .pingme-loader-dots {
                 position: relative;
                 z-index: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 12px;
-                height: 12px;
+                width: 9px;
+                height: 9px;
                 border-radius: 50%;
-                background: #202124;
-                box-shadow: 0 0 0 3px rgba(34,197,94,.10);
-                animation: pingmeCorePulse 1.1s ease-in-out infinite;
+                background: #22c55e;
+                box-shadow: 0 0 9px rgba(34,197,94,.35);
             }
 
             .pingme-loader-dots span {
@@ -160,6 +147,15 @@
                 stroke-linejoin: round;
             }
 
+            @keyframes pingmeOrbFloat {
+                0%, 100% {
+                    transform: translateY(0) scale(.96);
+                }
+                50% {
+                    transform: translateY(-5px) scale(1.04);
+                }
+            }
+
             @keyframes pingmeUserIn {
                 from {
                     opacity: 0;
@@ -182,40 +178,8 @@
                 }
             }
 
-            @keyframes pingmeRingRotate {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            @keyframes pingmeRingPulse {
-                0%, 100% {
-                    transform: scale(.94);
-                    opacity: .75;
-                }
-                50% {
-                    transform: scale(1.04);
-                    opacity: 1;
-                }
-            }
-
-            @keyframes pingmeCorePulse {
-                0%, 100% {
-                    transform: scale(.82);
-                    background: #202124;
-                    box-shadow: 0 0 0 2px rgba(34,197,94,.10);
-                }
-                50% {
-                    transform: scale(1.12);
-                    background: #22c55e;
-                    box-shadow: 0 0 0 5px rgba(34,197,94,.13);
-                }
-            }
-
             @media (prefers-reduced-motion: reduce) {
-                .pingme-loader-orbit,
-                .pingme-loader-orbit::before,
-                .pingme-loader-dots {
+                .pingme-ai-loader {
                     animation: none !important;
                 }
             }
@@ -248,6 +212,7 @@
 
     function setActiveChatId(id) {
         if (!id) return;
+
         activeChatId = id;
 
         try {
@@ -304,6 +269,7 @@
 
         const isUser = node.classList.contains("user-message");
         const isAI = node.classList.contains("ai-message");
+
         if (!isUser && !isAI) return;
 
         const content = messageText(node);
@@ -355,6 +321,7 @@
         const area = document.getElementById("chatArea");
 
         if (!area || area.dataset.pingmeHistoryObserver === "true") return;
+
         area.dataset.pingmeHistoryObserver = "true";
 
         const observer = new MutationObserver(mutations => {
@@ -379,7 +346,7 @@
     }
 
     /* ======================================================
-       LOADER — SINGLE OWNER
+       LOADER
        ====================================================== */
 
     function addLoader() {
@@ -403,7 +370,7 @@
         const loader = document.createElement("div");
         loader.className = "pingme-ai-loader";
         loader.setAttribute("role", "status");
-        loader.setAttribute("aria-label", "PingMe is thinking");
+        loader.setAttribute("aria-label", "PingMe is preparing a response");
 
         const orbit = document.createElement("div");
         orbit.className = "pingme-loader-orbit";
@@ -411,9 +378,8 @@
         const core = document.createElement("div");
         core.className = "pingme-loader-dots";
 
-        orbit.appendChild(core);
-        message.appendChild(loader);
         loader.append(orbit, core);
+        message.appendChild(loader);
         row.appendChild(message);
         area.appendChild(row);
 
@@ -432,9 +398,7 @@
 
     function hideLoader() {
         document.getElementById(LOADER_ID)?.remove();
-
-        const fallback = document.getElementById("pingmeFallbackLoader");
-        if (fallback) fallback.remove();
+        document.getElementById("pingmeFallbackLoader")?.remove();
 
         const thinking = document.getElementById("thinking");
         if (thinking) thinking.classList.remove("show");
@@ -448,22 +412,6 @@
     document.addEventListener("pingme:ai:start", showLoader);
     document.addEventListener("pingme:ai:complete", hideLoader);
     document.addEventListener("pingme:ai:error", hideLoader);
-
-    /* Keep legacy thinking compatible without observer loops. */
-
-    const thinking = document.getElementById("thinking");
-
-    if (thinking) {
-        new MutationObserver(() => {
-            if (thinking.classList.contains("show")) {
-                thinking.classList.remove("show");
-                showLoader();
-            }
-        }).observe(thinking, {
-            attributes: true,
-            attributeFilter: ["class"]
-        });
-    }
 
     /* ======================================================
        STARTUP
