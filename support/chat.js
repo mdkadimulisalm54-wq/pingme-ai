@@ -176,13 +176,7 @@ if (!document.getElementById(STYLE_ID)) {
                 opacity: 1;  
                 transform: translateY(0);  
             }  
-        }  
-
-        @media (prefers-reduced-motion: reduce) {  
-            .pingme-ai-loader {  
-                animation: none !important;  
-            }  
-        }  
+        }    
     `;  
 
     document.head.appendChild(style);  
