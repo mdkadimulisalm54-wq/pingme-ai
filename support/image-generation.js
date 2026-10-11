@@ -1,22 +1,15 @@
-
 /* =========================================================
    PINGME AI — IMAGE GENERATION SUPPORT
    File: support/image-generation.js
 
    Features:
-   • Animated dot-mesh generation screen
-   • Rotating English status messages
-   • Animated progress percentage
+   • Animated English generation status
+   • Progress indicator
+   • Prompt, style and aspect ratio
    • Image preview and download
-   • Prompt input and generation controls
-   • Image editing through future API connector
-   • Image history stored locally
-   • Responsive light/dark styling
-   • No dependency on external libraries
-
-   NOTE:
-   Connect a real image-generation API using
-   PingMeImageGeneration.setGenerator() when ready.
+   • Image history
+   • API connector: POST /api/images
+   • Responsive and dark-mode support
    ========================================================= */
 
 (() => {
@@ -24,132 +17,120 @@
 
     if (window.PingMeImageGeneration) return;
 
-    const VERSION = "1.0.0";
+    const VERSION = "2.0.0";
+    const ROOT_SELECTOR = "[data-pingme-image-generation]";
     const STYLE_ID = "pingme-image-generation-styles";
-    const ROOT_ID = "pingme-image-generation-root";
-    const HISTORY_KEY = "pingme_image_generation_history";
+    const STORAGE_KEY = "pingme_image_generation_history_v2";
     const MAX_HISTORY = 30;
-
-    const state = {
-        root: null,
-        prompt: "",
-        statusIndex: 0,
-        progress: 0,
-        phase: "idle",
-        timer: null,
-        statusTimer: null,
-        generator: null,
-        requestId: 0,
-        history: [],
-        lastImage: null,
-        lastError: "",
-        dark: false
-    };
+    const API_ENDPOINT = "/api/images";
 
     const STATUS_MESSAGES = [
         {
-            title: "Sketching it out",
-            detail: "Understanding your idea..."
+            title: "Understanding your idea",
+            detail: "Preparing your prompt for image generation..."
         },
         {
             title: "Imagining your vision",
-            detail: "Planning the image composition..."
+            detail: "Planning the composition, style, and atmosphere..."
         },
         {
-            title: "Creating the image",
-            detail: "Building shapes and details..."
+            title: "Creating your image",
+            detail: "Building the scene and bringing your idea to life..."
         },
         {
             title: "Adding fine details",
-            detail: "Refining textures and lighting..."
+            detail: "Refining textures, shapes, and small details..."
         },
         {
-            title: "Bringing it to life",
-            detail: "Enhancing depth and clarity..."
+            title: "Perfecting the lighting",
+            detail: "Balancing shadows, highlights, and depth..."
         },
         {
-            title: "Perfecting the colors",
-            detail: "Adjusting colors and lighting..."
+            title: "Fine-tuning the colors",
+            detail: "Adjusting colors and improving visual clarity..."
         },
         {
-            title: "Almost there",
+            title: "Your image is almost ready",
             detail: "Polishing the final details..."
         },
         {
             title: "Finalizing your image",
-            detail: "Preparing your image..."
+            detail: "Preparing your finished image..."
         }
     ];
+
+    const state = {
+        root: null,
+        prompt: "",
+        style: "realistic",
+        aspectRatio: "1:1",
+        progress: 0,
+        statusIndex: 0,
+        generating: false,
+        history: [],
+        lastImage: null,
+        lastError: "",
+        requestId: 0,
+        statusTimer: null,
+        progressTimer: null,
+        generator: null,
+        theme: "auto",
+        destroyed: false
+    };
 
     /* =====================================================
        UTILITIES
        ===================================================== */
 
-    const $ = (selector, parent = document) =>
-        parent.querySelector(selector);
-
     const escapeHTML = (value) =>
-        String(value ?? "").replace(/[&<>"']/g, char => ({
+        String(value ?? "").replace(/[&<>"']/g, character => ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#39;"
-        })[char]);
+        })[character]);
 
-    function makeId() {
-        return "pingme-img-" +
-            Date.now().toString(36) + "-" +
+    function createId() {
+        return Date.now().toString(36) +
             Math.random().toString(36).slice(2, 9);
     }
 
-    function readHistory() {
-        try {
-            const saved = localStorage.getItem(HISTORY_KEY);
-            const parsed = saved ? JSON.parse(saved) : [];
+    function isValidImageURL(value) {
+        if (typeof value !== "string") return false;
 
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
-        }
-    }
+        const trimmed = value.trim();
 
-    function saveHistory() {
-        try {
-            localStorage.setItem(
-                HISTORY_KEY,
-                JSON.stringify(state.history.slice(0, MAX_HISTORY))
-            );
-        } catch (error) {
-            console.warn(
-                "[PingMe Image Generation] History could not be saved.",
-                error
-            );
-        }
-    }
-
-    function emit(name, detail = {}) {
-        document.dispatchEvent(
-            new CustomEvent("pingme:image-generation:" + name, {
-                detail
-            })
+        return (
+            trimmed.startsWith("data:image/") ||
+            trimmed.startsWith("blob:") ||
+            /^https?:\/\//i.test(trimmed) ||
+            trimmed.startsWith("/")
         );
     }
 
-    function clearTimers() {
-        if (state.timer !== null) {
-            clearInterval(state.timer);
-            state.timer = null;
-        }
+    function emit(name, detail = {}) {
+        if (!state.root) return;
 
-        if (state.statusTimer !== null) {
-            clearInterval(state.statusTimer);
-            state.statusTimer = null;
-        }
+        state.root.dispatchEvent(new CustomEvent(
+            "pingme:image-generation:" + name,
+            {
+                bubbles: true,
+                detail
+            }
+        ));
     }
 
-    function getRoot() {
-        return state.root;
+    function stopTimers() {
+        clearInterval(state.statusTimer);
+        clearInterval(state.progressTimer);
+
+        state.statusTimer = null;
+        state.progressTimer = null;
+    }
+
+    function getElement(id) {
+        return state.root?.querySelector("#" + id) || null;
     }
 
     /* =====================================================
@@ -163,395 +144,492 @@
         style.id = STYLE_ID;
 
         style.textContent = `
-            #${ROOT_ID} {
+            .pmig {
                 --pmig-bg: #ffffff;
-                --pmig-text: #202124;
-                --pmig-muted: #858993;
-                --pmig-blue: #537bd7;
-                --pmig-line: #e9edf5;
-                --pmig-card: #ffffff;
-
-                position: relative;
+                --pmig-card: #f7f8fa;
+                --pmig-text: #17191f;
+                --pmig-muted: #737782;
+                --pmig-border: #e5e7eb;
+                --pmig-primary: #3867f4;
+                --pmig-primary-soft: #edf2ff;
                 width: 100%;
-                min-width: 0;
+                max-width: 100%;
                 color: var(--pmig-text);
-                background: var(--pmig-bg);
                 font-family: inherit;
                 box-sizing: border-box;
-                isolation: isolate;
             }
 
-            #${ROOT_ID} *,
-            #${ROOT_ID} *::before,
-            #${ROOT_ID} *::after {
+            .pmig *,
+            .pmig *::before,
+            .pmig *::after {
                 box-sizing: border-box;
             }
 
-            #${ROOT_ID}.pmig-dark {
-                --pmig-bg: #17181b;
-                --pmig-text: #f1f2f4;
-                --pmig-muted: #a1a5af;
-                --pmig-blue: #91adff;
-                --pmig-line: #33353b;
-                --pmig-card: #22242a;
+            .pmig button,
+            .pmig textarea,
+            .pmig select {
+                font: inherit;
             }
 
-            #${ROOT_ID} .pmig-screen {
-                width: 100%;
-                padding: 20px 16px 26px;
+            .pmig button {
+                cursor: pointer;
             }
 
-            #${ROOT_ID} .pmig-heading {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                margin-bottom: 14px;
+            .pmig-header {
+                margin-bottom: 20px;
             }
 
-            #${ROOT_ID} .pmig-title {
+            .pmig-title {
+                margin: 0 0 6px;
+                font-size: 25px;
+                line-height: 1.3;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+            }
+
+            .pmig-subtitle {
                 margin: 0;
-                font-size: 16px;
-                font-weight: 500;
-                line-height: 1.5;
                 color: var(--pmig-muted);
-                overflow-wrap: anywhere;
+                font-size: 14px;
+                line-height: 1.6;
             }
 
-            #${ROOT_ID} .pmig-stage {
+            .pmig-stage {
                 position: relative;
-                width: 100%;
-                height: clamp(290px, 72vw, 610px);
-                min-height: 290px;
-                max-height: 610px;
-                overflow: hidden;
-                border-radius: 14px;
-                background: var(--pmig-bg);
-                isolation: isolate;
-            }
-
-            #${ROOT_ID} .pmig-mesh {
-                position: absolute;
-                inset: 3% 1% 4%;
-                overflow: hidden;
-                pointer-events: none;
-                -webkit-mask-image:
-                    radial-gradient(ellipse at center,
-                        #000 15%, rgba(0,0,0,.92) 43%,
-                        transparent 76%);
-                mask-image:
-                    radial-gradient(ellipse at center,
-                        #000 15%, rgba(0,0,0,.92) 43%,
-                        transparent 76%);
-            }
-
-            #${ROOT_ID} .pmig-dot {
-                position: absolute;
-                left: var(--x);
-                top: var(--y);
-                width: var(--size);
-                height: var(--size);
-                border-radius: 50%;
-                background: var(--pmig-blue);
-                opacity: var(--opacity);
-                transform: translate(-50%, -50%);
-                animation: pmig-wave var(--duration) ease-in-out
-                    var(--delay) infinite alternate;
-                will-change: transform, opacity;
-            }
-
-            @keyframes pmig-wave {
-                0% {
-                    transform: translate(
-                        calc(-50% + var(--dx1)),
-                        calc(-50% + var(--dy1))
-                    ) scale(.78);
-                    opacity: var(--opacity);
-                }
-
-                50% {
-                    opacity: calc(var(--opacity) + .15);
-                }
-
-                100% {
-                    transform: translate(
-                        calc(-50% + var(--dx2)),
-                        calc(-50% + var(--dy2))
-                    ) scale(1.28);
-                    opacity: var(--opacity);
-                }
-            }
-
-            #${ROOT_ID} .pmig-progress-pill {
-                position: absolute;
-                right: 7%;
-                bottom: 7%;
-                z-index: 2;
                 display: flex;
+                min-height: 260px;
+                width: 100%;
+                overflow: hidden;
                 align-items: center;
                 justify-content: center;
-                min-width: 82px;
-                min-height: 48px;
-                padding: 10px 17px;
-                color: var(--pmig-blue);
-                background: var(--pmig-card);
-                border: 1px solid var(--pmig-line);
-                border-radius: 999px;
-                box-shadow: 0 5px 22px rgba(20, 35, 70, .06);
-                font-size: 17px;
-                font-weight: 500;
-                font-variant-numeric: tabular-nums;
+                flex-direction: column;
+                gap: 18px;
+                padding: 28px 18px;
+                margin-bottom: 18px;
+                border: 1px solid var(--pmig-border);
+                border-radius: 22px;
+                background:
+                    radial-gradient(
+                        ellipse at 50% 40%,
+                        rgba(63, 111, 255, 0.09),
+                        transparent 58%
+                    ),
+                    var(--pmig-card);
+                text-align: center;
             }
 
-            #${ROOT_ID} .pmig-result {
-                display: none;
-                width: 100%;
-                margin-top: 16px;
+            .pmig-stage[hidden],
+            .pmig-result[hidden],
+            .pmig-error[hidden],
+            .pmig-history[hidden] {
+                display: none !important;
             }
 
-            #${ROOT_ID} .pmig-result.pmig-visible {
-                display: block;
-                animation: pmig-appear .32s ease both;
+            .pmig-mesh {
+                display: grid;
+                grid-template-columns: repeat(25, 4px);
+                gap: 8px;
+                justify-content: center;
+                align-content: center;
+                min-height: 105px;
+                max-width: 100%;
+                overflow: hidden;
+                opacity: .9;
+                mask-image: radial-gradient(
+                    ellipse,
+                    black 20%,
+                    transparent 75%
+                );
             }
 
-            #${ROOT_ID} .pmig-result-image {
-                display: block;
-                width: 100%;
-                max-height: 75vh;
-                object-fit: contain;
-                border-radius: 14px;
-                background: var(--pmig-card);
+            .pmig-dot {
+                width: 4px;
+                height: 4px;
+                border-radius: 50%;
+                background: var(--pmig-primary);
+                opacity: .18;
+                animation: pmig-dot-wave 2.6s ease-in-out infinite;
+                animation-delay: var(--delay, 0ms);
             }
 
-            @keyframes pmig-appear {
-                from {
-                    opacity: 0;
-                    transform: translateY(8px);
+            @keyframes pmig-dot-wave {
+                0%, 100% {
+                    opacity: .12;
+                    transform: scale(.65);
                 }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
+                50% {
+                    opacity: .85;
+                    transform: scale(1.3);
                 }
             }
 
-            #${ROOT_ID} .pmig-result-actions {
+            .pmig-status {
+                width: 100%;
+                max-width: 440px;
+            }
+
+            .pmig-status-title {
+                margin: 0 0 7px;
+                font-size: 18px;
+                font-weight: 650;
+                line-height: 1.45;
+                transition: opacity .2s ease;
+            }
+
+            .pmig-status-detail {
+                margin: 0;
+                min-height: 22px;
+                color: var(--pmig-muted);
+                font-size: 13px;
+                line-height: 1.65;
+            }
+
+            .pmig-progress-wrap {
+                width: min(100%, 360px);
+                margin-top: 2px;
+            }
+
+            .pmig-progress-top {
                 display: flex;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 9px;
-                margin-top: 12px;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 8px;
+                color: var(--pmig-muted);
+                font-size: 12px;
             }
 
-            #${ROOT_ID} .pmig-btn {
+            .pmig-progress-track {
+                height: 6px;
+                overflow: hidden;
+                border-radius: 999px;
+                background: var(--pmig-border);
+            }
+
+            .pmig-progress-bar {
+                width: 0%;
+                height: 100%;
+                border-radius: inherit;
+                background: linear-gradient(
+                    90deg,
+                    #3867f4,
+                    #7b61ff,
+                    #42a5ff
+                );
+                transition: width .45s ease;
+            }
+
+            .pmig-result {
+                margin-bottom: 18px;
+                overflow: hidden;
+                border: 1px solid var(--pmig-border);
+                border-radius: 20px;
+                background: var(--pmig-card);
+            }
+
+            .pmig-result-image {
+                display: block;
+                width: 100%;
+                max-height: 720px;
+                object-fit: contain;
+                background: var(--pmig-card);
+            }
+
+            .pmig-result-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 14px;
+            }
+
+            .pmig-btn {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
                 min-height: 42px;
                 padding: 10px 15px;
-                border: 1px solid var(--pmig-line);
-                border-radius: 999px;
+                border: 1px solid var(--pmig-border);
+                border-radius: 12px;
                 color: var(--pmig-text);
-                background: var(--pmig-card);
-                font: inherit;
-                font-size: 14px;
-                cursor: pointer;
-                transition: opacity .2s, background .2s;
+                background: var(--pmig-bg);
+                font-size: 13px;
+                font-weight: 600;
+                transition:
+                    background .18s ease,
+                    transform .18s ease,
+                    opacity .18s ease;
             }
 
-            #${ROOT_ID} .pmig-btn:hover {
-                opacity: .82;
+            .pmig-btn:hover {
+                transform: translateY(-1px);
             }
 
-            #${ROOT_ID} .pmig-btn:disabled {
-                opacity: .45;
+            .pmig-btn:disabled {
                 cursor: not-allowed;
+                opacity: .55;
+                transform: none;
             }
 
-            #${ROOT_ID} .pmig-btn-primary {
-                color: #fff;
-                background: #4776df;
-                border-color: #4776df;
+            .pmig-btn-primary {
+                border-color: var(--pmig-primary);
+                color: #ffffff;
+                background: var(--pmig-primary);
             }
 
-            #${ROOT_ID} .pmig-composer {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                margin-top: 22px;
-                padding: 14px;
-                background: var(--pmig-card);
-                border: 1px solid var(--pmig-line);
+            .pmig-btn-primary:hover {
+                background: #2854db;
+            }
+
+            .pmig-btn svg {
+                width: 17px;
+                height: 17px;
+                flex: 0 0 auto;
+            }
+
+            .pmig-composer {
+                padding: 16px;
+                border: 1px solid var(--pmig-border);
                 border-radius: 20px;
+                background: var(--pmig-bg);
             }
 
-            #${ROOT_ID} .pmig-prompt {
+            .pmig-label {
+                display: block;
+                margin: 0 0 9px;
+                font-size: 13px;
+                font-weight: 650;
+            }
+
+            .pmig-prompt {
                 display: block;
                 width: 100%;
-                min-height: 82px;
-                max-height: 220px;
+                min-height: 110px;
                 resize: vertical;
-                padding: 5px;
-                border: 0;
+                padding: 12px;
+                border: 1px solid var(--pmig-border);
+                border-radius: 13px;
                 outline: none;
                 color: var(--pmig-text);
-                background: transparent;
-                font: inherit;
-                font-size: 15px;
+                background: var(--pmig-card);
+                font-size: 14px;
                 line-height: 1.65;
             }
 
-            #${ROOT_ID} .pmig-prompt::placeholder {
+            .pmig-prompt:focus,
+            .pmig-select:focus {
+                border-color: var(--pmig-primary);
+                box-shadow: 0 0 0 3px rgba(56, 103, 244, .12);
+            }
+
+            .pmig-prompt::placeholder {
                 color: var(--pmig-muted);
             }
 
-            #${ROOT_ID} .pmig-composer-footer {
+            .pmig-options {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+                margin-top: 16px;
+            }
+
+            .pmig-select {
+                width: 100%;
+                min-height: 43px;
+                padding: 10px;
+                border: 1px solid var(--pmig-border);
+                border-radius: 11px;
+                outline: none;
+                color: var(--pmig-text);
+                background: var(--pmig-bg);
+                font-size: 13px;
+            }
+
+            .pmig-generate-row {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 flex-wrap: wrap;
-                gap: 10px;
+                gap: 12px;
+                margin-top: 16px;
             }
 
-            #${ROOT_ID} .pmig-settings {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-                gap: 8px;
-            }
-
-            #${ROOT_ID} .pmig-select {
-                max-width: 150px;
-                min-height: 38px;
-                padding: 7px 10px;
-                color: var(--pmig-text);
-                background: var(--pmig-card);
-                border: 1px solid var(--pmig-line);
-                border-radius: 999px;
-                font: inherit;
+            .pmig-hint {
+                margin: 0;
+                color: var(--pmig-muted);
                 font-size: 12px;
+                line-height: 1.5;
             }
 
-            #${ROOT_ID} .pmig-message {
+            .pmig-generate {
+                min-width: 155px;
+            }
+
+            .pmig-spinner {
                 display: none;
-                margin-top: 13px;
+                width: 15px;
+                height: 15px;
+                border: 2px solid rgba(255,255,255,.4);
+                border-top-color: #fff;
+                border-radius: 50%;
+                animation: pmig-spin .7s linear infinite;
+            }
+
+            .pmig-generating .pmig-spinner {
+                display: inline-block;
+            }
+
+            @keyframes pmig-spin {
+                to { transform: rotate(360deg); }
+            }
+
+            .pmig-error {
+                margin-top: 12px;
                 padding: 12px 14px;
-                border: 1px solid var(--pmig-line);
+                border: 1px solid #f2caca;
                 border-radius: 12px;
+                color: #b42318;
+                background: #fff5f5;
                 font-size: 13px;
                 line-height: 1.6;
                 overflow-wrap: anywhere;
             }
 
-            #${ROOT_ID} .pmig-message.pmig-visible {
-                display: block;
-            }
-
-            #${ROOT_ID} .pmig-message.pmig-error {
-                color: #b42318;
-                background: #fff5f4;
-                border-color: #ffd7d2;
-            }
-
-            #${ROOT_ID} .pmig-message.pmig-info {
-                color: var(--pmig-muted);
-                background: var(--pmig-card);
-            }
-
-            #${ROOT_ID} .pmig-history {
+            .pmig-history {
                 margin-top: 26px;
             }
 
-            #${ROOT_ID} .pmig-history-heading {
-                margin: 0 0 13px;
-                font-size: 15px;
-                font-weight: 600;
+            .pmig-history-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 13px;
             }
 
-            #${ROOT_ID} .pmig-history-grid {
+            .pmig-history-title {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 700;
+            }
+
+            .pmig-clear {
+                border: 0;
+                padding: 5px;
+                color: var(--pmig-muted);
+                background: transparent;
+                font-size: 12px;
+            }
+
+            .pmig-history-grid {
                 display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 9px;
+                grid-template-columns: repeat(
+                    auto-fill,
+                    minmax(115px, 1fr)
+                );
+                gap: 10px;
             }
 
-            #${ROOT_ID} .pmig-history-item {
-                position: relative;
+            .pmig-history-item {
+                min-width: 0;
                 overflow: hidden;
                 padding: 0;
-                aspect-ratio: 1;
-                border: 1px solid var(--pmig-line);
+                border: 1px solid var(--pmig-border);
                 border-radius: 12px;
                 background: var(--pmig-card);
-                cursor: pointer;
+                text-align: left;
             }
 
-            #${ROOT_ID} .pmig-history-item img {
+            .pmig-history-item img {
+                display: block;
                 width: 100%;
-                height: 100%;
+                aspect-ratio: 1 / 1;
                 object-fit: cover;
             }
 
-            #${ROOT_ID} .pmig-history-empty {
+            .pmig-history-caption {
+                display: block;
+                overflow: hidden;
+                padding: 8px;
+                color: var(--pmig-text);
+                font-size: 11px;
+                line-height: 1.5;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .pmig-empty-history {
                 color: var(--pmig-muted);
                 font-size: 13px;
-                line-height: 1.7;
+                line-height: 1.6;
             }
 
-            #${ROOT_ID} .pmig-sr-only {
-                position: absolute;
-                width: 1px;
-                height: 1px;
-                padding: 0;
-                margin: -1px;
-                overflow: hidden;
-                clip: rect(0, 0, 0, 0);
-                white-space: nowrap;
-                border: 0;
+            .pmig-sr-only {
+                position: absolute !important;
+                width: 1px !important;
+                height: 1px !important;
+                padding: 0 !important;
+                margin: -1px !important;
+                overflow: hidden !important;
+                clip: rect(0, 0, 0, 0) !important;
+                white-space: nowrap !important;
+                border: 0 !important;
             }
 
-            @media (min-width: 700px) {
-                #${ROOT_ID} .pmig-screen {
-                    max-width: 850px;
-                    margin-inline: auto;
-                    padding: 28px 26px;
-                }
-
-                #${ROOT_ID} .pmig-stage {
-                    height: min(65vw, 570px);
-                }
-
-                #${ROOT_ID} .pmig-history-grid {
-                    grid-template-columns: repeat(5, minmax(0, 1fr));
-                }
+            .pmig-dark {
+                --pmig-bg: #17191e;
+                --pmig-card: #20232a;
+                --pmig-text: #f2f3f5;
+                --pmig-muted: #a1a6b1;
+                --pmig-border: #343842;
+                --pmig-primary-soft: #202d50;
             }
 
-            @media (max-width: 380px) {
-                #${ROOT_ID} .pmig-screen {
-                    padding-inline: 10px;
+            .pmig-dark .pmig-error {
+                border-color: #6e3434;
+                color: #ffb4ab;
+                background: #321f22;
+            }
+
+            @media (max-width: 520px) {
+                .pmig-title {
+                    font-size: 22px;
                 }
 
-                #${ROOT_ID} .pmig-stage {
-                    height: 320px;
+                .pmig-stage {
+                    min-height: 235px;
+                    padding: 22px 12px;
+                    border-radius: 17px;
                 }
 
-                #${ROOT_ID} .pmig-progress-pill {
-                    min-width: 70px;
-                    min-height: 41px;
-                    font-size: 15px;
+                .pmig-options {
+                    grid-template-columns: 1fr;
                 }
 
-                #${ROOT_ID} .pmig-btn {
-                    padding-inline: 12px;
+                .pmig-generate-row {
+                    align-items: stretch;
+                    flex-direction: column;
+                }
+
+                .pmig-generate {
+                    width: 100%;
+                }
+
+                .pmig-result-actions .pmig-btn {
+                    flex: 1 1 130px;
+                }
+
+                .pmig-history-grid {
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
                 }
             }
 
             @media (prefers-reduced-motion: reduce) {
-                #${ROOT_ID} .pmig-dot {
-                    animation: none !important;
-                }
-
-                #${ROOT_ID} .pmig-result {
-                    animation: none !important;
+                .pmig *,
+                .pmig *::before,
+                .pmig *::after {
+                    animation-duration: .01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: .01ms !important;
                 }
             }
         `;
@@ -560,300 +638,346 @@
     }
 
     /* =====================================================
-       ANIMATED DOT MESH
+       ICONS AND MESH
        ===================================================== */
 
+    const ICONS = {
+        download: `
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <path d="m7 10 5 5 5-5"/>
+                <path d="M12 15V3"/>
+            </svg>`,
+        refresh: `
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M20 7v5h-5"/>
+                <path d="M4 17v-5h5"/>
+                <path d="M5.6 9a7 7 0 0 1 11.6-2L20 12"/>
+                <path d="M4 12l2.8 5a7 7 0 0 0 11.6-2"/>
+            </svg>`
+    };
+
     function createMesh() {
-        const dots = document.createDocumentFragment();
+        let html = "";
 
-        const columns = 25;
-        const rows = 25;
+        for (let i = 0; i < 225; i++) {
+            const delay = ((i * 37) % 1800);
 
-        for (let row = 0; row < rows; row++) {
-            for (let column = 0; column < columns; column++) {
-                const dot = document.createElement("span");
-                dot.className = "pmig-dot";
-
-                const nx = column / (columns - 1);
-                const ny = row / (rows - 1);
-
-                const dx = (nx - 0.5) / 0.5;
-                const dy = (ny - 0.5) / 0.5;
-
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const center = Math.max(0, 1 - distance / 1.35);
-
-                const size = 2.4 + center * 2.1;
-                const opacity = Math.min(
-                    0.58,
-                    0.12 + center * 0.42
-                );
-
-                const seed = (row * 37 + column * 19) % 17;
-
-                dot.style.setProperty("--x", `${nx * 100}%`);
-                dot.style.setProperty("--y", `${ny * 100}%`);
-                dot.style.setProperty("--size", `${size}px`);
-                dot.style.setProperty("--opacity", opacity.toFixed(2));
-                dot.style.setProperty(
-                    "--duration",
-                    `${2.2 + (seed % 7) * 0.35}s`
-                );
-                dot.style.setProperty(
-                    "--delay",
-                    `${-((row + column) % 13) * 0.19}s`
-                );
-                dot.style.setProperty(
-                    "--dx1",
-                    `${Math.sin(seed) * 2.2}px`
-                );
-                dot.style.setProperty(
-                    "--dy1",
-                    `${Math.cos(seed) * 2.2}px`
-                );
-                dot.style.setProperty(
-                    "--dx2",
-                    `${Math.cos(seed * 1.4) * 4.5}px`
-                );
-                dot.style.setProperty(
-                    "--dy2",
-                    `${Math.sin(seed * 1.2) * 4.5}px`
-                );
-
-                dots.appendChild(dot);
-            }
+            html += `
+                <span class="pmig-dot"
+                    style="--delay:${delay}ms"></span>`;
         }
 
-        return dots;
+        return html;
     }
 
     /* =====================================================
-       MAIN UI
+       HISTORY STORAGE
+       ===================================================== */
+
+    function loadHistory() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            const items = stored ? JSON.parse(stored) : [];
+
+            state.history = Array.isArray(items)
+                ? items.filter(item =>
+                    item &&
+                    typeof item.id === "string" &&
+                    typeof item.prompt === "string" &&
+                    isValidImageURL(item.url)
+                ).slice(0, MAX_HISTORY)
+                : [];
+        } catch {
+            state.history = [];
+        }
+    }
+
+    function saveHistory() {
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(state.history.slice(0, MAX_HISTORY))
+            );
+        } catch (error) {
+            console.warn(
+                "[PingMe Image Generation] Could not save history.",
+                error
+            );
+        }
+    }
+
+    function addHistory(url, prompt, settings = {}) {
+        const item = {
+            id: createId(),
+            url,
+            prompt,
+            style: settings.style || state.style,
+            aspectRatio: settings.aspectRatio || state.aspectRatio,
+            createdAt: new Date().toISOString()
+        };
+
+        state.history.unshift(item);
+        state.history = state.history.slice(0, MAX_HISTORY);
+
+        saveHistory();
+        renderHistory();
+
+        return item;
+    }
+
+    /* =====================================================
+       MOUNT UI
        ===================================================== */
 
     function render(container, options = {}) {
-        injectStyles();
-
         if (typeof container === "string") {
             container = document.querySelector(container);
         }
 
-        if (!container) {
-            throw new Error(
-                "Image generation container was not found."
+        if (!container || !(container instanceof Element)) {
+            console.error(
+                "[PingMe Image Generation] A valid container is required."
             );
+            return null;
+        }
+
+        injectStyles();
+
+        if (state.root && state.root !== container) {
+            destroy();
         }
 
         state.root = container;
+        state.destroyed = false;
+
+        if (options.endpoint) {
+            state.endpoint = options.endpoint;
+        }
+
+        if (typeof options.generator === "function") {
+            state.generator = options.generator;
+        }
 
         container.innerHTML = `
-            <section
-                id="${ROOT_ID}"
-                class="${options.dark ? "pmig-dark" : ""}"
-                aria-label="PingMe AI Image Generation"
-            >
-                <div class="pmig-screen">
+            <section class="pmig" aria-label="AI image generation">
 
-                    <div class="pmig-heading">
-                        <h2 class="pmig-title" data-pmig-title>
-                            Sketching it out
-                        </h2>
+                <header class="pmig-header">
+                    <h2 class="pmig-title">Create images</h2>
+                    <p class="pmig-subtitle">
+                        Turn your ideas into images with PingMe AI.
+                    </p>
+                </header>
+
+                <div class="pmig-stage" id="pmigStage">
+                    <div class="pmig-mesh" aria-hidden="true">
+                        ${createMesh()}
                     </div>
 
-                    <div
-                        class="pmig-stage"
-                        data-pmig-stage
-                        aria-label="Image generation animation"
-                    >
-                        <div class="pmig-mesh" data-pmig-mesh></div>
+                    <div class="pmig-status" aria-live="polite">
+                        <h3 class="pmig-status-title"
+                            id="pmigStatusTitle">
+                            Ready to create
+                        </h3>
 
-                        <div
-                            class="pmig-progress-pill"
-                            data-pmig-progress
-                            aria-live="polite"
-                        >0%</div>
-
-                        <span class="pmig-sr-only" data-pmig-live
-                            aria-live="polite">
-                            Ready to create an image
-                        </span>
+                        <p class="pmig-status-detail"
+                            id="pmigStatusDetail">
+                            Describe the image you want to make.
+                        </p>
                     </div>
 
-                    <div class="pmig-result" data-pmig-result>
-                        <img
-                            class="pmig-result-image"
-                            data-pmig-result-image
-                            alt="AI-generated image"
-                        />
+                    <div class="pmig-progress-wrap"
+                        id="pmigProgressWrap" hidden>
+                        <div class="pmig-progress-top">
+                            <span id="pmigProgressLabel">
+                                Preparing your image...
+                            </span>
+                            <span id="pmigProgressPercent">0%</span>
+                        </div>
 
-                        <div class="pmig-result-actions">
-                            <button
-                                type="button"
-                                class="pmig-btn pmig-btn-primary"
-                                data-pmig-download
-                            >Download image</button>
-
-                            <button
-                                type="button"
-                                class="pmig-btn"
-                                data-pmig-again
-                            >Create another</button>
+                        <div class="pmig-progress-track"
+                            role="progressbar"
+                            aria-label="Image generation progress"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-valuenow="0"
+                            id="pmigProgressTrack">
+                            <div class="pmig-progress-bar"
+                                id="pmigProgressBar"></div>
                         </div>
                     </div>
-
-                    <div class="pmig-composer">
-                        <label class="pmig-sr-only" for="pmig-prompt">
-                            Describe the image you want to create
-                        </label>
-
-                        <textarea
-                            id="pmig-prompt"
-                            class="pmig-prompt"
-                            data-pmig-prompt
-                            maxlength="10000"
-                            placeholder="Describe the image you want to create..."
-                        ></textarea>
-
-                        <div class="pmig-composer-footer">
-                            <div class="pmig-settings">
-                                <label class="pmig-sr-only"
-                                    for="pmig-style">Image style</label>
-
-                                <select
-                                    class="pmig-select"
-                                    id="pmig-style"
-                                    data-pmig-style
-                                >
-                                    <option value="realistic">
-                                        Photorealistic
-                                    </option>
-                                    <option value="cinematic">
-                                        Cinematic
-                                    </option>
-                                    <option value="anime">Anime</option>
-                                    <option value="3d">3D Art</option>
-                                    <option value="illustration">
-                                        Illustration
-                                    </option>
-                                    <option value="logo">Logo</option>
-                                    <option value="poster">Poster</option>
-                                    <option value="watercolor">
-                                        Watercolor
-                                    </option>
-                                    <option value="custom">Custom</option>
-                                </select>
-
-                                <label class="pmig-sr-only"
-                                    for="pmig-ratio">Image ratio</label>
-
-                                <select
-                                    class="pmig-select"
-                                    id="pmig-ratio"
-                                    data-pmig-ratio
-                                >
-                                    <option value="1:1">Square</option>
-                                    <option value="3:2">Landscape</option>
-                                    <option value="2:3">Portrait</option>
-                                    <option value="16:9">Widescreen</option>
-                                    <option value="9:16">Vertical</option>
-                                </select>
-                            </div>
-
-                            <button
-                                type="button"
-                                class="pmig-btn pmig-btn-primary"
-                                data-pmig-generate
-                            >
-                                <span data-pmig-button-label>
-                                    Generate image
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div
-                        class="pmig-message"
-                        data-pmig-message
-                        role="status"
-                        aria-live="polite"
-                    ></div>
-
-                    <section class="pmig-history">
-                        <h3 class="pmig-history-heading">My images</h3>
-                        <div
-                            class="pmig-history-grid"
-                            data-pmig-history
-                        ></div>
-                    </section>
                 </div>
+
+                <div class="pmig-result" id="pmigResult" hidden>
+                    <img class="pmig-result-image"
+                        id="pmigResultImage"
+                        alt="Generated image"
+                        decoding="async">
+
+                    <div class="pmig-result-actions">
+                        <button type="button"
+                            class="pmig-btn pmig-btn-primary"
+                            id="pmigDownloadButton">
+                            ${ICONS.download}
+                            Download image
+                        </button>
+
+                        <button type="button"
+                            class="pmig-btn"
+                            id="pmigAnotherButton">
+                            ${ICONS.refresh}
+                            Create another
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pmig-composer">
+                    <label class="pmig-label" for="pmigPrompt">
+                        Describe your image
+                    </label>
+
+                    <textarea
+                        class="pmig-prompt"
+                        id="pmigPrompt"
+                        maxlength="5000"
+                        placeholder="A cinematic sunset over a peaceful lake, realistic lighting, highly detailed..."
+                        aria-describedby="pmigPromptHint"></textarea>
+
+                    <div class="pmig-options">
+                        <div>
+                            <label class="pmig-label"
+                                for="pmigStyle">Image style</label>
+
+                            <select class="pmig-select"
+                                id="pmigStyle">
+                                <option value="realistic">Photorealistic</option>
+                                <option value="cinematic">Cinematic</option>
+                                <option value="anime">Anime</option>
+                                <option value="3d">3D render</option>
+                                <option value="illustration">Illustration</option>
+                                <option value="logo">Logo</option>
+                                <option value="poster">Poster</option>
+                                <option value="watercolor">Watercolor</option>
+                                <option value="custom">Custom style</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="pmig-label"
+                                for="pmigRatio">Aspect ratio</label>
+
+                            <select class="pmig-select"
+                                id="pmigRatio">
+                                <option value="1:1">Square · 1:1</option>
+                                <option value="3:2">Landscape · 3:2</option>
+                                <option value="2:3">Portrait · 2:3</option>
+                                <option value="16:9">Wide · 16:9</option>
+                                <option value="9:16">Vertical · 9:16</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pmig-generate-row">
+                        <p class="pmig-hint" id="pmigPromptHint">
+                            Be specific about the subject, lighting, and style.
+                        </p>
+
+                        <button type="button"
+                            class="pmig-btn pmig-btn-primary pmig-generate"
+                            id="pmigGenerateButton">
+                            <span class="pmig-spinner"
+                                aria-hidden="true"></span>
+                            <span id="pmigGenerateLabel">
+                                Generate image
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="pmig-error" id="pmigError"
+                        role="alert" hidden></div>
+                </div>
+
+                <section class="pmig-history" id="pmigHistory">
+                    <div class="pmig-history-header">
+                        <h3 class="pmig-history-title">Your images</h3>
+
+                        <button type="button"
+                            class="pmig-clear"
+                            id="pmigClearHistory">
+                            Clear history
+                        </button>
+                    </div>
+
+                    <div class="pmig-history-grid"
+                        id="pmigHistoryGrid"></div>
+                </section>
+
+                <p class="pmig-sr-only"
+                    id="pmigLiveRegion"
+                    aria-live="polite"></p>
             </section>
         `;
 
-        const root = $("#" + ROOT_ID, container);
-
-        $("[data-pmig-mesh]", root).appendChild(createMesh());
-
-        bindEvents(root);
-        applyIdleState();
+        loadHistory();
+        bindEvents();
         renderHistory();
+        setTheme(state.theme);
 
-        if (options.dark) state.dark = true;
-
-        emit("ready", { version: VERSION });
-
-        return api;
+        return container;
     }
 
     /* =====================================================
-       UI STATE
+       STATUS AND PROGRESS
        ===================================================== */
 
-    function setMessage(message, type = "info") {
-        const root = getRoot();
-        if (!root) return;
-
-        const el = $("[data-pmig-message]", root);
-        if (!el) return;
-
-        el.textContent = message || "";
-        el.className = "pmig-message";
-
-        if (message) {
-            el.classList.add("pmig-visible", "pmig-" + type);
-        }
-    }
-
     function setStatus(index) {
-        const root = getRoot();
-        if (!root) return;
+        state.statusIndex = Math.max(
+            0,
+            Math.min(index, STATUS_MESSAGES.length - 1)
+        );
 
-        const message = STATUS_MESSAGES[
-            index % STATUS_MESSAGES.length
-        ];
+        const message = STATUS_MESSAGES[state.statusIndex];
 
-        const title = $("[data-pmig-title]", root);
-        const live = $("[data-pmig-live]", root);
+        const title = getElement("pmigStatusTitle");
+        const detail = getElement("pmigStatusDetail");
+        const live = getElement("pmigLiveRegion");
 
-        if (title) title.textContent = message.title;
+        if (title) {
+            title.style.opacity = "0";
+
+            requestAnimationFrame(() => {
+                if (!state.root || !title.isConnected) return;
+
+                title.textContent = message.title;
+                title.style.opacity = "1";
+            });
+        }
+
+        if (detail) detail.textContent = message.detail;
 
         if (live) {
-            live.textContent =
-                message.title + ". " + message.detail;
+            live.textContent = message.title + ". " + message.detail;
         }
 
-        state.statusIndex = index;
+        const label = getElement("pmigProgressLabel");
+
+        if (label) {
+            label.textContent = message.title + "...";
+        }
 
         emit("status", {
-            index,
-            title: message.title,
-            detail: message.detail
+            index: state.statusIndex,
+            ...message
         });
     }
 
     function setProgress(value) {
-        const root = getRoot();
-        if (!root) return;
-
         const progress = Math.max(
             0,
             Math.min(100, Math.round(Number(value) || 0))
@@ -861,405 +985,512 @@
 
         state.progress = progress;
 
-        const pill = $("[data-pmig-progress]", root);
+        const bar = getElement("pmigProgressBar");
+        const percent = getElement("pmigProgressPercent");
+        const track = getElement("pmigProgressTrack");
 
-        if (pill) pill.textContent = `${progress}%`;
+        if (bar) bar.style.width = progress + "%";
+        if (percent) percent.textContent = progress + "%";
+
+        if (track) {
+            track.setAttribute("aria-valuenow", String(progress));
+        }
 
         emit("progress", { progress });
     }
 
-    function applyIdleState() {
-        const root = getRoot();
-        if (!root) return;
-
-        const result = $("[data-pmig-result]", root);
-        const button = $("[data-pmig-generate]", root);
-        const label = $("[data-pmig-button-label]", root);
-        const mesh = $("[data-pmig-mesh]", root);
-
-        if (result) result.classList.remove("pmig-visible");
-        if (mesh) mesh.style.display = "";
-
-        if (button) button.disabled = false;
-        if (label) label.textContent = "Generate image";
-
-        setProgress(0);
-        setStatus(0);
-    }
-
-    function applyLoadingState() {
-        const root = getRoot();
-        if (!root) return;
-
-        const result = $("[data-pmig-result]", root);
-        const button = $("[data-pmig-generate]", root);
-        const label = $("[data-pmig-button-label]", root);
-        const mesh = $("[data-pmig-mesh]", root);
-
-        if (result) result.classList.remove("pmig-visible");
-        if (mesh) mesh.style.display = "";
-
-        if (button) button.disabled = true;
-        if (label) label.textContent = "Generating...";
-
-        setMessage("");
-        setStatus(0);
-        setProgress(1);
-    }
-
-    /* =====================================================
-       PROGRESS ANIMATION
-
-       This is an estimated visual progress indicator.
-       A real API can report actual progress when supported.
-       It never automatically reaches 100%.
-       ===================================================== */
-
     function startProgressAnimation() {
-        clearTimers();
-
-        state.statusIndex = 0;
+        stopTimers();
 
         state.statusTimer = setInterval(() => {
-            if (state.phase !== "generating") return;
+            if (!state.generating) return;
 
-            const next = Math.min(
-                STATUS_MESSAGES.length - 1,
-                state.statusIndex + 1
-            );
+            const next = (state.statusIndex + 1) %
+                STATUS_MESSAGES.length;
 
             setStatus(next);
-        }, 4500);
+        }, 4200);
 
-        state.timer = setInterval(() => {
-            if (state.phase !== "generating") return;
+        state.progressTimer = setInterval(() => {
+            if (!state.generating) return;
 
-            let increment;
-
-            if (state.progress < 20) {
-                increment = 1 + Math.random() * 2.0;
+            if (state.progress < 25) {
+                setProgress(state.progress + 2);
             } else if (state.progress < 55) {
-                increment = 0.5 + Math.random() * 1.1;
+                setProgress(state.progress + 1);
             } else if (state.progress < 78) {
-                increment = 0.2 + Math.random() * 0.65;
-            } else {
-                increment = 0.08 + Math.random() * 0.2;
+                setProgress(state.progress + 0.5);
+            } else if (state.progress < 92) {
+                setProgress(state.progress + 0.2);
+            } else if (state.progress < 94) {
+                setProgress(94);
             }
+        }, 900);
+    }
 
-            setProgress(Math.min(94, state.progress + increment));
-        }, 700);
+    function showError(message) {
+        const error = getElement("pmigError");
+
+        if (!error) return;
+
+        error.textContent = message;
+        error.hidden = false;
+    }
+
+    function clearError() {
+        const error = getElement("pmigError");
+
+        if (!error) return;
+
+        error.textContent = "";
+        error.hidden = true;
+    }
+
+    function applyGeneratingState(isGenerating) {
+        state.generating = isGenerating;
+
+        const button = getElement("pmigGenerateButton");
+        const label = getElement("pmigGenerateLabel");
+        const prompt = getElement("pmigPrompt");
+        const style = getElement("pmigStyle");
+        const ratio = getElement("pmigRatio");
+        const progressWrap = getElement("pmigProgressWrap");
+        const stage = getElement("pmigStage");
+
+        if (button) {
+            button.disabled = isGenerating;
+            button.classList.toggle(
+                "pmig-generating",
+                isGenerating
+            );
+        }
+
+        if (label) {
+            label.textContent = isGenerating
+                ? "Creating image..."
+                : "Generate image";
+        }
+
+        if (prompt) prompt.disabled = isGenerating;
+        if (style) style.disabled = isGenerating;
+        if (ratio) ratio.disabled = isGenerating;
+
+        if (progressWrap) progressWrap.hidden = !isGenerating;
+        if (stage) stage.hidden = false;
+
+        if (!isGenerating) {
+            stopTimers();
+        }
     }
 
     /* =====================================================
-       IMAGE GENERATION CONNECTOR
-
-       Expected generator signature:
-
-       async function generator(request, callbacks) {
-           callbacks.onProgress(35);
-           callbacks.onStatus("Rendering details...");
-           return {
-               url: "https://example.com/generated-image.png"
-           };
-       }
-
-       The connector must be supplied later.
+       IMAGE GENERATION API
        ===================================================== */
 
+    function buildRequest(prompt, settings = {}) {
+        return {
+            prompt,
+            style: settings.style || state.style,
+            aspectRatio: settings.aspectRatio || state.aspectRatio,
+            width: ratioDimensions(
+                settings.aspectRatio || state.aspectRatio
+            ).width,
+            height: ratioDimensions(
+                settings.aspectRatio || state.aspectRatio
+            ).height
+        };
+    }
+
+    function ratioDimensions(ratio) {
+        const dimensions = {
+            "1:1": { width: 1024, height: 1024 },
+            "3:2": { width: 1536, height: 1024 },
+            "2:3": { width: 1024, height: 1536 },
+            "16:9": { width: 1536, height: 864 },
+            "9:16": { width: 864, height: 1536 }
+        };
+
+        return dimensions[ratio] || dimensions["1:1"];
+    }
+
+    async function defaultGenerator(request, callbacks = {}) {
+        const endpoint = state.endpoint || API_ENDPOINT;
+
+        callbacks.onStatus?.("Connecting to the image generator...");
+        callbacks.onProgress?.(5);
+
+        let response;
+
+        try {
+            response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, image/*"
+                },
+                body: JSON.stringify(request)
+            });
+        } catch (error) {
+            throw new Error(
+                "Could not connect to the image-generation API. " +
+                "Check your network and API endpoint."
+            );
+        }
+
+        if (!response.ok) {
+            let detail = "";
+
+            try {
+                const data = await response.json();
+                detail = data.error || data.message || "";
+            } catch {
+                try {
+                    detail = await response.text();
+                } catch {
+                    detail = "";
+                }
+            }
+
+            throw new Error(
+                detail ||
+                "Image generation failed (HTTP " +
+                response.status + ")."
+            );
+        }
+
+        const contentType = (
+            response.headers.get("content-type") || ""
+        ).toLowerCase();
+
+        if (contentType.startsWith("image/")) {
+            const blob = await response.blob();
+            callbacks.onProgress?.(98);
+
+            return {
+                url: URL.createObjectURL(blob),
+                prompt: request.prompt
+            };
+        }
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error(
+                "The image API returned an unsupported response."
+            );
+        }
+
+        callbacks.onProgress?.(95);
+
+        if (typeof data === "string") {
+            return { url: data };
+        }
+
+        if (data && data.error) {
+            throw new Error(String(data.error));
+        }
+
+        const imageUrl =
+            data?.url ||
+            data?.imageUrl ||
+            data?.image_url ||
+            data?.dataUrl ||
+            data?.data_url ||
+            data?.output?.url ||
+            data?.image?.url ||
+            (typeof data?.image === "string" ? data.image : null) ||
+            (typeof data?.data === "string" ? data.data : null) ||
+            (Array.isArray(data?.data)
+                ? data.data[0]?.url || data.data[0]
+                : null) ||
+            (Array.isArray(data?.images)
+                ? data.images[0]?.url || data.images[0]
+                : null);
+
+        if (typeof imageUrl !== "string" ||
+            !isValidImageURL(imageUrl)) {
+            throw new Error(
+                "The API responded, but no usable image URL was found. " +
+                "Make sure the endpoint returns url, imageUrl, dataUrl, " +
+                "or a supported image response."
+            );
+        }
+
+        return {
+            url: imageUrl,
+            metadata: data.metadata || {}
+        };
+    }
+
     function setGenerator(generator) {
-        if (generator !== null && typeof generator !== "function") {
+        if (generator !== null &&
+            typeof generator !== "function") {
             throw new TypeError(
-                "Generator must be a function or null."
+                "The image generator must be a function or null."
             );
         }
 
         state.generator = generator;
-
-        emit("connector", {
-            connected: typeof generator === "function"
-        });
-
-        return api;
     }
 
     async function start(prompt, settings = {}) {
-        const root = getRoot();
-
-        if (!root) {
+        if (!state.root) {
             throw new Error(
-                "Call PingMeImageGeneration.mount() first."
+                "Mount the image-generation UI before generating."
             );
         }
 
-        const cleanPrompt = String(prompt ?? "").trim();
+        if (state.generating) return null;
+
+        const cleanPrompt = String(prompt || "").trim();
 
         if (!cleanPrompt) {
-            setMessage(
-                "Please describe the image you want to create.",
-                "error"
-            );
+            showError("Please describe the image you want to create.");
+            getElement("pmigPrompt")?.focus();
             return null;
         }
 
-        if (state.phase === "generating") {
-            setMessage(
-                "An image is already being generated.",
-                "info"
-            );
-            return null;
-        }
-
-        if (typeof state.generator !== "function") {
-            setMessage(
-                "Image generation is not connected yet. " +
-                "Connect an image-generation API to create real images.",
-                "info"
-            );
-
-            emit("not-connected", { prompt: cleanPrompt });
-
-            return null;
-        }
-
-        clearTimers();
-
-        const requestId = ++state.requestId;
+        clearError();
 
         state.prompt = cleanPrompt;
-        state.phase = "generating";
+        state.style = settings.style ||
+            getElement("pmigStyle")?.value ||
+            state.style;
+
+        state.aspectRatio = settings.aspectRatio ||
+            getElement("pmigRatio")?.value ||
+            state.aspectRatio;
+
         state.lastError = "";
+        state.lastImage = null;
 
-        const style = settings.style ||
-            $("[data-pmig-style]", root)?.value ||
-            "realistic";
+        const requestId = ++state.requestId;
+        const request = buildRequest(cleanPrompt, settings);
 
-        const ratio = settings.ratio ||
-            $("[data-pmig-ratio]", root)?.value ||
-            "1:1";
+        const result = getElement("pmigResult");
 
-        const request = {
-            prompt: cleanPrompt,
-            style,
-            aspectRatio: ratio,
-            requestId,
-            options: { ...settings }
-        };
+        if (result) result.hidden = true;
 
-        applyLoadingState();
+        applyGeneratingState(true);
+        setProgress(0);
+        setStatus(0);
         startProgressAnimation();
 
-        emit("start", request);
+        emit("start", { request });
 
         try {
-            const result = await state.generator(request, {
-                onProgress(value) {
+            const generator = state.generator || defaultGenerator;
+
+            const output = await generator(request, {
+                onProgress: value => {
                     if (requestId !== state.requestId) return;
-
-                    const progress = Number(value);
-
-                    if (Number.isFinite(progress)) {
-                        setProgress(
-                            Math.min(99, Math.max(state.progress, progress))
-                        );
-                    }
+                    setProgress(value);
                 },
 
-                onStatus(message) {
+                onStatus: message => {
                     if (requestId !== state.requestId) return;
 
-                    const title = String(message || "").trim();
+                    const detail = getElement("pmigStatusDetail");
 
-                    if (!title) return;
-
-                    const root = getRoot();
-                    const heading = root &&
-                        $("[data-pmig-title]", root);
-
-                    if (heading) heading.textContent = title;
-
-                    emit("status", { title, custom: true });
+                    if (detail && typeof message === "string") {
+                        detail.textContent = message;
+                    }
                 }
             });
 
             if (requestId !== state.requestId) return null;
 
-            const imageUrl = typeof result === "string"
-                ? result
-                : result && (result.url || result.imageUrl || result.dataUrl);
+            const imageUrl = typeof output === "string"
+                ? output
+                : output?.url ||
+                  output?.imageUrl ||
+                  output?.dataUrl ||
+                  output?.image_url ||
+                  output?.data_url;
 
-            if (!imageUrl) {
+            if (!isValidImageURL(imageUrl)) {
                 throw new Error(
-                    "The image service returned no image."
+                    "The image generator did not return a valid image URL."
                 );
             }
 
-            complete(imageUrl, {
+            return complete(imageUrl, {
                 prompt: cleanPrompt,
-                style,
-                ratio,
-                requestId
+                style: request.style,
+                aspectRatio: request.aspectRatio,
+                ...(output?.metadata || {})
             });
-
-            return result;
         } catch (error) {
             if (requestId !== state.requestId) return null;
 
             fail(error);
-
             return null;
         }
     }
 
     /* =====================================================
-       COMPLETION
+       GENERATION COMPLETE / FAILURE
        ===================================================== */
 
     function complete(imageUrl, metadata = {}) {
-        const root = getRoot();
-        if (!root) return;
-
-        clearTimers();
-
-        const requestId = metadata.requestId ?? state.requestId;
-
-        if (requestId !== state.requestId) return;
-
-        state.phase = "complete";
-        state.lastImage = imageUrl;
-
-        setProgress(100);
-
-        const title = $("[data-pmig-title]", root);
-        const mesh = $("[data-pmig-mesh]", root);
-        const stage = $("[data-pmig-stage]", root);
-        const result = $("[data-pmig-result]", root);
-        const resultImage = $("[data-pmig-result-image]", root);
-        const button = $("[data-pmig-generate]", root);
-        const label = $("[data-pmig-button-label]", root);
-
-        if (title) title.textContent = "Your image is ready";
-        if (mesh) mesh.style.display = "none";
-        if (stage) stage.style.display = "none";
-
-        if (resultImage) {
-            resultImage.src = imageUrl;
-            resultImage.alt = metadata.prompt
-                ? "Generated image: " + metadata.prompt
-                : "AI-generated image";
+        if (!isValidImageURL(imageUrl)) {
+            fail(new Error("The generated image URL is invalid."));
+            return null;
         }
 
-        if (result) result.classList.add("pmig-visible");
+        stopTimers();
 
-        if (button) button.disabled = false;
-        if (label) label.textContent = "Generate image";
+        state.generating = false;
+        state.lastError = "";
+        state.lastImage = imageUrl;
 
-        setMessage("Image created successfully.", "info");
+        applyGeneratingState(false);
+        setProgress(100);
 
-        const entry = {
-            id: makeId(),
-            url: imageUrl,
-            prompt: metadata.prompt || state.prompt || "",
-            style: metadata.style || "",
-            ratio: metadata.ratio || "",
-            createdAt: new Date().toISOString()
-        };
+        const stage = getElement("pmigStage");
+        const result = getElement("pmigResult");
+        const image = getElement("pmigResultImage");
+        const progressLabel = getElement("pmigProgressLabel");
 
-        state.history.unshift(entry);
-        state.history = state.history.slice(0, MAX_HISTORY);
+        if (stage) stage.hidden = false;
 
-        saveHistory();
-        renderHistory();
+        setStatus(7);
 
-        emit("complete", entry);
+        const title = getElement("pmigStatusTitle");
+        const detail = getElement("pmigStatusDetail");
+
+        if (title) title.textContent = "Your image is ready!";
+        if (detail) {
+            detail.textContent =
+                "Your image has been created successfully.";
+        }
+
+        if (progressLabel) {
+            progressLabel.textContent = "Image complete";
+        }
+
+        if (image) {
+            image.onload = () => {
+                if (result) result.hidden = false;
+            };
+
+            image.onerror = () => {
+                if (result) result.hidden = true;
+                showError(
+                    "The image was generated, but it could not be displayed. " +
+                    "Try generating it again."
+                );
+            };
+
+            image.src = imageUrl;
+            image.alt = metadata.prompt
+                ? "Generated image: " + metadata.prompt
+                : "Generated image";
+        }
+
+        if (result) result.hidden = false;
+
+        const prompt = metadata.prompt || state.prompt;
+
+        const item = addHistory(imageUrl, prompt, {
+            style: metadata.style || state.style,
+            aspectRatio: metadata.aspectRatio || state.aspectRatio
+        });
+
+        emit("complete", {
+            imageUrl,
+            metadata,
+            historyItem: item
+        });
+
+        return item;
     }
 
-    /* =====================================================
-       FAILURE
-       ===================================================== */
-
     function fail(error) {
-        clearTimers();
-
-        state.phase = "error";
+        stopTimers();
+        state.generating = false;
 
         const message = error instanceof Error
             ? error.message
-            : String(error || "Something went wrong.");
+            : String(error || "An unknown error occurred.");
 
         state.lastError = message;
 
-        const root = getRoot();
+        applyGeneratingState(false);
+        setProgress(0);
 
-        if (root) {
-            const stage = $("[data-pmig-stage]", root);
-            const button = $("[data-pmig-generate]", root);
-            const label = $("[data-pmig-button-label]", root);
+        const title = getElement("pmigStatusTitle");
+        const detail = getElement("pmigStatusDetail");
 
-            if (stage) stage.style.display = "";
-            if (button) button.disabled = false;
-            if (label) label.textContent = "Try again";
-
-            setMessage(
-                "Image generation failed: " + message,
-                "error"
-            );
+        if (title) title.textContent = "Image generation failed";
+        if (detail) {
+            detail.textContent =
+                "Something went wrong while creating your image.";
         }
 
-        emit("error", { message });
-    }
+        showError(message);
 
-    /* =====================================================
-       RESET
-       ===================================================== */
+        emit("error", { error: message });
 
-    function reset() {
-        clearTimers();
-
-        state.requestId++;
-        state.phase = "idle";
-        state.progress = 0;
-        state.lastError = "";
-
-        const root = getRoot();
-
-        if (!root) return api;
-
-        const stage = $("[data-pmig-stage]", root);
-        const result = $("[data-pmig-result]", root);
-        const mesh = $("[data-pmig-mesh]", root);
-
-        if (stage) stage.style.display = "";
-        if (result) result.classList.remove("pmig-visible");
-        if (mesh) mesh.style.display = "";
-
-        setMessage("");
-        applyIdleState();
-
-        return api;
+        return false;
     }
 
     /* =====================================================
        DOWNLOAD
        ===================================================== */
 
-    function downloadImage(url, filename = "pingme-ai-image.png") {
-        if (!url) {
-            setMessage("There is no image to download.", "error");
-            return;
+    async function downloadImage(url = state.lastImage) {
+        if (!url || !isValidImageURL(url)) {
+            showError("There is no image available to download.");
+            return false;
         }
 
-        const anchor = document.createElement("a");
+        try {
+            let downloadUrl = url;
+            let objectUrl = null;
 
-        anchor.href = url;
-        anchor.download = filename;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
+            if (!url.startsWith("data:") &&
+                !url.startsWith("blob:")) {
+                const response = await fetch(url);
 
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+                if (!response.ok) {
+                    throw new Error(
+                        "The image could not be downloaded."
+                    );
+                }
 
-        emit("download", { url, filename });
+                const blob = await response.blob();
+                objectUrl = URL.createObjectURL(blob);
+                downloadUrl = objectUrl;
+            }
+
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = "pingme-image-" +
+                new Date().toISOString().replace(/[:.]/g, "-") +
+                ".png";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            if (objectUrl) {
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+            }
+
+            emit("download", { url });
+
+            return true;
+        } catch (error) {
+            showError(
+                error.message ||
+                "Download failed. Try opening the image in a new tab."
+            );
+
+            return false;
+        }
     }
 
     /* =====================================================
@@ -1267,74 +1498,76 @@
        ===================================================== */
 
     function renderHistory() {
-        const root = getRoot();
-        if (!root) return;
+        const grid = getElement("pmigHistoryGrid");
+        const section = getElement("pmigHistory");
 
-        const grid = $("[data-pmig-history]", root);
-        if (!grid) return;
-
-        grid.innerHTML = "";
+        if (!grid || !section) return;
 
         if (!state.history.length) {
-            const empty = document.createElement("p");
-            empty.className = "pmig-history-empty";
-            empty.textContent =
-                "Your generated images will appear here.";
+            grid.innerHTML = `
+                <p class="pmig-empty-history">
+                    Your generated images will appear here.
+                </p>
+            `;
 
-            grid.appendChild(empty);
+            section.hidden = false;
             return;
         }
 
-        state.history.forEach(item => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "pmig-history-item";
-            button.title = item.prompt || "Open generated image";
+        grid.innerHTML = state.history.map(item => `
+            <button type="button"
+                class="pmig-history-item"
+                data-history-id="${escapeHTML(item.id)}"
+                title="${escapeHTML(item.prompt)}">
 
-            const image = document.createElement("img");
-            image.src = item.url;
-            image.alt = item.prompt || "Generated image";
-            image.loading = "lazy";
+                <img
+                    src="${escapeHTML(item.url)}"
+                    alt="${escapeHTML(item.prompt)}"
+                    loading="lazy">
 
-            button.appendChild(image);
+                <span class="pmig-history-caption">
+                    ${escapeHTML(item.prompt)}
+                </span>
+            </button>
+        `).join("");
 
-            button.addEventListener("click", () => {
-                showHistoryItem(item);
-            });
-
-            grid.appendChild(button);
-        });
+        section.hidden = false;
     }
 
-    function showHistoryItem(item) {
-        const root = getRoot();
-        if (!root || !item) return;
+    function showHistoryItem(id) {
+        const item = state.history.find(entry => entry.id === id);
 
-        clearTimers();
+        if (!item) return null;
 
-        state.phase = "complete";
         state.lastImage = item.url;
-        state.prompt = item.prompt || "";
+        state.prompt = item.prompt;
+        state.style = item.style || "realistic";
+        state.aspectRatio = item.aspectRatio || "1:1";
 
-        const prompt = $("[data-pmig-prompt]", root);
-        const stage = $("[data-pmig-stage]", root);
-        const mesh = $("[data-pmig-mesh]", root);
-        const result = $("[data-pmig-result]", root);
-        const image = $("[data-pmig-result-image]", root);
+        const prompt = getElement("pmigPrompt");
+        const style = getElement("pmigStyle");
+        const ratio = getElement("pmigRatio");
+        const image = getElement("pmigResultImage");
+        const result = getElement("pmigResult");
+        const stage = getElement("pmigStage");
 
-        if (prompt) prompt.value = state.prompt;
-        if (stage) stage.style.display = "none";
-        if (mesh) mesh.style.display = "none";
+        if (prompt) prompt.value = item.prompt;
+        if (style) style.value = state.style;
+        if (ratio) ratio.value = state.aspectRatio;
 
         if (image) {
             image.src = item.url;
-            image.alt = item.prompt || "Generated image";
+            image.alt = "Generated image: " + item.prompt;
         }
 
-        if (result) result.classList.add("pmig-visible");
+        if (result) result.hidden = false;
+        if (stage) stage.hidden = true;
 
-        setMessage("");
-        emit("history-open", item);
+        clearError();
+
+        emit("history-open", { item });
+
+        return item;
     }
 
     function getHistory() {
@@ -1346,76 +1579,158 @@
         saveHistory();
         renderHistory();
 
-        emit("history-cleared");
+        emit("history-clear");
     }
 
     /* =====================================================
-       EVENT BINDINGS
+       RESET / THEME / EVENTS
        ===================================================== */
 
-    function bindEvents(root) {
-        const prompt = $("[data-pmig-prompt]", root);
-        const generate = $("[data-pmig-generate]", root);
-        const download = $("[data-pmig-download]", root);
-        const again = $("[data-pmig-again]", root);
+    function reset() {
+        state.requestId++;
+        stopTimers();
 
-        generate.addEventListener("click", () => {
-            start(prompt.value);
+        state.generating = false;
+        state.progress = 0;
+        state.lastError = "";
+        state.lastImage = null;
+
+        applyGeneratingState(false);
+        setProgress(0);
+        clearError();
+
+        const prompt = getElement("pmigPrompt");
+        const result = getElement("pmigResult");
+        const stage = getElement("pmigStage");
+        const progressWrap = getElement("pmigProgressWrap");
+
+        if (prompt) prompt.value = "";
+        if (result) result.hidden = true;
+        if (stage) stage.hidden = false;
+        if (progressWrap) progressWrap.hidden = true;
+
+        setStatus(0);
+
+        const title = getElement("pmigStatusTitle");
+        const detail = getElement("pmigStatusDetail");
+
+        if (title) title.textContent = "Ready to create";
+        if (detail) {
+            detail.textContent =
+                "Describe the image you want to make.";
+        }
+
+        emit("reset");
+    }
+
+    function setTheme(theme = "auto") {
+        state.theme = theme;
+
+        if (!state.root) return;
+
+        const dark = theme === "dark" ||
+            (theme === "auto" &&
+                window.matchMedia?.(
+                    "(prefers-color-scheme: dark)"
+                ).matches);
+
+        const section = state.root.querySelector(".pmig");
+
+        if (section) {
+            section.classList.toggle("pmig-dark", Boolean(dark));
+        }
+    }
+
+    function bindEvents() {
+        const generateButton = getElement("pmigGenerateButton");
+        const prompt = getElement("pmigPrompt");
+        const style = getElement("pmigStyle");
+        const ratio = getElement("pmigRatio");
+        const downloadButton = getElement("pmigDownloadButton");
+        const anotherButton = getElement("pmigAnotherButton");
+        const clearButton = getElement("pmigClearHistory");
+        const historyGrid = getElement("pmigHistoryGrid");
+
+        generateButton?.addEventListener("click", () => {
+            start(prompt?.value || "", {
+                style: style?.value || "realistic",
+                aspectRatio: ratio?.value || "1:1"
+            });
         });
 
-        prompt.addEventListener("keydown", event => {
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.isComposing
-            ) {
+        prompt?.addEventListener("keydown", event => {
+            if ((event.ctrlKey || event.metaKey) &&
+                event.key === "Enter") {
                 event.preventDefault();
-                start(prompt.value);
+                generateButton?.click();
             }
         });
 
-        download.addEventListener("click", () => {
-            downloadImage(state.lastImage);
+        style?.addEventListener("change", () => {
+            state.style = style.value;
         });
 
-        again.addEventListener("click", () => {
+        ratio?.addEventListener("change", () => {
+            state.aspectRatio = ratio.value;
+        });
+
+        downloadButton?.addEventListener("click", () => {
+            downloadImage();
+        });
+
+        anotherButton?.addEventListener("click", () => {
             reset();
+            prompt?.focus();
+        });
 
-            const stage = $("[data-pmig-stage]", root);
-            if (stage) {
-                stage.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest"
-                });
-            }
+        clearButton?.addEventListener("click", () => {
+            if (!state.history.length) return;
 
-            prompt.focus();
+            clearHistory();
+        });
+
+        historyGrid?.addEventListener("click", event => {
+            const button = event.target.closest(
+                "[data-history-id]"
+            );
+
+            if (!button) return;
+
+            showHistoryItem(button.dataset.historyId);
         });
     }
 
-    /* =====================================================
-       THEME
-       ===================================================== */
+    function destroy() {
+        stopTimers();
 
-    function setTheme(theme) {
-        const root = getRoot();
-        if (!root) return api;
+        if (state.root) {
+            state.root.innerHTML = "";
+        }
 
-        state.dark = theme === "dark";
-        root.classList.toggle("pmig-dark", state.dark);
+        state.root = null;
+        state.destroyed = true;
+    }
 
-        emit("theme", { theme: state.dark ? "dark" : "light" });
-
-        return api;
+    function getState() {
+        return {
+            version: VERSION,
+            generating: state.generating,
+            progress: state.progress,
+            prompt: state.prompt,
+            style: state.style,
+            aspectRatio: state.aspectRatio,
+            lastImage: state.lastImage,
+            lastError: state.lastError,
+            historyCount: state.history.length
+        };
     }
 
     /* =====================================================
        PUBLIC API
        ===================================================== */
 
-    const api = {
+    window.PingMeImageGeneration = {
         version: VERSION,
-
         mount: render,
         setGenerator,
         start,
@@ -1425,50 +1740,20 @@
         download: downloadImage,
         getHistory,
         clearHistory,
+        showHistoryItem,
         setTheme,
-
-        getState() {
-            return {
-                phase: state.phase,
-                progress: Math.round(state.progress),
-                prompt: state.prompt,
-                connected: typeof state.generator === "function",
-                lastError: state.lastError
-            };
-        },
-
-        destroy() {
-            clearTimers();
-
-            state.requestId++;
-
-            if (state.root) {
-                state.root.innerHTML = "";
-            }
-
-            state.root = null;
-            state.phase = "idle";
-
-            emit("destroy");
-        }
+        setProgress,
+        setStatus,
+        getState,
+        destroy
     };
 
     /* =====================================================
-       INITIALIZE
+       AUTO-MOUNT
        ===================================================== */
 
-    state.history = readHistory();
-
-    window.PingMeImageGeneration = api;
-
-    injectStyles();
-
-    // Automatically initialize only if a matching container
-    // already exists. Otherwise, mount it when the app is ready.
     function autoMount() {
-        const container = document.querySelector(
-            "[data-pingme-image-generation]"
-        );
+        const container = document.querySelector(ROOT_SELECTOR);
 
         if (container && !state.root) {
             render(container);
