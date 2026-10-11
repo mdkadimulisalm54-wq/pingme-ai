@@ -4,6 +4,7 @@
 (() => {
     "use strict";
 
+
     /* =========================================================
        MESSAGE UI STYLE
        ========================================================= */
@@ -17,32 +18,25 @@
            ===================================================== */
 
         .user-message {
-            display: block;
-            width: fit-content;
             max-width: 80%;
             margin: 10px 0 10px auto !important;
-            padding: 10px 14px !important;
+            padding: 12px 16px !important;
 
-            border-radius: 18px 18px 6px 18px !important;
+            border-radius: 20px 20px 6px 20px !important;
 
             background:
-    linear-gradient(
-        135deg,
-        #eef5ff 0%,
-        #e4efff 45%,
-        #d8e9ff 100%
-    ) !important;
+                linear-gradient(
+                    135deg,
+                    #1a73e8,
+                    #4285f4
+                ) !important;
 
-            color: #202124 !important;
+            color: #ffffff !important;
 
             box-shadow:
-                0 4px 14px rgba(70, 120, 180, 0.12);
+                0 5px 16px rgba(26, 115, 232, 0.20);
 
             line-height: 1.5;
-
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            word-break: break-word;
 
             animation:
                 pingmeUserIn
@@ -243,10 +237,8 @@
         @media (max-width: 480px) {
 
             .user-message {
-                display: block;
-                width: fit-content;
                 max-width: 84%;
-                padding: 10px 14px !important;
+                padding: 11px 14px !important;
             }
 
             .ai-message {
@@ -288,6 +280,7 @@
     const ACTIVE_CHAT_KEY =
         "pingme_active_chat_id";
 
+
     let activeChatId = null;
 
 
@@ -309,6 +302,7 @@
         if (activeChatId) {
             return activeChatId;
         }
+
 
         try {
 
@@ -341,7 +335,9 @@
             return;
         }
 
+
         activeChatId = chatId;
+
 
         try {
 
@@ -371,8 +367,10 @@
             return null;
         }
 
+
         const existingId =
             getActiveChatId();
+
 
         if (existingId) {
 
@@ -387,6 +385,7 @@
 
         }
 
+
         try {
 
             const title =
@@ -394,10 +393,12 @@
                     firstMessage
                 );
 
+
             const newChat =
                 history.createChat(
                     title
                 );
+
 
             if (
                 newChat &&
@@ -420,6 +421,7 @@
 
         }
 
+
         return null;
     }
 
@@ -431,13 +433,16 @@
                 .replace(/\s+/g, " ")
                 .trim();
 
+
         if (!clean) {
             return "New Chat";
         }
 
+
         if (clean.length <= 45) {
             return clean;
         }
+
 
         return (
             clean.substring(0, 45)
@@ -452,6 +457,13 @@
         if (!node) {
             return "";
         }
+
+
+        /*
+         * textContent is intentionally used instead of
+         * innerHTML so History stores clean readable text
+         * rather than UI markup.
+         */
 
         return String(
             node.textContent || ""
@@ -471,6 +483,12 @@
             return;
         }
 
+
+        /*
+         * Prevent the same DOM message from being
+         * stored more than once.
+         */
+
         if (
             node.dataset &&
             node.dataset.historySaved === "true"
@@ -478,7 +496,9 @@
             return;
         }
 
+
         let role = null;
+
 
         if (
             node.classList.contains(
@@ -498,16 +518,20 @@
 
         }
 
+
         if (!role) {
             return;
         }
 
+
         const content =
             getMessageText(node);
+
 
         if (!content) {
             return;
         }
+
 
         const chatId =
             ensureActiveChat(
@@ -516,9 +540,11 @@
                     : ""
             );
 
+
         if (!chatId) {
             return;
         }
+
 
         try {
 
@@ -554,8 +580,10 @@
 
             }
 
+
             node.dataset.historySaved =
                 "true";
+
 
         } catch (error) {
 
@@ -618,6 +646,7 @@
                                 node.style.animation =
                                     "pingmeUserIn 0.38s cubic-bezier(.2,.8,.2,1) both";
 
+
                                 saveMessageToHistory(
                                     node
                                 );
@@ -642,6 +671,7 @@
 
                                 node.style.animation =
                                     "pingmeAIIn 0.45s cubic-bezier(.2,.8,.2,1) both";
+
 
                                 saveMessageToHistory(
                                     node
@@ -711,6 +741,7 @@
                         document.getElementById(
                             "chatArea"
                         );
+
 
                     if (chatArea) {
 
