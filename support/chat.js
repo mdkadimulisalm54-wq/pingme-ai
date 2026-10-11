@@ -1,6 +1,7 @@
+
 /* ==========================================================
-   PINGME AI — CHAT SUPPORT (COMPLETE & UPDATED)
-   Animated Green Loader • Typing Effect • History Compatibility
+   PINGME AI — CHAT SUPPORT
+   Message UI • History • Four-Corner Glow Loader
    ========================================================== */
 
 (() => {
@@ -15,7 +16,7 @@
     const LOADER_ID = "pingmeAiLoaderRow";
 
     /* ======================================================
-       CHAT STYLES & GREEN LOADER ANIMATION
+       STYLES
        ====================================================== */
 
     if (!document.getElementById(STYLE_ID)) {
@@ -23,237 +24,155 @@
         style.id = STYLE_ID;
 
         style.textContent = `
-            #chatArea .message-row {
-                box-sizing: border-box;
-                min-width: 0;
-                max-width: 100%;
-            }
-
-            #chatArea .message-row.user {
-                display: flex;
-                justify-content: flex-end;
-                width: 100%;
-            }
-
-            #chatArea .message-row.ai {
-                display: flex;
-                justify-content: flex-start;
-                width: 100%;
-            }
-
-            #chatArea .message-row.user .message-box {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                width: fit-content;
-                max-width: min(84%, 680px);
-                min-width: 0;
-                box-sizing: border-box;
-            }
-
-            #chatArea .message-row.ai .message-box {
-                width: 100%;
-                max-width: 100%;
-                min-width: 0;
-                box-sizing: border-box;
-            }
-
-            #chatArea .message-row .message {
-                box-sizing: border-box;
-                min-width: 0;
-                max-width: 100%;
-                overflow-wrap: anywhere;
-                word-break: normal;
-                white-space: pre-wrap;
-                line-height: 1.65;
-            }
-
-            /* User message bubble */
-            #chatArea .message-row.user .message {
-                display: block;
-                width: fit-content;
-                max-width: 100%;
-                padding: 10px 14px;
-                border: 1px solid #cceaff;
-                border-radius: 19px 19px 5px 19px;
-                background: linear-gradient(
-                    135deg,
-                    #ffffff 0%,
-                    #edf8ff 58%,
-                    #eafaf5 100%
-                );
-                color: #213b4a;
-                box-shadow: 0 2px 9px rgba(92, 173, 214, .09);
-                animation: pingmeMessageEnter .24s ease-out both;
-            }
-
-            /* AI message */
-            #chatArea .message-row.ai .message {
-                color: inherit;
-                overflow-wrap: anywhere;
-            }
-
-            /* Typewriter cursor */
-            #chatArea .message.typing-active::after {
-                content: "";
-                display: inline-block;
-                width: 2px;
-                height: 1em;
-                margin-left: 2px;
-                vertical-align: -2px;
-                border-radius: 2px;
-                background: #10a37f;
-                animation: pingmeCursorBlink .8s steps(2, start) infinite;
-            }
-
-            /* Legacy message compatibility */
             .user-message {
                 display: block;
                 width: fit-content;
                 max-width: 84%;
                 margin: 10px 0 10px auto !important;
                 padding: 10px 14px !important;
-                border: 1px solid #cceaff !important;
-                border-radius: 19px 19px 5px 19px !important;
-                background: linear-gradient(
-                    135deg, #ffffff, #edf8ff 58%, #eafaf5
-                ) !important;
-                color: #213b4a !important;
-                box-shadow: 0 2px 9px rgba(92, 173, 214, .09);
+                border-radius: 18px 18px 6px 18px !important;
+                background: linear-gradient(135deg,#eef5ff,#d8e9ff) !important;
+                color: #202124 !important;
+                box-shadow: 0 4px 14px rgba(70,120,180,.12);
                 line-height: 1.5;
                 white-space: pre-wrap;
                 overflow-wrap: anywhere;
-                animation: pingmeMessageEnter .24s ease-out both;
+                animation: pingmeUserIn .3s ease both;
             }
 
             .ai-message {
                 width: 100%;
-                max-width: 100%;
-                box-sizing: border-box;
                 margin: 14px 0 !important;
-                padding: 12px 0 !important;
-                border-radius: 12px;
-                color: inherit !important;
-                line-height: 1.65;
+                padding: 12px 14px !important;
+                border-radius: 18px 18px 18px 6px;
+                background: #f7f8fc;
+                color: #202124 !important;
+                line-height: 1.6;
                 overflow-wrap: anywhere;
-                animation: pingmeMessageEnter .24s ease-out both;
+                animation: pingmeAIIn .3s ease both;
             }
 
             .ai-message h3 {
                 margin: 8px 0 6px !important;
             }
 
-            /* =================================================
-               ANIMATED GREEN LOADER (UPDATED)
-               ================================================= */
+            /* LOADER */
 
-            #chatArea .pingme-loader-row {
-                display: flex !important;
+            .pingme-loader-row {
+                display: flex;
+                align-items: center;
+                min-height: 42px;
+                margin: 6px 0;
+            }
+
+            .pingme-loader-row .thinking-message {
+                display: flex;
                 align-items: center;
                 justify-content: flex-start;
-                width: 100%;
-                min-height: 38px;
-                margin: 8px 0 12px;
+                width: 70px;
+                height: 54px;
+                margin: 0;
                 padding: 0;
-                visibility: visible !important;
-                opacity: 1 !important;
-                animation: pingmeLoaderEnter .25s ease-out both;
-            }
-
-            #chatArea .pingme-loader-row .thinking-message {
-                display: flex !important;
-                align-items: center;
-                justify-content: flex-start;
-                gap: 10px;
-                width: auto;
-                min-width: 0;
-                height: auto;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: 0 !important;
-                border-radius: 0 !important;
-                background: transparent !important;
-                box-shadow: none !important;
+                background: transparent;
                 overflow: visible;
-                visibility: visible !important;
-                opacity: 1 !important;
             }
 
-            /* Green Pulse Loader Circle */
-            #chatArea .pingme-ai-loader {
+            .pingme-ai-loader {
                 position: relative;
-                display: flex !important;
+                width: 42px;
+                height: 42px;
+                display: flex;
                 align-items: center;
                 justify-content: center;
-                flex: 0 0 26px;
-                width: 26px;
-                height: 26px;
-                overflow: visible;
-                border-radius: 50%;
-                background-color: #10a37f;
-                box-shadow: 0 0 0 rgba(16, 163, 127, 0.4);
-                animation: pingmeGreenPulse 1.4s infinite ease-in-out;
+                flex-shrink: 0;
+                isolation: isolate;
             }
 
-            @keyframes pingmeGreenPulse {
-                0% {
-                    transform: scale(0.92);
-                    box-shadow: 0 0 0 0 rgba(16, 163, 127, 0.7);
-                }
-                70% {
-                    transform: scale(1.12);
-                    box-shadow: 0 0 0 8px rgba(16, 163, 127, 0);
-                }
-                100% {
-                    transform: scale(0.92);
-                    box-shadow: 0 0 0 0 rgba(16, 163, 127, 0);
-                }
+            /* Static rounded-square outline */
+
+            .pingme-loader-orbit {
+                position: absolute;
+                inset: 3px;
+                box-sizing: border-box;
+                border: 2px solid rgba(153,177,255,.24);
+                border-radius: 10px;
+                pointer-events: none;
             }
 
-            /* Animated English status */
-            #chatArea .pingme-loader-status {
-                display: inline-flex !important;
+            /* Light travels around the fixed outline */
+
+            .pingme-loader-orbit::before {
+                content: "";
+                position: absolute;
+                inset: -2px;
+                border-radius: inherit;
+                padding: 2px;
+                background: conic-gradient(
+                    from 0deg,
+                    transparent 0deg,
+                    transparent 235deg,
+                    #91baff 275deg,
+                    #b7a0ff 315deg,
+                    #91baff 345deg,
+                    transparent 360deg
+                );
+                -webkit-mask:
+                    linear-gradient(#000 0 0) content-box,
+                    linear-gradient(#000 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
+                animation: pingmeLightTravel 2.2s linear infinite;
+                filter:
+                    drop-shadow(0 0 2px rgba(116,157,255,.65))
+                    drop-shadow(0 0 5px rgba(167,139,250,.4));
+            }
+
+            .pingme-loader-dots {
+                position: relative;
+                z-index: 1;
+                display: flex;
                 align-items: center;
-                flex-wrap: wrap;
-                min-width: 0;
-                color: #929da8;
-                font-family: inherit;
-                font-size: 13px;
-                font-weight: 400;
-                line-height: 1.5;
-                letter-spacing: .1px;
-                white-space: pre-wrap;
+                justify-content: center;
+                gap: 4px;
             }
 
-            #chatArea .pingme-loader-status span {
-                display: inline-block;
-                animation: pingmeTextWave 1.5s ease-in-out infinite;
-                animation-delay: calc(var(--i) * 35ms);
+            .pingme-loader-dots span {
+                display: block;
+                width: 4px;
+                height: 4px;
+                flex-shrink: 0;
+                border-radius: 50%;
+                background: #252525;
+                animation: pingmeDotPulse 1.05s ease-in-out infinite;
             }
 
-            /* Hide old indicator */
-            #thinking {
+            .pingme-loader-dots span:nth-child(2) {
+                animation-delay: .15s;
+            }
+
+            .pingme-loader-dots span:nth-child(3) {
+                animation-delay: .3s;
+            }
+
+            .thinking {
                 display: none !important;
             }
 
-            /* Copy and link actions */
-            #chatArea .message-actions,
-            #chatArea .pingme-message-actions {
+            .message-actions {
                 display: flex;
                 flex-wrap: wrap;
-                align-items: center;
                 gap: 8px;
                 margin-top: 10px;
             }
 
-            #chatArea .message-action-btn {
+            .message-action-btn {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
             }
 
-            #chatArea .message-action-btn svg {
+            .message-action-btn svg {
                 width: 15px;
                 height: 15px;
                 fill: none;
@@ -263,62 +182,35 @@
                 stroke-linejoin: round;
             }
 
-            /* Input sizing */
-            #messageInput {
-                box-sizing: border-box;
-                min-width: 0;
-                max-width: 100%;
-                max-height: 120px;
-                overflow-y: auto;
-                resize: none;
+            @keyframes pingmeUserIn {
+                from { opacity: 0; transform: translateY(6px); }
+                to { opacity: 1; transform: translateY(0); }
             }
 
-            /* Animations */
-            @keyframes pingmeTextWave {
-                0%, 70%, 100% {
-                    opacity: .65;
-                    transform: translateY(0);
+            @keyframes pingmeAIIn {
+                from { opacity: 0; transform: translateY(7px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            @keyframes pingmeLightTravel {
+                to { transform: rotate(360deg); }
+            }
+
+            @keyframes pingmeDotPulse {
+                0%, 60%, 100% {
+                    opacity: .5;
+                    transform: scale(.85);
                 }
-                35% {
+                30% {
                     opacity: 1;
-                    transform: translateY(-1px);
-                }
-            }
-
-            @keyframes pingmeCursorBlink {
-                to { visibility: hidden; }
-            }
-
-            @keyframes pingmeLoaderEnter {
-                from {
-                    opacity: 0;
-                    transform: translateY(3px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            @keyframes pingmeMessageEnter {
-                from {
-                    opacity: 0;
-                    transform: translateY(5px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
+                    transform: scale(1.12);
                 }
             }
 
             @media (prefers-reduced-motion: reduce) {
-                #chatArea .pingme-ai-loader,
-                #chatArea .pingme-loader-status span {
-                    animation-duration: 2.5s;
-                }
-
-                #chatArea .message.typing-active::after {
-                    animation: none;
+                .pingme-loader-orbit::before,
+                .pingme-loader-dots span {
+                    animation: none !important;
                 }
             }
         `;
@@ -327,7 +219,7 @@
     }
 
     /* ======================================================
-       HISTORY SUPPORT — LEGACY COMPATIBILITY
+       HISTORY SUPPORT
        ====================================================== */
 
     let activeChatId = null;
@@ -350,7 +242,6 @@
 
     function setActiveChatId(id) {
         if (!id) return;
-
         activeChatId = id;
 
         try {
@@ -360,10 +251,7 @@
     }
 
     function makeTitle(text) {
-        const clean = String(text || "")
-            .replace(/\s+/g, " ")
-            .trim();
-
+        const clean = String(text || "").replace(/\s+/g, " ").trim();
         return clean ? clean.slice(0, 45) : "New Chat";
     }
 
@@ -387,10 +275,7 @@
                 return chat.id;
             }
         } catch (error) {
-            console.error(
-                "PingMe History: Could not create chat.",
-                error
-            );
+            console.error("PingMe History: Could not create chat.", error);
         }
 
         return null;
@@ -402,13 +287,10 @@
         const clone = node.cloneNode(true);
 
         clone.querySelectorAll(
-            ".pingme-message-actions, .message-actions, " +
-            ".pingme-ai-loader, .pingme-loader-status, button"
+            ".pingme-message-actions, .pingme-ai-loader, button"
         ).forEach(element => element.remove());
 
-        return String(
-            clone.innerText || clone.textContent || ""
-        ).trim();
+        return String(clone.innerText || clone.textContent || "").trim();
     }
 
     function saveLegacyMessage(node) {
@@ -416,7 +298,6 @@
 
         const isUser = node.classList.contains("user-message");
         const isAI = node.classList.contains("ai-message");
-
         if (!isUser && !isAI) return;
 
         const content = messageText(node);
@@ -429,15 +310,9 @@
         if (!chatId) return;
 
         try {
-            if (
-                isUser &&
-                typeof history.addUserMessage === "function"
-            ) {
+            if (isUser && typeof history.addUserMessage === "function") {
                 history.addUserMessage(chatId, content);
-            } else if (
-                isAI &&
-                typeof history.addAssistantMessage === "function"
-            ) {
+            } else if (isAI && typeof history.addAssistantMessage === "function") {
                 history.addAssistantMessage(chatId, content);
             } else if (typeof history.addMessage === "function") {
                 history.addMessage(chatId, {
@@ -452,10 +327,7 @@
 
             node.dataset.historySaved = "true";
         } catch (error) {
-            console.error(
-                "PingMe History: Could not save message.",
-                error
-            );
+            console.error("PingMe History: Could not save message.", error);
         }
     }
 
@@ -473,10 +345,7 @@
     function connectChatArea() {
         const area = document.getElementById("chatArea");
 
-        if (!area || area.dataset.pingmeHistoryObserver === "true") {
-            return;
-        }
-
+        if (!area || area.dataset.pingmeHistoryObserver === "true") return;
         area.dataset.pingmeHistoryObserver = "true";
 
         const observer = new MutationObserver(mutations => {
@@ -484,12 +353,8 @@
                 mutation.addedNodes.forEach(processNode);
 
                 const target = mutation.target?.nodeType === 1
-                    ? mutation.target.closest(
-                        ".user-message, .ai-message"
-                    )
-                    : mutation.target?.parentElement?.closest(
-                        ".user-message, .ai-message"
-                    );
+                    ? mutation.target.closest(".user-message, .ai-message")
+                    : mutation.target?.parentElement?.closest(".user-message, .ai-message");
 
                 if (target) saveLegacyMessage(target);
             });
@@ -503,74 +368,62 @@
     }
 
     /* ======================================================
-       LOADER API (GREEN PULSE CIRCLE)
+       LOADER — SINGLE OWNER
        ====================================================== */
-    function addLoader(label = "Thinking...") {
+
+    function addLoader() {
         const area = document.getElementById("chatArea");
         if (!area) return null;
 
         let row = document.getElementById(LOADER_ID);
 
-        if (!row) {
-            row = document.createElement("div");
-            row.id = LOADER_ID;
-            row.className = "message-row ai pingme-loader-row";
-            row.setAttribute("role", "status");
-
-            const message = document.createElement("div");
-            message.className = "message thinking-message";
-
-            const loader = document.createElement("div");
-            loader.className = "pingme-ai-loader"; // সবুজ বৃত্তের জন্য ক্লাস
-
-            const status = document.createElement("span");
-            status.className = "pingme-loader-status";
-
-            message.append(loader, status);
-            row.appendChild(message);
-            area.appendChild(row);
-        } else if (row.parentElement !== area) {
-            area.appendChild(row);
+        if (row) {
+            if (row.parentElement !== area) area.appendChild(row);
+            return row;
         }
 
-        const status = row.querySelector(".pingme-loader-status");
-        const text = String(label || "Thinking...");
+        row = document.createElement("div");
+        row.id = LOADER_ID;
+        row.className = "message-row ai pingme-loader-row";
 
-        if (status && status.dataset.label !== text) {
-            status.replaceChildren();
+        const message = document.createElement("div");
+        message.className = "message thinking-message";
 
-            [...text].forEach((character, index) => {
-                const letter = document.createElement("span");
+        const loader = document.createElement("div");
+        loader.className = "pingme-ai-loader";
+        loader.setAttribute("role", "status");
+        loader.setAttribute("aria-label", "PingMe is thinking");
 
-                letter.textContent =
-                    character === " " ? "\u00a0" : character;
+        const orbit = document.createElement("div");
+        orbit.className = "pingme-loader-orbit";
 
-                letter.style.setProperty("--i", index);
-                status.appendChild(letter);
-            });
+        const dots = document.createElement("div");
+        dots.className = "pingme-loader-dots";
+        dots.innerHTML = "<span></span><span></span><span></span>";
 
-            status.dataset.label = text;
-            row.setAttribute("aria-label", text);
-        }
+        loader.append(orbit, dots);
+        message.appendChild(loader);
+        row.appendChild(message);
+        area.appendChild(row);
 
         return row;
     }
 
-    function showLoader(label = "Thinking...") {
+    function showLoader() {
         const area = document.getElementById("chatArea");
-        const row = addLoader(label);
+        const row = addLoader();
 
         const thinking = document.getElementById("thinking");
         if (thinking) thinking.classList.remove("show");
 
-        if (area && row) {
-            area.scrollTop = area.scrollHeight;
-        }
+        if (area && row) area.scrollTop = area.scrollHeight;
     }
 
     function hideLoader() {
         document.getElementById(LOADER_ID)?.remove();
-        document.getElementById("pingmeFallbackLoader")?.remove();
+
+        const fallback = document.getElementById("pingmeFallbackLoader");
+        if (fallback) fallback.remove();
 
         const thinking = document.getElementById("thinking");
         if (thinking) thinking.classList.remove("show");
@@ -585,70 +438,19 @@
     document.addEventListener("pingme:ai:complete", hideLoader);
     document.addEventListener("pingme:ai:error", hideLoader);
 
-    /* ======================================================
-       USER INPUT, SEND & BUTTON HANDLERS
-       ====================================================== */
+    /* Keep legacy thinking compatible without observer loops. */
 
-    const sendBtn = document.getElementById("sendBtn");
-    const messageInput = document.getElementById("messageInput");
-    const settingsBtn = document.getElementById("settingsBtn");
-    const menuBtn = document.getElementById("menuBtn");
-    const micBtn = document.getElementById("micBtn");
+    const thinking = document.getElementById("thinking");
 
-    if (sendBtn) {
-        sendBtn.addEventListener("click", event => {
-            event.preventDefault();
-            if (typeof sendMessage === "function") {
-                sendMessage();
+    if (thinking) {
+        new MutationObserver(() => {
+            if (thinking.classList.contains("show")) {
+                thinking.classList.remove("show");
+                showLoader();
             }
-        });
-    }
-
-    if (messageInput) {
-        messageInput.addEventListener("keydown", event => {
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                if (typeof sendMessage === "function") {
-                    sendMessage();
-                }
-            }
-        });
-
-        messageInput.addEventListener("input", function () {
-            this.style.height = "auto";
-            this.style.height = Math.min(this.scrollHeight, 120) + "px";
-        });
-    }
-
-    document.querySelectorAll(".suggestion-item").forEach(button => {
-        button.addEventListener("click", function () {
-            if (!messageInput) return;
-            const text = this.querySelector(".text");
-
-            messageInput.value = text
-                ? text.textContent.trim()
-                : this.textContent.trim();
-
-            messageInput.focus();
-            messageInput.dispatchEvent(new Event("input"));
-        });
-    });
-
-    if (settingsBtn) {
-        settingsBtn.addEventListener("click", function () {
-            alert("PingMe AI Settings পরে যোগ করা হবে।");
-        });
-    }
-
-    if (menuBtn) {
-        menuBtn.addEventListener("click", function () {
-            alert("History পরে যোগ করা হবে।");
-        });
-    }
-
-    if (micBtn) {
-        micBtn.addEventListener("click", function () {
-            alert("Voice feature পরে যোগ করা হবে।");
+        }).observe(thinking, {
+            attributes: true,
+            attributeFilter: ["class"]
         });
     }
 
@@ -658,12 +460,15 @@
 
     connectChatArea();
 
-    if (typeof loadCurrentHistoryChat === "function") {
-        loadCurrentHistoryChat();
-    }
+    window.addEventListener("load", () => {
+        connectChatArea();
 
-    console.log("PingMe AI is ready.");
-    console.log("Nickname: PingMe");
-    console.log("Company: PingMe AI");
+        if (getHistory()) {
+            console.log("PingMe Chat Support: History connected.");
+        } else {
+            console.warn("PingMe Chat Support: History Support not found.");
+        }
+    });
+
     console.log("PingMe Chat Support Connected");
 })();
